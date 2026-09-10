@@ -88,6 +88,52 @@ if (typeof C.optionsLancement !== 'function') {
   ok('les deux pilotent le Chrome installé', co.channel === 'chrome' && ca.channel === 'chrome');
 }
 
+console.log('\nLes captures ne peuvent RIEN écrire');
+/* Une recette clique dans l'app : un clic de trop sur « Sauvegarder » ou
+   « Envoyer » modifierait le compte de démo. Toute écriture vers Supabase est
+   coupée au réseau ; seuls passent les lectures et le rafraîchissement du
+   jeton, sans lequel la session expirerait en cours de route. */
+if (typeof C.ecritureInterdite !== 'function') {
+  ok('le script expose ecritureInterdite', false);
+} else {
+  const B = 'https://sxdobjodxkwexaspepdm.supabase.co';
+  const E = C.ecritureInterdite;
+  ok('une lecture passe',                         !E('GET', B + '/rest/v1/patients?select=*'));
+  ok('un insert est coupé',                        E('POST', B + '/rest/v1/bilans'));
+  ok('une mise à jour est coupée',                 E('PATCH', B + '/rest/v1/patients?id=eq.1'));
+  ok('une suppression est coupée',                 E('DELETE', B + '/rest/v1/calendar_events?id=eq.1'));
+  ok('un appel de fonction est coupé',             E('POST', B + '/functions/v1/notify-athlete'));
+  ok('la casse de la méthode ne change rien',      E('post', B + '/rest/v1/bilans'));
+  /* Et dans l'autre sens : une LECTURE en minuscules doit passer. Sans mise en
+     majuscules elle serait coupée — trop bloquer est le sens sûr, mais une
+     capture privée de ses données se tromperait d'écran sans le dire. */
+  ok('une lecture en minuscules passe',            !E('get', B + '/rest/v1/patients?select=*'));
+  /* Sans lui, la session expire en plein lancement et l'on capture la page de
+     connexion à la place de l'étape. */
+  ok('le rafraîchissement du jeton passe',        !E('POST', B + '/auth/v1/token?grant_type=refresh_token'));
+  /* Mais pas une autre route d'authentification : se déconnecter, changer de
+     mot de passe, c'est écrire. */
+  ok('une autre écriture d\'authentification est coupée', E('POST', B + '/auth/v1/logout'));
+  /* Une URL signée de fichier se demande en POST mais ne modifie rien : sans
+     elle, logo, signature et tampon manquent aux captures. */
+  ok('une URL signée de fichier passe',            !E('POST', B + '/storage/v1/object/sign/praticien-profil/u/logo.png'));
+  /* … mais PAS le téléversement ni la suppression d'un fichier. */
+  ok('téléverser un fichier est coupé',            E('POST', B + '/storage/v1/object/praticien-profil/u/logo.png'));
+  ok('supprimer un fichier est coupé',             E('DELETE', B + '/storage/v1/object/praticien-profil/u/logo.png'));
+  ok('« sign » ailleurs dans l\'adresse ne suffit pas', E('POST', B + '/rest/v1/sign/x'));
+  /* Un hôte qui ne fait que CONTENIR « supabase.co » n'est pas Supabase. */
+  ok('un faux hôte n\'est pas pris pour Supabase',   !E('POST', 'https://supabase.co.exemple.fr/rest/v1/x'));
+  ok('les fichiers de l\'app ne sont pas touchés',   !E('GET', 'https://app.rehab4perf.com/js/bilan.js'));
+  /* Posée AVANT le premier chargement : une écriture déclenchée à l'ouverture
+     de l'app passerait sinon avant la coupure. Contrôle de texte, assumé ; la
+     preuve d'exécution se fait en lançant une vraie capture. */
+  const dCa = src.indexOf('async function captures(');
+  const cCa = src.slice(dCa, src.indexOf('\n}\n', dCa));
+  const iRoute = cCa.indexOf('ctx.route('), iGoto = cCa.indexOf('page.goto(');
+  ok('la coupure est posée avant le premier chargement', iRoute > 0 && iGoto > 0 && iRoute < iGoto,
+     'route ' + iRoute + ', chargement ' + iGoto);
+}
+
 console.log('\nLa liste attendue est lue dans le contenu réel');
 const att = C.attendues();
 /* Recompter indépendamment dans js/aide-content.js : si les deux divergent,

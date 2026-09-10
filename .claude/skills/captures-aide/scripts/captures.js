@@ -62,6 +62,30 @@ async function emailSession(page) {
   } catch (e) { return ''; }                       // page en cours de navigation
 }
 
+/* LECTURE SEULE pendant les captures. Une recette clique dans l'app : un clic
+   de trop sur « Sauvegarder », « Supprimer » ou « Envoyer » modifierait le
+   compte de démo — ou enverrait quelque chose à quelqu'un. Plutôt que de
+   compter sur la prudence de chaque recette, toute ÉCRITURE vers Supabase est
+   coupée au niveau du réseau.
+
+   Passent : les lectures (GET, HEAD, OPTIONS) et le rafraîchissement du jeton
+   — sans lui la session expirerait en cours de route et l'on capturerait
+   l'écran de connexion. Tout le reste vers Supabase (insert, update, delete,
+   rpc, fonctions) est refusé et COMPTÉ : une recette qui tente d'écrire le dit
+   dans le bilan du lancement, elle ne passe pas inaperçue. */
+function ecritureInterdite(methode, url) {
+  if (!/^https:\/\/[a-z0-9]+\.supabase\.co\//.test(String(url))) return false;
+  const m = String(methode || '').toUpperCase();
+  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return false;
+  if (/\/auth\/v1\/token(\?|$)/.test(String(url))) return false;
+  /* Générer une URL SIGNÉE de fichier (logo, signature, tampon) passe par un
+     POST, mais ne modifie rien : c'est une lecture. Coupée, elle privait les
+     captures de « Mon compte » et du courrier de leurs images. Seul ce chemin
+     passe — téléverser ou supprimer un fichier reste coupé. */
+  if (m === 'POST' && /\/storage\/v1\/object\/sign\//.test(String(url))) return false;
+  return true;
+}
+
 /* Les options de lancement, en fonction pure pour qu'un fichier de cas les
    verifie SANS lancer Chrome.
 
@@ -133,6 +157,17 @@ async function captures(seule) {
     if (!cibles.length) stop(seule + ' n\'est pas une capture attendue par le centre d\'aide.');
   }
   const ctx = await lancer(true);
+  /* Posée AVANT le premier chargement : une écriture déclenchée à l'ouverture
+     de l'app serait sinon passée avant la coupure. */
+  let bloquees = [];
+  await ctx.route('**/*', route => {
+    const r = route.request();
+    if (ecritureInterdite(r.method(), r.url())) {
+      bloquees.push(r.method() + ' ' + r.url().replace(/^https:\/\/[^/]+/, '').split('?')[0]);
+      return route.abort();
+    }
+    return route.continue();
+  });
   const page = ctx.pages()[0] || await ctx.newPage();
   await page.goto(APP, { waitUntil: 'networkidle' });
 
@@ -164,11 +199,19 @@ async function captures(seule) {
     }
   }
   await ctx.close();
-  console.log(`\n  ${bilan.ok.length} capturée(s) · ${bilan.echec.length} en échec · ${bilan.sans.length} sans recette\n`);
+  console.log(`\n  ${bilan.ok.length} capturée(s) · ${bilan.echec.length} en échec · ${bilan.sans.length} sans recette`);
+  /* Une écriture tentée n'est pas une erreur de capture — elle a été coupée —
+     mais elle dit qu'une recette a cliqué sur quelque chose qui modifie : on
+     la montre, pour corriger la recette plutôt que de s'y habituer. */
+  if (bloquees.length) {
+    console.log(`  ⚠ ${bloquees.length} écriture(s) tentée(s) et bloquée(s) :`);
+    [...new Set(bloquees)].slice(0, 10).forEach(b => console.log('     · ' + b));
+  } else console.log('  aucune écriture tentée');
+  console.log('');
   if (bilan.echec.length) process.exit(1);
 }
 
-module.exports = { refusCompte, attendues, optionsLancement };
+module.exports = { refusCompte, attendues, optionsLancement, ecritureInterdite };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
