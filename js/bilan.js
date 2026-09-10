@@ -3972,7 +3972,13 @@ function _buildMergedDonnees(allBilans){
     });
   });
   // Union-merge spécial pour ct-data-* : union de tous les noms de tests,
-  // valeurs les plus récentes non-vides par test
+  // valeurs les plus récentes non-vides par test.
+  /* Les OBSERVATIONS suivent la même règle que les valeurs. Elles étaient
+     jetées : chaque test était reconstruit à partir de son nom, de ses valeurs
+     et de son type, rien d'autre. La vue en lecture perdait donc les
+     observations des tests personnalisés — y compris celles du bilan consulté —
+     et le bilan de suivi ne pouvait pas les montrer en gris
+     (qualite/ct-heritage-cas.js). */
   var ctPgs = window._CT_PAGES || [];
   ctPgs.forEach(function(pk){
     var key = 'ct-data-' + pk;
@@ -3986,7 +3992,7 @@ function _buildMergedDonnees(allBilans){
     });
     if(!nameOrder.length) return;
     var arr = nameOrder.map(function(name){
-      var best = {name:name, valA:'', valB:'', type:seen[name].type};
+      var best = {name:name, valA:'', valB:'', obsA:'', obsB:'', type:seen[name].type};
       allBilans.slice().reverse().forEach(function(b){ // oldest → newest, last non-empty wins
         var raw = (b.donnees||{})[key];
         if(!raw) return;
@@ -3995,6 +4001,8 @@ function _buildMergedDonnees(allBilans){
           if(t.type) best.type = t.type;
           if(t.valA !== undefined && t.valA !== '') best.valA = t.valA;
           if(t.valB !== undefined && t.valB !== '') best.valB = t.valB;
+          if(t.obsA !== undefined && t.obsA !== null && t.obsA !== '') best.obsA = t.obsA;
+          if(t.obsB !== undefined && t.obsB !== null && t.obsB !== '') best.obsB = t.obsB;
         }); }catch(e){}
       });
       return best;

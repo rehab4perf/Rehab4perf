@@ -152,6 +152,40 @@ rangs = b.conteneur.children.filter(c => /ct-row/.test(c.className || ''));
 c = parCle(rangs.find(r => /Squat jump/.test(r.innerHTML)) || { innerHTML: '' }, 'valA');
 ok('changement de patient : l\'héritage du précédent est oublié', !/bl-inherited-ghost/.test(c.classe || '') && c.placeholder === '—', JSON.stringify(c));
 
+/* ── La fusion des bilans : c'est ELLE qui fournit l'héritage en vrai ───────
+   Le suivi ne passe pas `PREC` tel quel : il passe `_prevMergedFrom`, qui
+   repose sur `_buildMergedDonnees`. Celle-ci reconstruisait chaque test
+   personnalisé à partir de son nom, de ses valeurs et de son type — et JETAIT
+   les observations. Constaté en ligne : les valeurs grisées s'affichaient,
+   les observations jamais. La même fusion alimente la vue en lecture : les
+   observations y disparaissaient aussi, y compris du bilan qui les porte. */
+console.log('\nLa fusion des bilans garde les observations');
+const m0 = src.indexOf('function _buildMergedDonnees(');
+const m1 = src.indexOf('\n}\n', m0);
+const fusion = new Function('window', src.slice(m0, m1 + 2) + '; return _buildMergedDonnees;')({ _CT_PAGES: ['genou'] });
+const ancien = { donnees: { 'ct-data-genou': JSON.stringify([
+  { name: 'Squat jump', type: 'comparison', valA: '28', valB: '34', obsA: 'réception raide', obsB: 'RAS' }]) } };
+const recent = { donnees: { 'ct-data-genou': JSON.stringify([
+  { name: 'Squat jump', type: 'comparison', valA: '30', valB: '', obsA: '', obsB: '' }]) } };
+const lu = m => { try { return JSON.parse(m['ct-data-genou'])[0] || {}; } catch (e) { return {}; } };
+let t = lu(fusion([recent, ancien]));   // du plus récent au plus ancien, comme _allBilans
+ok('deux bilans : la valeur la plus récente l\'emporte', t.valA === '30' && t.valB === '34', JSON.stringify(t));
+ok('… et l\'observation d\'un bilan antérieur survit', t.obsA === 'réception raide' && t.obsB === 'RAS', JSON.stringify(t));
+t = lu(fusion([ancien]));
+ok('un seul bilan garde ses propres observations (vue en lecture)', t.obsA === 'réception raide', JSON.stringify(t));
+const recentObs = { donnees: { 'ct-data-genou': JSON.stringify([
+  { name: 'Squat jump', type: 'comparison', valA: '30', valB: '33', obsA: 'meilleure réception', obsB: '' }]) } };
+t = lu(fusion([recentObs, ancien]));
+ok('une observation plus récente remplace l\'ancienne', t.obsA === 'meilleure réception' && t.obsB === 'RAS', JSON.stringify(t));
+/* De bout en bout : la fusion, puis la marque. */
+b = banc(); b.cache.value = JSON.stringify([{ name: 'Squat jump', type: 'comparison', valA: '', valB: '' }]); b.window._ctRestoreAll();
+b.window._ctPoserHeritage(fusion([recent, ancien]));
+const tas2 = [];
+b.conteneur.children.filter(c => !/ct-row|ct-sub-hdr/.test(c.className || ''))
+  .forEach(z => z.children.forEach(k => (k.children || []).forEach(x => { if (x.tagName === 'TEXTAREA') tas2.push(x); })));
+ok('de bout en bout : l\'observation fusionnée s\'affiche en gris', tas2.some(x => x.placeholder === 'réception raide' && x.classList.contains('bl-inherited-ghost')),
+  tas2.map(x => x.placeholder).join(' | '));
+
 console.log('\nLe câblage : suivi ET « Modifier » passent par _blShowInheritedHints');
 const h0 = src.indexOf('function _blShowInheritedHints');
 const h1 = src.indexOf('\nfunction ', h0 + 10);

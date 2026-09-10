@@ -456,6 +456,16 @@ type ou de côté redessine tout, et une marque posée une seule fois
 disparaîtrait au premier de ces gestes. L'appel sans héritage (`null`) la
 vide, et `_ctResetAll` aussi — elle appartient au patient qu'on quitte.
 
+**Le cas isolé ne suffisait pas : c'est la vérification en ligne qui a trouvé
+le second trou.** `_buildMergedDonnees` — d'où vient l'héritage réel, via
+`_prevMergedFrom` — reconstruisait chaque test personnalisé depuis son nom, ses
+valeurs et son type, et **jetait les observations**. Les valeurs grisées
+s'affichaient, les observations jamais. Et comme la même fusion alimente la vue
+en lecture, les observations des tests personnalisés y disparaissaient aussi,
+y compris celles du bilan consulté. Elles suivent désormais la règle des
+valeurs : la plus récente non vide l'emporte. Le cas exécute la vraie fusion,
+puis la marque, de bout en bout.
+
 **`f-pain-zones` et `f-cote` n'en font PAS partie, et c'est délibéré** : les
 zones portent le côté atteint, que le CR nomme en toutes lettres. Les vider
 obligerait à redessiner à chaque séance et ferait perdre la résolution du côté.
