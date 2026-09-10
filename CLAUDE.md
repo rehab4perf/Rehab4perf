@@ -257,8 +257,26 @@ Toute correction ici est à porter **dans les trois**.
 `.single()` lève quand aucune ligne ne correspond. Sur une table où l'absence
 est un cas normal — un athlète non relié — c'est `.maybeSingle()` qu'il faut.
 
+**Un compte Strava = un seul lien** (`node qualite/strava-lien-unique-cas.js`).
+Le callback OAuth rangeait le jeton avec `onConflict: 'patient_id'` : le même
+`strava_athlete_id` pouvait être relié à deux fiches, et `maybeSingle()` lève
+aussi sur **deux** lignes — le webhook rendait 500 à chaque événement, toutes
+les activités du compte étaient perdues. Règle décidée avec le praticien :
+même praticien, la dernière fiche reliée l'emporte (l'app n'a aucun bouton
+« délier Strava ») ; autre praticien, refus lisible (`?status=taken` sur
+`strava-connected.html`). Le webhook lit la **liste**, retient le lien le plus
+récent et journalise `DOUBLON` — un doublon ne se résout jamais en rejouant,
+un 500 n'y sert à rien. Filet en base : `20260910_strava_lien_unique.sql`.
+
 **`git push` ne déploie PAS les fonctions** : Netlify ne sert que le statique.
 Elles passent par `supabase functions deploy <nom>`, séparément.
+
+**`strava-webhook` et `strava-oauth-callback` se déploient avec
+`--no-verify-jwt`.** Strava les appelle sans JWT, et le dépôt n'a pas de
+`supabase/config.toml` : sans le drapeau, la CLI réactive la vérification par
+défaut, Strava reçoit un 401 et chaque activité est perdue. Vérifié en ligne le
+2026-09-10 : les deux tournent sans vérification (le webhook rend le 403 de
+notre code sur un mauvais `verify_token`, le callback redirige).
 
 ## Barre du haut — le nom du patient est la variable d'ajustement
 

@@ -49,6 +49,39 @@ Deno.serve(async (req: Request) => {
 
   const data = await tokenRes.json()
 
+  /* Un compte Strava = un seul lien. L'upsert ci-dessous a pour cle le PATIENT :
+     seul, il laissait le meme `strava_athlete_id` relie a deux fiches, et le
+     webhook — qui cherche le patient par compte Strava — tombait alors en
+     erreur sur chaque activite, perdue pour les deux fiches.
+     Regle decidee avec le praticien : chez le MEME praticien, la derniere fiche
+     reliee l'emporte (c'est la correction d'une fiche en double, et l'app n'a
+     aucun bouton « delier Strava ») ; chez un AUTRE praticien, on refuse — on
+     ne retire pas en silence le lien d'un confrere. */
+  const { data: liens, error: lienErr } = await supabase
+    .from('strava_tokens')
+    .select('id, patient_id, praticien_id')
+    .eq('strava_athlete_id', data.athlete.id)
+  if (lienErr) {
+    return Response.redirect(ATHLETE_REDIRECT + '?status=error', 302)
+  }
+  const autres = (liens || []).filter(l => String(l.patient_id) !== String(patientId))
+  if (autres.some(l => String(l.praticien_id) !== String(praticienId))) {
+    return Response.redirect(ATHLETE_REDIRECT + '?status=taken', 302)
+  }
+  if (autres.length) {
+    // Retire AVANT d'ecrire : avec l'index unique sur strava_athlete_id,
+    // l'upsert de la nouvelle fiche serait refuse tant que l'ancienne existe.
+    const { error: retraitErr } = await supabase
+      .from('strava_tokens')
+      .delete()
+      .eq('strava_athlete_id', data.athlete.id)
+      .eq('praticien_id', praticienId)
+      .neq('patient_id', patientId)
+    if (retraitErr) {
+      return Response.redirect(ATHLETE_REDIRECT + '?status=error', 302)
+    }
+  }
+
   const { error: upsertErr } = await supabase.from('strava_tokens').upsert({
     patient_id:        patientId,
     praticien_id:      praticienId,

@@ -105,26 +105,39 @@ Deno.serve(async (req: Request) => {
     const stravaActivityId = event.object_id
 
     /* `.single()` leve une erreur quand aucune ligne ne correspond — un athlete
-       non relie faisait donc echouer la requete au lieu de rendre `null`. */
-    const { data: token, error: tokErr } = await supabase
+       non relie faisait donc echouer la requete au lieu de rendre `null`.
+       `.maybeSingle()` leve a son tour quand il y en a DEUX : un compte Strava
+       relie a deux fiches rendait 500 a chaque evenement, Strava relancait puis
+       abandonnait, et toutes les activites du compte etaient perdues. Un
+       doublon ne se resout jamais tout seul — rejouer ne sert a rien. On lit
+       donc la liste, on retient le lien le plus recent (la regle du callback
+       OAuth, qui empeche desormais le doublon) et on le signale. */
+    const { data: liens, error: tokErr } = await supabase
       .from('strava_tokens')
       .select('*')
       .eq('strava_athlete_id', stravaAthleteId)
-      .maybeSingle()
+      .order('updated_at', { ascending: false, nullsFirst: false })
 
     if (tokErr) {
       console.error('[strava-webhook] lecture du token', tokErr.message)
       return new Response('token lookup failed', { status: 500 })
     }
-    if (!token) return new Response('ok') // athlete not linked
+    if (!liens || !liens.length) return new Response('ok') // athlete not linked
+    const token = liens[0]
+    if (liens.length > 1) {
+      console.error('[strava-webhook] DOUBLON strava_athlete_id', stravaAthleteId,
+        '— fiches', liens.map(l => l.patient_id).join(', '), '— retenue', token.patient_id)
+    }
 
     // Une suppression n'a besoin d'aucun appel a l'API : on sait deja quoi retirer.
+    // Sur toutes les fiches du compte : l'activite a pu etre rangee sous
+    // l'ancienne avant que le lien ne change de fiche.
     if (event.aspect_type === 'delete') {
       const { error: supErr } = await supabase
         .from('strava_activities')
         .delete()
         .eq('strava_id', stravaActivityId)
-        .eq('patient_id', token.patient_id)
+        .in('patient_id', liens.map(l => l.patient_id))
       if (supErr) {
         console.error('[strava-webhook] suppression', stravaActivityId, supErr.message)
         return new Response('delete failed', { status: 500 })

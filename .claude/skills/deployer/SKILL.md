@@ -93,6 +93,11 @@ seule preuve que le contenu est bien là.
 Les fonctions Edge (`supabase/functions/`) se déploient séparément :
 `supabase functions deploy <nom>`. Netlify ne sert que le statique.
 
+Les fonctions **appelées par Strava** (`strava-webhook`,
+`strava-oauth-callback`) exigent `--no-verify-jwt` : sans `config.toml` dans
+le dépôt, la CLI réactive la vérification JWT par défaut, et Strava — qui
+n'envoie aucun JWT — recevrait un 401 à chaque appel.
+
 ## Quand l'utilisateur dit que la correction n'a pas pris
 
 Avant de toucher au code, distinguer trois causes — elles se traitent à des

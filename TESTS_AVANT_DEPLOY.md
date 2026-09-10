@@ -23,6 +23,7 @@ node qualite/course-cas.js
 node qualite/prehension-cas.js
 node qualite/tactile-cas.js
 node qualite/strava-doublons-cas.js
+node qualite/strava-lien-unique-cas.js
 node qualite/cr-sections-cas.js
 node qualite/cardio-cas.js
 node qualite/cr-empreinte-cas.js

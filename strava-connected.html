@@ -53,6 +53,13 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
       <div class="desc">Si c'est une erreur, redemandez le lien à votre kinésithérapeute.</div>
     </div>
 
+    <div id="statusTaken" style="display:none;">
+      <div class="icon denied">⚠️</div>
+      <div class="title">Compte Strava déjà relié</div>
+      <div class="desc">Ce compte Strava est déjà relié au suivi d'un autre professionnel : il ne peut transmettre ses activités qu'à un seul suivi à la fois.</div>
+      <div class="desc">Rien n'a été modifié. Parlez-en à votre kinésithérapeute.</div>
+    </div>
+
     <div id="statusError" style="display:none;">
       <div class="icon error">✕</div>
       <div class="title">Une erreur est survenue</div>
@@ -69,7 +76,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 
 <script>
 var status = new URLSearchParams(window.location.search).get('status') || 'ok';
-var id = status === 'denied' ? 'statusDenied' : status === 'error' ? 'statusError' : 'statusOk';
+var id = { denied: 'statusDenied', error: 'statusError', taken: 'statusTaken' }[status] || 'statusOk';
 document.getElementById(id).style.display = 'block';
 </script>
 </body>
