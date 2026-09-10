@@ -23,12 +23,18 @@
    document daté, et sa mesure ne se réécrit jamais. L'identité n'est pas une
    mesure.
 
-   QUATRE GARDES-FOUS, et chacun ferme un vrai risque :
+   CINQ GARDES-FOUS, et chacun ferme un vrai risque :
      - vider un champ n'efface JAMAIS le registre ;
      - sans patient sélectionné, rien n'est écrit ;
      - une valeur identique après normalisation ne déclenche aucune écriture ;
      - la coquille n'accepte QUE les quatre colonnes d'identité — un message
        forgé ne peut pas atteindre une autre colonne de la table.
+     - un CHARGEMENT de bilan ne corrige jamais la fiche : seule une saisie
+       réelle du praticien (`event.isTrusted`) le fait. `_deserializeBilan`
+       émet `change` sur chaque champ qu'il remplit ; sans ce garde-fou, ouvrir
+       un bilan réécrivait la fiche avec SA valeur et la propageait à tous les
+       autres — une correction faite depuis la liste des patients revenait à
+       l'ancienne, en silence.
 
      node qualite/identite-patient-cas.js
    ════════════════════════════════════════════════════════════════════════════ */
@@ -60,7 +66,9 @@ console.log('\nLes quatre champs d\'identité signalent leur correction');
     var champ = (html.match(re) || [''])[0];
     ok(c[1] + ' — le champ existe', !!champ);
     ok(c[1] + ' — il signale sa correction',
-       new RegExp('onchange="[^"]*_blSyncIdentite\\(\'' + c[0] + '\'\\)').test(champ), champ);
+       new RegExp('onchange="[^"]*_blSyncIdentite\\(\'' + c[0] + '\',\\s*event\\)').test(champ), champ);
+    /* L'événement est TRANSMIS : c'est lui qui dit si la saisie vient du
+       praticien (`isTrusted`) ou du code qui remplit le formulaire. */
     /* `oninput` capitalise et recalcule a chaque frappe ; `onchange` ne part
        qu'une fois la saisie finie. Ecrire a chaque frappe propagerait « G »,
        « Ge », « Gen »… dans tous les bilans du patient. */
@@ -76,13 +84,16 @@ var dF = js.indexOf('function _blSyncIdentite(');
 if (dT < 0 || dF < 0) { console.log('  ✗ `_BL_IDENTITE` ou `_blSyncIdentite` introuvable'); process.exit(1); }
 var corps = js.slice(dT, js.indexOf('\n}', dF) + 2);
 
-function lancer(champ, valeur, patient) {
+function lancer(champ, valeur, patient, ev) {
+  /* Par défaut, une vraie saisie du praticien. Les cas de CHARGEMENT passent
+     explicitement leur événement — `undefined` compris. */
+  if (arguments.length < 4) ev = { isTrusted: true };
   var envoyes = [], toasts = [], propages = [];
   var pat = patient ? JSON.parse(JSON.stringify(patient)) : null;
   var f = new Function('document', 'window', '_bilanPatient', 'showToast',
-                       '_capName', '_blPropagerIdentite', 'poser', 'champ', 'valeur',
+                       '_capName', '_blPropagerIdentite', 'poser', 'champ', 'valeur', 'ev',
     corps +
-    '\nvar _r = _blSyncIdentite(champ);\nposer(_bilanPatient);\nreturn _r;');
+    '\nvar _r = _blSyncIdentite(champ, ev);\nposer(_bilanPatient);\nreturn _r;');
   var res = f(
     { getElementById: function (id) { return id === champ ? { value: valeur } : null; } },
     { parent: { postMessage: function (m) { envoyes.push(m); } },
@@ -93,7 +104,7 @@ function lancer(champ, valeur, patient) {
                      function (m, s, c) { return s + c.toUpperCase(); }); },
     function (cle, v) { propages.push([cle, v]); return { then: function () {} }; },
     function (p) { pat = p; },
-    champ, valeur);
+    champ, valeur, ev);
   return { rendu: res, envoyes: envoyes, toasts: toasts, propages: propages, patient: pat };
 }
 
@@ -143,6 +154,26 @@ egal('… ni sur un patient sans identifiant', 0, lancer('f-nom', 'X', { nom: 'Y
 egal('un champ inconnu ne déclenche rien', 0, lancer('f-taille', '175', PAT).envoyes.length);
 
 /* ── La propagation dans les bilans ───────────────────────────────────────── */
+console.log('\nUn chargement de bilan ne corrige jamais la fiche');
+{
+  /* LE CAS POUR LEQUEL CE GARDE-FOU EXISTE — constaté en ligne, un PATCH
+     `{"nom":"MARTIN"}` partant à la simple ouverture de l'app. La fiche a été
+     corrigée depuis la liste des patients (1992-11-07) ; le bilan ouvert porte
+     encore l'ancienne date. `_deserializeBilan` remplit le champ et émet
+     `change` : un événement du CODE, `isTrusted` à faux. */
+  var ouverture = lancer('f-dob', '1992-11-01', PAT, { isTrusted: false });
+  egal('ouvrir un bilan n\'écrit rien dans la fiche', 0, ouverture.envoyes.length);
+  egal('… ne propage rien aux autres bilans', 0, ouverture.propages.length);
+  egal('… et la fiche garde SA valeur', '1992-11-07', (ouverture.patient || {}).ddn);
+  egal('… sans avertir d\'une correction qui n\'a pas eu lieu', 0, ouverture.toasts.length);
+  /* Un appel sans événement ne vaut pas saisie : dans le doute, on n'écrit pas. */
+  egal('un appel sans événement n\'écrit rien', 0, lancer('f-dob', '1992-11-01', PAT, undefined).envoyes.length);
+  /* Et la vraie saisie, elle, passe toujours — sinon le garde-fou aurait
+     simplement tué la fonction. */
+  egal('une saisie réelle corrige toujours la fiche', 1,
+       lancer('f-dob', '1992-11-01', PAT, { isTrusted: true }).envoyes.length);
+}
+
 console.log('\nLa correction descend dans les bilans déjà enregistrés');
 
 var dP = js.indexOf('function _blPropagerIdentite(');

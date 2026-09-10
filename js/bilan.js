@@ -3722,7 +3722,19 @@ var _BL_IDENTITE = [
   { champ:'f-dob',    col:'ddn',    norm:function(v){ return v; } }
 ];
 
-function _blSyncIdentite(champ){
+function _blSyncIdentite(champ, ev){
+  /* SEULE UNE SAISIE DU PRATICIEN corrige la fiche. `_deserializeBilan` émet
+     `input` et `change` sur CHAQUE champ qu'il remplit, les quatre champs
+     d'identité compris. Sans ce garde-fou, ouvrir un bilan réécrivait la fiche
+     patient avec la valeur de CE bilan, et la propageait à tous les autres :
+     une date de naissance corrigée depuis la liste des patients revenait à
+     l'ancienne à la première ouverture d'un bilan, en silence. Constaté en
+     ligne : un PATCH `{"nom":"MARTIN"}` partait à la simple ouverture de l'app.
+
+     `isTrusted` est faux pour tout événement émis par le code — celui-ci et
+     ceux qu'on écrira demain. Le drapeau `_suppressDirty` ne couvre, lui, que
+     les chemins qui pensent à le poser. */
+  if(!ev || ev.isTrusted !== true) return false;
   var def = null;
   for(var i=0;i<_BL_IDENTITE.length;i++){ if(_BL_IDENTITE[i].champ === champ) def = _BL_IDENTITE[i]; }
   if(!def) return false;

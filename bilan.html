@@ -2473,9 +2473,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <div class="block" data-block-id="infos--identite">
       <div class="block-header">Identité</div>
       <div class="form-grid triple">
-        <div class="field"><label>Nom</label><input type="text" id="f-nom" placeholder="Dupont" autocapitalize="words" oninput="_capInput(this);updateAll()" onchange="_blSyncIdentite('f-nom')"></div>
-        <div class="field"><label>Prénom</label><input type="text" id="f-prenom" placeholder="Jean" autocapitalize="words" oninput="_capInput(this);updateAll()" onchange="_blSyncIdentite('f-prenom')"></div>
-        <div class="field"><label>Date de naissance</label><input type="date" id="f-dob" oninput="updateAll()" onchange="updateAll();_blSyncIdentite('f-dob')"></div>
+        <div class="field"><label>Nom</label><input type="text" id="f-nom" placeholder="Dupont" autocapitalize="words" oninput="_capInput(this);updateAll()" onchange="_blSyncIdentite('f-nom', event)"></div>
+        <div class="field"><label>Prénom</label><input type="text" id="f-prenom" placeholder="Jean" autocapitalize="words" oninput="_capInput(this);updateAll()" onchange="_blSyncIdentite('f-prenom', event)"></div>
+        <div class="field"><label>Date de naissance</label><input type="date" id="f-dob" oninput="updateAll()" onchange="updateAll();_blSyncIdentite('f-dob', event)"></div>
       </div>
       <div class="form-grid">
         <div class="field"><label>Poids (kg)</label><input type="number" id="f-poids" placeholder="70" oninput="updateAll()"></div>
@@ -2514,7 +2514,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       </div>
       <div class="form-grid">
         <div class="field"><label>Sexe</label>
-          <select id="f-sexe" onchange="updateAll();_blSyncIdentite('f-sexe')" style="font-family:var(--font-sans);font-size:.95rem;color:var(--text);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:6px 8px;outline:none;width:100%;background:var(--surface)">
+          <select id="f-sexe" onchange="updateAll();_blSyncIdentite('f-sexe', event)" style="font-family:var(--font-sans);font-size:.95rem;color:var(--text);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:6px 8px;outline:none;width:100%;background:var(--surface)">
             <option value="">— Sélectionner —</option>
             <option value="H">Homme</option>
             <option value="F">Femme</option>
@@ -6241,7 +6241,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260909f"></script>
+<script src="js/bilan.js?v=20260910b"></script>
 
 </body>
 </html>
