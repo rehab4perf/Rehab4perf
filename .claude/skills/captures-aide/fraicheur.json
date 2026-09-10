@@ -70,7 +70,7 @@
  "notifications-cloche-1.png": {
   "date": "2026-09-10",
   "sources": {
-   "index.html": "2afaf7128a08a5b399820796233141e68bd75482"
+   "index.html": "d56b08d2859ac489ee508c75348c85493284e721"
   }
  },
  "notifications-pastilles-1.png": {
@@ -108,28 +108,28 @@
  "patients-filtres-periode-1.png": {
   "date": "2026-09-10",
   "sources": {
-   "patients.html": "cd0702b37a6bb139ee87386c2929bfa47f1ba63f",
-   "js/patients-data.js": "e05c4cca231c33835ba185158e4ba8c4b100ded7"
+   "patients.html": "f7934a1731d0093f9eef1fca1c38314905ae1eef",
+   "js/patients-data.js": "7ccc6752e72f82fd87fc0f9deab0dac294e29f09"
   }
  },
  "patients-liste-1.png": {
   "date": "2026-09-10",
   "sources": {
-   "patients.html": "cd0702b37a6bb139ee87386c2929bfa47f1ba63f",
-   "js/patients-data.js": "e05c4cca231c33835ba185158e4ba8c4b100ded7"
+   "patients.html": "f7934a1731d0093f9eef1fca1c38314905ae1eef",
+   "js/patients-data.js": "7ccc6752e72f82fd87fc0f9deab0dac294e29f09"
   }
  },
  "patients-vue-ensemble-1.png": {
   "date": "2026-09-10",
   "sources": {
-   "patients.html": "cd0702b37a6bb139ee87386c2929bfa47f1ba63f",
-   "js/patients-data.js": "e05c4cca231c33835ba185158e4ba8c4b100ded7"
+   "patients.html": "f7934a1731d0093f9eef1fca1c38314905ae1eef",
+   "js/patients-data.js": "7ccc6752e72f82fd87fc0f9deab0dac294e29f09"
   }
  },
  "premiers-pas-creer-patient-1.png": {
   "date": "2026-09-10",
   "sources": {
-   "index.html": "2afaf7128a08a5b399820796233141e68bd75482"
+   "index.html": "d56b08d2859ac489ee508c75348c85493284e721"
   }
  },
  "premiers-pas-mon-compte-1.png": {
@@ -245,7 +245,7 @@
  "strava-connecter-strava-1.png": {
   "date": "2026-09-10",
   "sources": {
-   "index.html": "2afaf7128a08a5b399820796233141e68bd75482"
+   "index.html": "d56b08d2859ac489ee508c75348c85493284e721"
   }
  }
 }

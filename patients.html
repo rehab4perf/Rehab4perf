@@ -116,6 +116,15 @@ table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3
 .fi-f input.inherited, .fi-f textarea.inherited { border-style: dashed; background: var(--surface2); }
 .fi-f input.inherited::placeholder, .fi-f textarea.inherited::placeholder { color: var(--text3); font-style: italic; }
 .fi-hint { font-size: .7rem; color: var(--text3); }
+/* Écart avec le dernier bilan : signalé, jamais corrigé d'office. */
+.fi-f input.ecart, .fi-f textarea.ecart { border-color: var(--orange); }
+.fi-ecart { color: var(--orange); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fi-ecart b { font-weight: 700; }
+.fi-reprendre {
+  font-family: inherit; font-size: .7rem; font-weight: 600; color: var(--accent);
+  background: none; border: 1px solid var(--border); border-radius: 5px; padding: 1px 8px; cursor: pointer;
+}
+.fi-reprendre:hover { border-color: var(--accent); background: var(--accent-l); }
 .fi-bar {
   position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -254,7 +263,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="state" id="pv-state">Chargement…</div>
 </div>
 
-<script src="js/patients-data.js?v=20260803c"></script>
+<script src="js/patients-data.js?v=20260910i"></script>
 <script>
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
@@ -397,15 +406,20 @@ function renderList(rows, bounds){
 
 /* ── Vue Fiche ─────────────────────────────────────────────────────
    Les champs qui existent aussi dans le bilan (poids, taille, activité,
-   médecin) affichent la valeur du bilan le plus récent en indice quand la
-   fiche est vide. L'indice n'est jamais enregistré : seule une saisie
-   explicite du praticien devient une valeur de fiche. */
+   médecin) fusionnent avec lui :
+   - fiche vide : la valeur du bilan le plus récent s'affiche en indice, et
+     entre dans la fiche au prochain « Enregistrer » (`r4pValeurFiche`) ;
+   - fiche remplie mais différente du dernier bilan : l'écart est écrit sous le
+     champ, avec « Reprendre » (`r4pEcartFicheBilan`). Sans lui, la fiche
+     l'emportait en silence.
+   Le bilan n'est jamais modifié depuis la fiche. */
 function ficheField(p, key, bilanKey, label, opts){
   opts = opts || {};
   var r = bilanKey ? r4pResolveFicheField(p, _raw.bilans, key, bilanKey) : { value: p[key] || '', source: p[key] ? 'fiche' : '' };
   var own = (r.source === 'fiche') ? r.value : '';
   var ghost = (r.source === 'bilan') ? String(r.value) : '';
-  var cls = ghost ? ' class="inherited"' : '';
+  var ecart = bilanKey ? r4pEcartFicheBilan(p, _raw.bilans, key, bilanKey, !!opts.number) : null;
+  var cls = ghost ? ' class="inherited"' : ecart ? ' class="ecart"' : '';
   var ph = ghost ? (ghost + (opts.unit || '') + (r.date ? ' — bilan du ' + fmtDate(r.date) : '')) : (opts.placeholder || '');
   var h = '<div class="fi-f' + (opts.wide ? ' wide' : '') + '"><label for="fi-' + key + '">' + esc(label) + '</label>';
   if (opts.list) {
@@ -421,9 +435,23 @@ function ficheField(p, key, bilanKey, label, opts){
        + (opts.step ? ' step="' + opts.step + '"' : '') + (opts.min ? ' min="' + opts.min + '"' : '') + (opts.max ? ' max="' + opts.max + '"' : '')
        + ' value="' + esc(own) + '" placeholder="' + esc(ph) + '">';
   }
-  if (ghost) h += '<span class="fi-hint">Valeur du bilan le plus récent — saisir ici pour la remplacer.</span>';
+  if (ghost) h += '<span class="fi-hint">Reprise du bilan le plus récent — enregistrée avec la fiche. Saisir ici pour la remplacer.</span>';
+  if (ecart) h += '<span class="fi-hint fi-ecart">Dernier bilan' + (ecart.date ? ' du ' + fmtDate(ecart.date) : '') + ' : <b>'
+                + esc(String(ecart.value) + (opts.unit || '')) + '</b> '
+                + '<button type="button" class="fi-reprendre" data-cible="fi-' + key + '" data-val="' + esc(ecart.value) + '" onclick="ficheReprendre(this)">Reprendre</button></span>';
   h += '</div>';
   return h;
+}
+
+/* Pose la valeur du bilan dans le champ, sans enregistrer : le praticien
+   valide avec le reste de la fiche. */
+function ficheReprendre(btn){
+  var el = document.getElementById(btn.getAttribute('data-cible'));
+  if (!el) return;
+  el.value = btn.getAttribute('data-val');
+  el.classList.remove('ecart');
+  btn.parentNode.textContent = 'Repris du bilan — enregistrer la fiche pour valider.';
+  el.focus();
 }
 
 function renderFiche(){
@@ -791,8 +819,8 @@ function pickPatient(id){
 }
 
 /* Lit un champ ; rend null si vide, pour effacer la valeur en base plutôt que
-   d'y écrire une chaîne vide (un champ vide doit redonner la main à l'indice
-   du bilan, pas bloquer sur '' qui compterait comme une saisie). */
+   d'y écrire une chaîne vide ('' compterait comme une saisie et masquerait
+   l'indice du bilan). */
 function fVal(id, isNumber){
   var el = document.getElementById(id);
   if (!el) return null;
@@ -808,14 +836,16 @@ function saveFiche(){
   var btn = document.getElementById('fi-save'), st = document.getElementById('fi-status');
   btn.disabled = true; st.className = 'fi-status'; st.textContent = 'Enregistrement…';
 
+  // Les champs adossés au bilan reprennent sa valeur quand la fiche l'affichait en indice.
+  var duBilan = function(key, isNumber){ return r4pValeurFiche(fVal('fi-' + key, isNumber), p, _raw.bilans, key, key, isNumber); };
   var patch = {
-    poids:            fVal('fi-poids', true),
-    taille:           fVal('fi-taille', true),
+    poids:            duBilan('poids', true),
+    taille:           duBilan('taille', true),
     niveau:           fVal('fi-niveau'),
     lateralite_main:  fVal('fi-lateralite_main'),
     lateralite_pied:  fVal('fi-lateralite_pied'),
-    activite:         fVal('fi-activite'),
-    medecin:          fVal('fi-medecin'),
+    activite:         duBilan('activite'),
+    medecin:          duBilan('medecin'),
     fiche: {
       seancesSemaine:    fVal('fi-seances', true),
       materiel:          fVal('fi-materiel'),
@@ -840,6 +870,9 @@ function saveFiche(){
     // Rafraîchir la copie locale pour que les indices et la liste restent justes
     var i = _raw.patients.findIndex(function(x){ return String(x.id) === String(p.id); });
     if (i !== -1) _raw.patients[i] = res.data;
+    // Redessiner : les indices repris deviennent des valeurs, les écarts se recalculent.
+    renderFiche();
+    st = document.getElementById('fi-status') || st;
     st.className = 'fi-status ok';
     st.textContent = 'Fiche enregistrée.';
     setTimeout(function(){ if (st) st.textContent = ''; }, 3000);

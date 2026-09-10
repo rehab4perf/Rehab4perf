@@ -336,6 +336,39 @@ function r4pResolveFicheField(patient, bilans, ficheKey, bilanKey){
   return best !== null ? { value: best, source: 'bilan', date: bestDate } : { value: '', source: '' };
 }
 
+function _r4pNombre(v){
+  var n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+/* Valeur à enregistrer pour un champ adossé au bilan. La saisie du praticien
+   prime ; à défaut, la valeur du bilan est reprise — mais SEULEMENT si c'est
+   elle que la fiche affichait, c'est-à-dire si la fiche en base était vide.
+   Un champ rempli puis vidé est une décision du praticien : le bilan ne le
+   recomble pas. Le bilan, lui, n'est jamais modifié. */
+function r4pValeurFiche(saisie, patient, bilans, ficheKey, bilanKey, isNumber){
+  if (saisie !== null && saisie !== undefined) return saisie;
+  var r = r4pResolveFicheField(patient, bilans, ficheKey, bilanKey);
+  if (r.source !== 'bilan') return null;
+  return isNumber ? _r4pNombre(r.value) : String(r.value).trim();
+}
+
+/* Écart entre la fiche et le bilan le plus récent. Rend null si la fiche est
+   vide (c'est alors l'indice qui s'affiche) ou si les deux disent la même
+   chose — même nombre (« 78,5 » = 78.5), même texte à la casse et aux espaces
+   près. Sans ce signal, une fiche qui contredit le bilan l'emportait en
+   silence : 81 cm affichés contre 181 mesurés à trois bilans. */
+function r4pEcartFicheBilan(patient, bilans, ficheKey, bilanKey, isNumber){
+  var own = patient ? patient[ficheKey] : null;
+  if (own === null || own === undefined || String(own).trim() === '') return null;
+  var r = r4pResolveFicheField({ id: patient.id }, bilans, ficheKey, bilanKey);
+  if (r.source !== 'bilan') return null;
+  var a = _r4pNombre(own), b = _r4pNombre(r.value);
+  if (isNumber && a !== null && b !== null) return Math.abs(a - b) < 1e-9 ? null : { value: r.value, date: r.date };
+  var norm = function(s){ return String(s).trim().replace(/\s+/g, ' ').toLowerCase(); };
+  return norm(own) === norm(r.value) ? null : { value: r.value, date: r.date };
+}
+
 /* Antécédents : liste répétable datée, comme les objectifs et les zones
    douloureuses du bilan. Un bloc de texte unique perdrait la chronologie,
    qui est justement l'information utile. */
@@ -583,5 +616,6 @@ if (typeof module !== 'undefined' && module.exports) {
                      R4P_STATUT_LABELS: R4P_STATUT_LABELS, r4pResolveSport: r4pResolveSport,
                      R4P_NIVEAUX: R4P_NIVEAUX, R4P_LAT_MAIN: R4P_LAT_MAIN, R4P_LAT_PIED: R4P_LAT_PIED,
                      R4P_JOURS: R4P_JOURS,
-                     r4pResolveFicheField: r4pResolveFicheField, r4pNormAntecedents: r4pNormAntecedents };
+                     r4pResolveFicheField: r4pResolveFicheField, r4pNormAntecedents: r4pNormAntecedents,
+                     r4pValeurFiche: r4pValeurFiche, r4pEcartFicheBilan: r4pEcartFicheBilan };
 }
