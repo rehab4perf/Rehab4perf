@@ -31,13 +31,15 @@ function ok(nom, cond, detail) {
   ko++; console.log('  ✗ ' + nom + (detail ? ' — ' + detail : ''));
 }
 
-/* On EXÉCUTE la vraie bibliothèque, le vrai jeu d'icônes et la vraie fonction. */
-const dR = src.indexOf('var PROTOCOLS_REF = [');
-const fR = src.indexOf('\n];', dR);
+/* On EXÉCUTE la vraie bibliothèque, le vrai jeu d'icônes et la vraie fonction.
+   La bibliothèque vit dans js/protocoles-ref.js, partagé avec athlete.html. */
+const refs = fs.readFileSync(path.join(R, 'js', 'protocoles-ref.js'), 'utf8');
+const dR = refs.indexOf('var PROTOCOLS_REF = [');
+const fR = refs.indexOf('\n];', dR);
 const dI = src.indexOf('var PROTO_ICONS = [');
 const fI = src.indexOf('function _buildProtoIconPicker', dI);
-if (dR < 0 || fR < 0 || dI < 0 || fI < 0) { console.log('  ✗ bornes introuvables dans js/prog-main.js'); process.exit(1); }
-const M = new Function(src.slice(dR, fR + 3) + '\n' + src.slice(dI, fI)
+if (dR < 0 || fR < 0 || dI < 0 || fI < 0) { console.log('  ✗ bornes introuvables dans js/protocoles-ref.js ou js/prog-main.js'); process.exit(1); }
+const M = new Function(refs.slice(dR, fR + 3) + '\n' + src.slice(dI, fI)
   + '; return { REF: PROTOCOLS_REF, ICONES: PROTO_ICONS, resoudre: _resolveProtoIcon };')();
 const cles = M.ICONES.map(x => x.key);
 

@@ -25,6 +25,9 @@ var CHAINE = {
   'bilan.html':         [['index.html', 'bilan.html']],
   'js/prog-data.js':    [['programme.html', 'js/prog-data.js'], ['index.html', 'programme.html']],
   'js/prog-main.js':    [['programme.html', 'js/prog-main.js'], ['index.html', 'programme.html']],
+  /* Seul script partage entre le builder et l'espace athlete. */
+  'js/protocoles-ref.js': [['programme.html', 'js/protocoles-ref.js'], ['index.html', 'programme.html'],
+                           ['athlete.html', 'js/protocoles-ref.js']],
   'programme.html':     [['index.html', 'programme.html']],
   'outils.html':        [['index.html', 'outils.html']],
   'js/patients-data.js':[['patients.html', 'js/patients-data.js'], ['index.html', 'patients.html']],
@@ -76,6 +79,8 @@ modifies.forEach(function (f) {
   if (CHAINE[f]) {
     CHAINE[f].forEach(function (p) { (aFaire[p[0]] = aFaire[p[0]] || []).push(p[1]); });
     touchePro = true;
+    /* Un script charge par l'espace athlete touche aussi SON service worker. */
+    if (CHAINE[f].some(function (p) { return p[0] === 'athlete.html'; })) toucheAth = true;
   }
   if (f === 'athlete.html' || f.indexOf('js/athlete') === 0) toucheAth = true;
   /* Seul ce qui est SERVI au navigateur peut perimer un cache. Les fichiers

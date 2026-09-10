@@ -35,6 +35,8 @@ var path = require('path');
 var R = path.join(__dirname, '..');
 var data = fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8');
 var main = fs.readFileSync(path.join(R, 'js', 'prog-main.js'), 'utf8');
+/* La bibliothèque intégrée vit dans son propre fichier, partagé avec athlete.html. */
+var refs = fs.readFileSync(path.join(R, 'js', 'protocoles-ref.js'), 'utf8');
 
 var ko = 0;
 function ok(nom, cond, detail) {
@@ -54,7 +56,7 @@ function tranche(src, debut, fin, nom) {
    le panneau et la synchro des protocoles, les favoris. */
 var srcCles   = tranche(data, 'var R4P_KEYS', '/* ================================================================\n   NETWORK HELPER', 'R4P_KEYS');
 var srcFavs   = tranche(data, '/* ── FAVORITES ── */', 'var _favFilter', 'favoris');
-var srcRef    = tranche(main, 'var PROTOCOLS_REF = [', '\n];', 'PROTOCOLS_REF') + '\n];';
+var srcRef    = tranche(refs, 'var PROTOCOLS_REF = [', '\n];', 'PROTOCOLS_REF') + '\n];';
 var srcIcons  = tranche(main, 'var PROTO_ICONS = [', '\n];', 'PROTO_ICONS') + '\n];';
 var srcProtos = tranche(main, 'function openProtoPanel', '/* ── Éditeur visuel de phases', 'protocoles');
 

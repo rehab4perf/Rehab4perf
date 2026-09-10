@@ -22,6 +22,7 @@ node qualite/cap-cas.js
 node qualite/course-cas.js
 node qualite/prehension-cas.js
 node qualite/tactile-cas.js
+node qualite/protocole-actif-cas.js
 node qualite/strava-doublons-cas.js
 node qualite/strava-lien-unique-cas.js
 node qualite/cr-sections-cas.js

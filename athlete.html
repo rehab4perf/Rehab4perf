@@ -691,6 +691,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 }
 </style>
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
+  <!-- Bibliothèque intégrée des protocoles : repli de « Mon protocole » quand
+       la ligne meta du praticien n'a pas le protocole actif. -->
+  <script src="js/protocoles-ref.js?v=20260910g"></script>
 </head>
 <body>
 
@@ -1292,11 +1295,11 @@ function _loadActiveProto(){
     var pp = Array.isArray(rows) && rows[0] ? rows[0] : null;
     if(!pp){ _activeProtoData = null; _renderProtoSection(); return; }
     var pratId = pp.praticien_id || _pratId;
-    if(!pratId){ _activeProtoData = null; _renderProtoSection(); return; }
     Promise.all([
-      fetch(SUPA_URL + '/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.' + pratId + '&select=donnees&limit=1', {
+      /* Sans praticien connu, pas de meta à lire : la bibliothèque répond seule. */
+      pratId ? fetch(SUPA_URL + '/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.' + pratId + '&select=donnees&limit=1', {
         headers: _entetes()
-      }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
+      }).then(function(r){ return r.json(); }).catch(function(){ return []; }) : Promise.resolve([]),
       fetch(SUPA_URL + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=phase_id,criteria_index,checked', {
         headers: _entetes()
       }).then(function(r){ return r.json(); }).catch(function(){ return []; })
@@ -1305,7 +1308,15 @@ function _loadActiveProto(){
       var donnees = tplRows && tplRows[0] && tplRows[0].donnees;
       if(typeof donnees === 'string'){ try{ donnees = JSON.parse(donnees); }catch(e){ donnees = null; } }
       var protocols = (donnees && Array.isArray(donnees.protocols)) ? donnees.protocols : [];
-      var proto = protocols.find(function(p){ return p.id === pp.protocol_id; });
+      /* La meta du praticien fait foi — c'est là que vivent ses versions
+         modifiées. Mais elle n'existe qu'après la PREMIÈRE ouverture du
+         panneau Protocoles du builder : d'ici là, et pour tout protocole
+         qu'elle n'a pas, la bibliothèque intégrée (js/protocoles-ref.js)
+         prend le relais, comme dans le builder. Sans ce repli, un protocole
+         affecté restait invisible au patient jusqu'à cette ouverture.
+         Garde-fou : node qualite/protocole-actif-cas.js */
+      var proto = protocols.find(function(p){ return p.id === pp.protocol_id; })
+        || (typeof PROTOCOLS_REF !== 'undefined' ? PROTOCOLS_REF : []).find(function(p){ return p.id === pp.protocol_id; });
       var phase = proto && (proto.phases||[]).find(function(ph){ return ph.id === pp.current_phase_id; });
       var checks = {};
       (checkRows||[]).forEach(function(c){

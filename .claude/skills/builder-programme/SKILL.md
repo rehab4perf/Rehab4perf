@@ -188,6 +188,33 @@ sur un objet qui n'en a pas.
 Le brouillon suit le mode (`_draftKey()`) : sans ça, composer un template
 écraserait celui d'une séance laissée en plan.
 
+## « Mon protocole » — la meta d'abord, la bibliothèque en repli
+
+```bash
+node qualite/protocole-actif-cas.js
+```
+
+La bibliothèque intégrée `PROTOCOLS_REF` vit dans **`js/protocoles-ref.js`**,
+chargé par `programme.html` (avant `prog-main.js`) **et** par `athlete.html`.
+Elle vivait dans `prog-main.js`, que l'espace athlète ne charge pas.
+
+`_loadActiveProto()` (athlete.html) résolvait le protocole actif **uniquement**
+dans la ligne `templates` `__r4p_protocols_meta__` du praticien. Or cette ligne
+n'est créée qu'à la **première ouverture du panneau Protocoles** du builder
+(`_fetchCustomProtocolsFromSupabase`, qui la sème depuis `PROTOCOLS_REF`).
+Entre l'affectation d'un protocole et cette ouverture, la section restait vide
+— constaté le 2026-09-10 sur le compte de démo : `lca`/`p1` affecté à 08:22,
+meta créée à 09:15. Le builder, lui, retombait déjà sur la bibliothèque.
+
+La règle : **la meta fait foi** (versions modifiées par le praticien,
+`userModified` compris), et **la bibliothèque ne sert que pour un protocole
+que la meta n'a pas** — meta absente, refusée, sans ce protocole, ou praticien
+inconnu. Jamais de mélange : si la version de la meta n'a plus la phase en
+cours, rien ne s'affiche plutôt qu'une phase tirée de la bibliothèque.
+
+Modifier la bibliothèque oblige à versionner les **deux** pages :
+`bump-versions.js` connaît ce maillon, et bouge alors `sw.js` avec `sw-pro.js`.
+
 ## Cycles de l'espace athlète — deux voies, pas une file
 
 ```bash
