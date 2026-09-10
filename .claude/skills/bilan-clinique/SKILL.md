@@ -445,6 +445,17 @@ valeur.
 Le cas exécute la vraie fonction sur un DOM minimal et **lit la vraie feuille
 de style** ; il échoue si une règle rend l'ombre à l'encre pleine.
 
+**Les tests personnalisés en étaient privés** (`node qualite/ct-heritage-cas.js`).
+La marque vise les champs par leur `id` ; eux vivent dans le JSON
+`ct-data-<page>` et leurs champs, rendus par `_ctRender`, n'en ont pas. Le
+suivi reportait les NOMS, valeurs vides — et rien d'autre.
+`_blShowInheritedHints` transmet désormais l'héritage à
+`window._ctPoserHeritage`, qui le range **par page puis par NOM de test**, et
+`_ctRender` pose la marque à **chaque** rendu : ajouter un test, changer de
+type ou de côté redessine tout, et une marque posée une seule fois
+disparaîtrait au premier de ces gestes. L'appel sans héritage (`null`) la
+vide, et `_ctResetAll` aussi — elle appartient au patient qu'on quitte.
+
 **`f-pain-zones` et `f-cote` n'en font PAS partie, et c'est délibéré** : les
 zones portent le côté atteint, que le CR nomme en toutes lettres. Les vider
 obligerait à redessiner à chaque séance et ferait perdre la résolution du côté.

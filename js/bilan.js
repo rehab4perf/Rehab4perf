@@ -3577,6 +3577,9 @@ function _blShowInheritedHints(mergedData){
       delete el.dataset.blOrigPlaceholder;
     }
   });
+  /* Les tests personnalisés n'ont pas d'id : la boucle ci-dessous ne peut pas
+     les atteindre. Ils reçoivent l'héritage à part, et le perdent avec lui. */
+  try{ if(window._ctPoserHeritage) window._ctPoserHeritage(mergedData || null); }catch(ex){}
   if(!mergedData) return;
   Object.keys(mergedData).forEach(function(id){
     var val = mergedData[id];
@@ -12587,6 +12590,46 @@ window.addEventListener('load', function(){
 
   function _esc(v){ return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
+  /* Valeurs du bilan précédent, par page puis par NOM de test. Partout
+     ailleurs dans un suivi, un champ non retesté montre l'ancienne valeur en
+     gris italique (`_blShowInheritedHints`) — mais cette marque vise les champs
+     par leur id, et ceux des tests personnalisés n'en ont pas : ils vivent dans
+     le JSON `ct-data-<page>`. Le suivi n'en reportait que les NOMS.
+     La marque est posée par `_ctRender`, à CHAQUE rendu : ajouter un test,
+     changer de type ou de côté redessine tout, et une marque posée une seule
+     fois disparaîtrait au premier de ces gestes. Jamais enregistrée : c'est un
+     placeholder, comme partout (qualite/ct-heritage-cas.js). */
+  var _ctHerite = {};
+  var _CT_TITRE_HERITE = 'Champ VIDE. Texte affiché = dernière valeur connue, reprise d\'un bilan antérieur. Elle ne sera pas enregistrée tant que vous ne l\'aurez pas saisie.';
+  function _ctOmbre(pk, t, field){
+    if(!t || !t.name) return '';
+    if(t[field] !== undefined && t[field] !== null && String(t[field]) !== '') return '';
+    var h = (_ctHerite[pk] || {})[t.name];
+    var v = h ? h[field] : '';
+    return (v === undefined || v === null) ? '' : String(v).trim();
+  }
+  /* Attributs d'un champ chiffré : ombre héritée, ou tiret d'invite. */
+  function _ctAttrsVal(pk, t, field){
+    var o = _ctOmbre(pk, t, field);
+    return o ? { cls:' bl-inherited-ghost', ph:_esc(o), titre:' title="'+_esc(_CT_TITRE_HERITE)+'"', rm:"this.classList.remove('bl-inherited-ghost');" }
+             : { cls:'', ph:'—', titre:'', rm:'' };
+  }
+  /* Appelé par `_blShowInheritedHints` — le suivi comme « Modifier » passent
+     par elle. Sans héritage (null), la mémoire est vidée. */
+  window._ctPoserHeritage = function(merged){
+    _ctHerite = {};
+    if(merged) _CT_PAGES.forEach(function(pk){
+      var raw = merged['ct-data-'+pk];
+      if(!raw) return;
+      try{
+        (JSON.parse(raw)||[]).forEach(function(t){
+          if(t && t.name) (_ctHerite[pk] = _ctHerite[pk] || {})[t.name] = t;
+        });
+      }catch(e){}
+    });
+    _CT_PAGES.forEach(function(pk){ _ctRender(pk); });
+  };
+
   function _mkObsZone(pk, idx, t, isComp, lbl){
     var obs = document.createElement('div');
     obs.style.cssText = 'padding:4px 0 8px;border-bottom:1px solid var(--border)';
@@ -12606,6 +12649,7 @@ window.addEventListener('load', function(){
         ta.placeholder = 'Observation '+label+'…';
         ta.style.cssText = taStyle;
         ta.value = t[field]||'';
+        _ctOmbreObs(ta, pk, t, field);
         ta.addEventListener('input',function(){ _ctUpdate(pk,idx,field,this.value); });
         wrap.appendChild(lb); wrap.appendChild(ta);
         obs.appendChild(wrap);
@@ -12615,10 +12659,24 @@ window.addEventListener('load', function(){
       ta.placeholder = 'Observation…';
       ta.style.cssText = taStyle;
       ta.value = t.obsA||'';
+      _ctOmbreObs(ta, pk, t, 'obsA');
       ta.addEventListener('input',function(){ _ctUpdate(pk,idx,'obsA',this.value); });
       obs.appendChild(ta);
     }
     return obs;
+  }
+
+  /* Même marque sur une observation : placeholder, classe, retirée à la frappe. */
+  function _ctOmbreObs(ta, pk, t, field){
+    var o = _ctOmbre(pk, t, field);
+    if(!o) return;
+    ta.placeholder = o;
+    ta.title = _CT_TITRE_HERITE;
+    ta.classList.add('bl-inherited-ghost');
+    ta.addEventListener('input', function _rmOmbre(){
+      this.classList.remove('bl-inherited-ghost');
+      this.removeEventListener('input', _rmOmbre);
+    });
   }
 
   function _ctRender(pk){
@@ -12638,14 +12696,15 @@ window.addEventListener('load', function(){
       container.appendChild(ph);
       perfItems.forEach(function(item){
         var t = item.t, idx = item.i;
+        var hA = _ctAttrsVal(pk, t, 'valA');
         var row = document.createElement('div');
         row.className = 'ct-row ct-row-perf';
         row.setAttribute('data-idx', idx);
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
-            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
+          '<div class="ct-cell"><input class="ct-val-inp'+hA.cls+'" type="number" step="any" placeholder="'+hA.ph+'"'+hA.titre+' value="'+_esc(t.valA)+'" '+
+            'oninput="'+hA.rm+'_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'comparison\')" title="Passer en comparaison G/D">⇄</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
         container.appendChild(row);
@@ -12661,16 +12720,17 @@ window.addEventListener('load', function(){
       compItems.forEach(function(item){
         var t = item.t, idx = item.i;
         var lsi = _ctLsiCalc(t.valA, t.valB);
+        var hB = _ctAttrsVal(pk, t, 'valB'), hA = _ctAttrsVal(pk, t, 'valA');
         var row = document.createElement('div');
         row.className = 'ct-row';
         row.setAttribute('data-idx', idx);
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valB)+'" '+
-            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)"></div>'+
-          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
-            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
+          '<div class="ct-cell"><input class="ct-val-inp'+hB.cls+'" type="number" step="any" placeholder="'+hB.ph+'"'+hB.titre+' value="'+_esc(t.valB)+'" '+
+            'oninput="'+hB.rm+'_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)"></div>'+
+          '<div class="ct-cell"><input class="ct-val-inp'+hA.cls+'" type="number" step="any" placeholder="'+hA.ph+'"'+hA.titre+' value="'+_esc(t.valA)+'" '+
+            'oninput="'+hA.rm+'_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
           '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'perf\')" title="Passer en performance unique">↑</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
@@ -12790,6 +12850,7 @@ window.addEventListener('load', function(){
      et le premier re-rendu (ex. changement de côté) les ressuscitait — valeurs
      comprises — dans le formulaire ET le CR du nouveau patient. */
   window._ctResetAll = function(){
+    _ctHerite = {}; // l'héritage appartient au patient qu'on quitte
     _CT_PAGES.forEach(function(pk){
       _ctData[pk] = [];
       var hf = document.getElementById('ct-data-'+pk);
