@@ -22,6 +22,45 @@ Le script le fait respecter : il lit l'e-mail de la session connectée et
 déclaré. Il refuse aussi si la page est retombée sur `auth.html` — une session
 expirée en cours de route aurait sinon capturé l'écran de connexion.
 
+## Les captures ne peuvent rien écrire — et ne montrent jamais une erreur
+
+Une recette clique dans l'app : toute ÉCRITURE vers Supabase est interceptée
+au réseau, posée avant le premier chargement. Passent : les lectures, le
+rafraîchissement du jeton (sans lui la session expire en plein lancement) et
+la génération d'URL signées de fichiers (un POST qui ne modifie rien, sans
+lequel logo, signature et tampon manquent).
+
+L'écriture reçoit un **faux succès** (`200`, `[]`), elle n'est **pas coupée**.
+La première version coupait : le `fetch` échouait, et l'app affichait son
+bandeau « Une erreur est survenue » sur presque toutes les captures du premier
+lot. Rien n'atteint la base dans les deux cas — mais seul le faux succès laisse
+l'app se comporter comme d'habitude. Les écritures tentées sont comptées et
+listées en fin de lancement ; aujourd'hui, la seule est la synchro des
+favoris (`PATCH templates`), rejouée à chaque ouverture de l'app.
+
+Conséquence utile : les retours d'athlète NON LUS le restent. Ouvrir une
+séance marquerait le retour « lu » — c'est une écriture, donc interceptée — et
+les captures de la cloche et des pastilles gardent de quoi montrer.
+
+Avant chaque image, le moteur cherche le bandeau d'erreur de l'app
+(`#r4p-err-bandeau`) dans **tous** les cadres, par sa boîte (il est en position
+fixe, `offsetParent` y vaut null) : s'il est là, l'image n'est PAS écrite.
+Prouvé en conditions réelles avec un bandeau d'essai.
+
+## La session de capture tombe si l'on se déconnecte du compte de démo
+
+Une déconnexion Supabase ferme TOUTES les sessions du compte — celle de la
+fenêtre de capture comprise. Pour revenir à son vrai compte après avoir rempli
+la démo, **fermer la fenêtre privée** plutôt que cliquer « Déconnexion ». Le
+moteur le détecte (« aucune session ouverte ») et n'écrit rien ; il suffit de
+relancer `connexion`.
+
+## Itérer sur un lot
+
+`--manquantes` ne rejoue que les images absentes. Chaque recette part d'un
+état connu, **taille d'écran comprise** : les recettes de la page athlète
+passent en format téléphone (390 × 844) et la suivante en aurait hérité.
+
 ## Quand la capture exigerait ce qu'on ne peut pas montrer : un schéma
 
 Les étapes Strava auraient demandé un compte Strava réel relié au patient de

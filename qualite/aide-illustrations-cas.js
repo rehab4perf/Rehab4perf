@@ -119,6 +119,18 @@ const etape = (art, n) => ((strava.articles.find(a => a.id === art) || {}).etape
 });
 ok('strava/connecter-strava étape 1 : reste une vraie capture', !!etape('connecter-strava', 1).img);
 
+console.log('\nLa charge, l\'ACWR et les courbes sont illustrées');
+/* Des captures réelles auraient demandé des semaines de retours d'athlète dans
+   le compte de démo ; avec deux retours, l'ACWR aurait affiché un « risque »
+   fabriqué. Décision du praticien : schémas, comme pour Strava. */
+const sec = id => A.sections.find(s => s.id === id);
+const et = (sid, art, n) => (((sec(sid) || {}).articles || []).find(a => a.id === art) || {}).etapes?.[n - 1] || {};
+[['charges', 'bilan-charge', 1], ['charges', 'acwr', 2], ['programme', 'journal-evolution', 2]].forEach(([sid, art, n]) => {
+  const e = et(sid, art, n);
+  ok(`${sid}/${art} étape ${n} : un schéma`, !!e.svg);
+  ok(`${sid}/${art} étape ${n} : plus de capture attendue`, !e.img);
+});
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Illustrations du centre d\'aide : tous les cas passent.');

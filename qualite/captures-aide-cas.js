@@ -134,6 +134,43 @@ if (typeof C.ecritureInterdite !== 'function') {
      'route ' + iRoute + ', chargement ' + iGoto);
 }
 
+console.log('\nAucune capture ne montre une erreur');
+{
+  /* Le premier lot portait presque partout le bandeau rouge de l'app : couper
+     une écriture faisait échouer le `fetch`, et l'app l'affichait. Deux gardes,
+     vérifiées ici sur le texte — les exécuter demande un navigateur ; la preuve
+     d'exécution se fait en lançant les captures. */
+  const dCa = src.indexOf('async function captures(');
+  const cCa = src.slice(dCa, src.indexOf('\n}\n', dCa));
+  ok('une écriture bloquée reçoit un faux succès', /route\.fulfill\(/.test(cCa));
+  ok('… elle n\'est plus coupée (le fetch échouerait)', !/route\.abort\(/.test(cCa));
+  const iG = cCa.indexOf('bandeauErreurVisible('), iS = cCa.indexOf('.screenshot(');
+  ok('le bandeau d\'erreur est cherché avant chaque image', iG > 0 && iS > 0 && iG < iS, 'garde ' + iG + ', image ' + iS);
+  const dB = src.indexOf('async function bandeauErreurVisible(');
+  const cB = dB > 0 ? src.slice(dB, src.indexOf('\n}\n', dB)) : '';
+  ok('… dans TOUS les cadres', /page\.frames\(\)/.test(cB));
+  /* Le bandeau est en position fixe : `offsetParent` y vaut null même quand il
+     s'affiche. Une garde qui s'y fierait ne verrait jamais rien. */
+  ok('… par sa boîte, pas par offsetParent', /getBoundingClientRect\(\)/.test(cB) && !/offsetParent/.test(cB));
+}
+
+console.log('\nChaque recette part d\'un état connu');
+{
+  /* Les recettes de la page athlète passent en format téléphone ; la suivante
+     en aurait hérité. La taille est remise AVANT le chargement de chaque
+     recette. Contrôle de texte, assumé (navigateur requis pour l'exécuter). */
+  const dCa = src.indexOf('async function captures(');
+  const cCa = src.slice(dCa, src.indexOf('\n}\n', dCa));
+  const iVue = cCa.indexOf('page.setViewportSize(VUE)');
+  const iBoucle = cCa.indexOf('for (const c of cibles)');
+  const iGotoB = cCa.indexOf('page.goto(APP', iBoucle);
+  ok('la taille d\'écran est remise à zéro dans la boucle', iVue > iBoucle && iBoucle > 0, 'taille ' + iVue + ', boucle ' + iBoucle);
+  ok('… avant le chargement de la recette', iVue > 0 && iGotoB > iVue);
+  /* --manquantes ne rejoue que ce qui manque : il se fonde sur le FICHIER,
+     jamais sur une liste tenue à la main. */
+  ok('--manquantes se fonde sur les fichiers présents', /manquantes\)\s*cibles\s*=\s*cibles\.filter\([^)]*existsSync/.test(cCa));
+}
+
 console.log('\nLa liste attendue est lue dans le contenu réel');
 const att = C.attendues();
 /* Recompter indépendamment dans js/aide-content.js : si les deux divergent,

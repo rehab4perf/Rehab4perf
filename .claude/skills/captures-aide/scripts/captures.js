@@ -86,6 +86,23 @@ function ecritureInterdite(methode, url) {
   return true;
 }
 
+/* Une capture ne montre JAMAIS une erreur. Le bandeau de l'app
+   (`#r4p-err-bandeau`, js/r4p-erreurs.js) peut surgir dans n'importe quel
+   cadre : on les parcourt tous. Sa visibilité se lit sur sa BOÎTE — il est en
+   position fixe, et `offsetParent` vaut alors null même quand il s'affiche. */
+async function bandeauErreurVisible(page) {
+  for (const f of page.frames()) {
+    const t = await f.evaluate(() => {
+      const b = document.getElementById('r4p-err-bandeau');
+      if (!b) return '';
+      const r = b.getBoundingClientRect();
+      return (r.width > 0 && r.height > 0) ? (b.innerText || 'bandeau').replace(/\s+/g, ' ').slice(0, 90) : '';
+    }).catch(() => '');
+    if (t) return t;
+  }
+  return '';
+}
+
 /* Les options de lancement, en fonction pure pour qu'un fichier de cas les
    verifie SANS lancer Chrome.
 
@@ -147,7 +164,7 @@ function liste() {
 }
 
 /* ── captures ────────────────────────────────────────────────────────────── */
-async function captures(seule) {
+async function captures(seule, manquantes) {
   const R = require('./recettes');
   const cfg = lireConfig();
   if (!cfg.demo) stop('aucun compte de démo enregistré : lancer d\'abord « connexion --demo … ».');
@@ -156,6 +173,8 @@ async function captures(seule) {
     cibles = cibles.filter(c => c.fichier === seule);
     if (!cibles.length) stop(seule + ' n\'est pas une capture attendue par le centre d\'aide.');
   }
+  /* Pour itérer sur un lot sans refaire ce qui est déjà juste. */
+  if (manquantes) cibles = cibles.filter(c => !fs.existsSync(path.join(SORTIE, c.fichier)));
   const ctx = await lancer(true);
   /* Posée AVANT le premier chargement : une écriture déclenchée à l'ouverture
      de l'app serait sinon passée avant la coupure. */
@@ -164,7 +183,11 @@ async function captures(seule) {
     const r = route.request();
     if (ecritureInterdite(r.method(), r.url())) {
       bloquees.push(r.method() + ' ' + r.url().replace(/^https:\/\/[^/]+/, '').split('?')[0]);
-      return route.abort();
+      /* On RÉPOND un succès vide au lieu de couper. Une requête coupée fait
+         échouer le `fetch`, et l'app affiche alors son bandeau « Une erreur est
+         survenue » : il était sur presque toutes les captures du premier lot.
+         Rien n'atteint la base pour autant — la requête ne part jamais. */
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     }
     return route.continue();
   });
@@ -182,11 +205,17 @@ async function captures(seule) {
     const rec = R.RECETTES[c.fichier];
     if (!rec) { bilan.sans.push(c.fichier); continue; }
     try {
-      await page.goto(APP, { waitUntil: 'networkidle' });   // chaque recette part d'un etat connu
+      /* Chaque recette part d'un état connu — y compris la TAILLE d'écran : une
+         recette de la page athlète passe en format téléphone, et la suivante
+         aurait sinon hérité de ses 390 px. */
+      await page.setViewportSize(VUE);
+      await page.goto(APP, { waitUntil: 'networkidle' });
       const cible = await rec(R.outils(page));
       /* Une session expiree en cours de route ramene sur la connexion : on
          capturerait l'ecran de login a la place de l'etape. */
       if (/auth\.html/.test(page.url())) throw new Error('retombé sur auth.html — session expirée');
+      const bandeau = await bandeauErreurVisible(page);
+      if (bandeau) throw new Error('bandeau d\'erreur visible — image NON écrite : ' + bandeau);
       const tmp = path.join(SORTIE, '.' + c.fichier + '.tmp.png');
       if (cible) await cible.screenshot({ path: tmp });
       else await page.screenshot({ path: tmp });
@@ -219,6 +248,6 @@ if (require.main === module) {
   (async () => {
     if (a[0] === 'connexion') return connexion(opt('--demo'));
     if (a.includes('--liste')) return liste();
-    return captures(opt('--seule'));
+    return captures(opt('--seule'), a.includes('--manquantes'));
   })().catch(e => stop(e.message));
 }
