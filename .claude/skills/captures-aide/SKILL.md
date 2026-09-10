@@ -22,6 +22,30 @@ Le script le fait respecter : il lit l'e-mail de la session connectée et
 déclaré. Il refuse aussi si la page est retombée sur `auth.html` — une session
 expirée en cours de route aurait sinon capturé l'écran de connexion.
 
+## Quand la capture exigerait ce qu'on ne peut pas montrer : un schéma
+
+Les étapes Strava auraient demandé un compte Strava réel relié au patient de
+démo — et son **tracé GPS** sur une page publique, l'interface le dessinant.
+Relier le Strava du praticien aurait en plus pu casser la synchro d'un vrai
+patient (un même compte relié à deux patients fait échouer le webhook). Elles
+sont donc **illustrées** : `svg:'…'` à la place de `img:true` dans
+`js/aide-content.js`. L'objet d'un article d'aide est de montrer que la
+fonction existe et où cliquer — un schéma le fait sans aucune donnée.
+
+```bash
+node qualite/aide-illustrations-cas.js
+```
+
+Tout schéma y est contrôlé : bien formé, `role="img"` + `aria-label`, et
+**lisible dans le tiroir** (348 px utiles : un schéma de 600 unités y est
+réduit à 58 % — plancher 8 px une fois réduit, héritage des `font-size`
+compris). Le premier jet mettait le badge « S 4.7km 30min » à 7 px.
+
+Un schéma vit dans une chaîne JavaScript entre apostrophes : **aucune
+apostrophe droite** dedans (utiliser ’), aucune barre oblique inverse, une
+seule ligne. La liste des captures attendues perd d'office les étapes
+illustrées, puisqu'elle est lue dans le contenu.
+
 ## Utilisation
 
 ```bash
