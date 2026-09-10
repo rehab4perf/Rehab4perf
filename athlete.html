@@ -815,6 +815,36 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 
+/* En-têtes de tout appel REST de l'espace athlète. `x-r4p-patient` et
+   `x-r4p-prog` disent ce que le lien ouvre : sous la clé publique, la base
+   (migration 20260912_rls_anon_par_lien) ne rend QUE les lignes de ce
+   patient ou de ce programme. Un appel qui ne passerait pas par ici
+   reviendrait vide. Tant que la migration n'est pas appliquée, la base
+   ignore ces en-têtes — c'est ce qui permet de déployer la page d'abord.
+   Les Edge Functions (/functions/v1/) n'y passent PAS : leur CORS est le
+   leur, et refuserait ces en-têtes.
+   Garde-fou : node qualite/rls-cas.js */
+function _entetes(extra){
+  var h = { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' };
+  if(_patientId) h['x-r4p-patient'] = _patientId;
+  if(_progId)    h['x-r4p-prog']    = _progId;
+  return Object.assign(h, extra || {});
+}
+/* Mode kiné : les notes cliniques ne sont JAMAIS ouvertes par un lien. Le
+   praticien qui ouvre ce mode le fait dans son navigateur, où vit sa
+   session (même origine) : c'est son jeton qui les lit, et la base les
+   borne à ses patients. Jeton absent ou expiré : la requête part sans, et ne
+   rend rien — plutôt qu'un 401 qui ne dirait rien de plus. */
+function _entetesKine(){
+  var h = _entetes();
+  try {
+    var s = JSON.parse(localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token') || 'null');
+    if(s && s.access_token && !(s.expires_at && s.expires_at * 1000 < Date.now()))
+      h['Authorization'] = 'Bearer ' + s.access_token;
+  } catch(e){}
+  return h;
+}
+
 var OBJ_LABELS = { libre:'Libre', endurance:'Endurance', puissance:'Puissance', hypertrophie:'Hypertrophie', forcemax:'Force max' };
 var CYCLE_COLORS = {'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46','Endurance de force':'#2B5FA6','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'};
 function _cycleColor(nom){ return CYCLE_COLORS[nom] || '#52514E'; }
@@ -1077,7 +1107,7 @@ function loadProgById(id, callback){
   var btn = document.getElementById('refreshBtn');
   btn.disabled = true; btn.textContent = '⏳';
   fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + id + '&select=*', {
-    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    headers: _entetes()
   })
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res){
@@ -1104,7 +1134,7 @@ function renderProgInMain(prog){
     return;
   }
   fetch(SUPA_URL + '/rest/v1/athlete_feedback?seance_id=eq.' + _seanceId, {
-    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    headers: _entetes()
   })
   .then(function(r){ return r.json(); })
   .then(function(fbArr){
@@ -1133,23 +1163,23 @@ function renderCalendar(){
   var fetches = [
     fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
         + '&select=id,date,programme_id,programmes(nom),athlete_feedback(rpe,duree_min)&order=date.asc', {
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      headers: _entetes()
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/patient_settings?patient_id=eq.' + _patientId + '&select=cycles', {
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      headers: _entetes()
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/patient_messages?patient_id=eq.' + _patientId + '&order=date.asc', {
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      headers: _entetes()
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/strava_activities?patient_id=eq.' + _patientId
         + '&select=strava_id,date,type,nom,distance_m,duree_s,charge,donnees&order=date.asc', {
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      headers: _entetes()
     }).then(function(r){ return r.json(); }).catch(function(){ return []; })
   ];
   if(_kineMode && _pratId){
     fetches.push(
       fetch(SUPA_URL + '/rest/v1/clinical_notes?patient_id=eq.' + _patientId + '&praticien_id=eq.' + _pratId + '&order=date.asc', {
-        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+        headers: _entetesKine()
       }).then(function(r){ return r.json(); }).catch(function(){ return []; })
     );
   }
@@ -1256,7 +1286,7 @@ function _buildCalNav(label){
 function _loadActiveProto(){
   fetch(SUPA_URL + '/rest/v1/patient_protocols?patient_id=eq.' + _patientId
       + '&status=eq.active&order=started_at.desc&limit=1&select=*', {
-    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    headers: _entetes()
   }).then(function(r){ return r.json(); })
   .then(function(rows){
     var pp = Array.isArray(rows) && rows[0] ? rows[0] : null;
@@ -1265,10 +1295,10 @@ function _loadActiveProto(){
     if(!pratId){ _activeProtoData = null; _renderProtoSection(); return; }
     Promise.all([
       fetch(SUPA_URL + '/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.' + pratId + '&select=donnees&limit=1', {
-        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+        headers: _entetes()
       }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
       fetch(SUPA_URL + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=phase_id,criteria_index,checked', {
-        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+        headers: _entetes()
       }).then(function(r){ return r.json(); }).catch(function(){ return []; })
     ]).then(function(res){
       var tplRows = res[0], checkRows = res[1];
@@ -1574,7 +1604,7 @@ function _echDateLisibleAth(d){
 }
 function _echCharger(){
   if(!_patientId) return;
-  var ent = { 'apikey':SUPA_KEY, 'Content-Type':'application/json' };
+  var ent = _entetes();
   /* `select=*` plutot que la liste des colonnes — meme raison que cote
      praticien : nommer une colonne absente fait echouer la requete, et la
      section entiere disparaitrait au lieu de perdre un champ. */
@@ -1700,7 +1730,7 @@ function _echAjouter(){
   if(per) corps.date_fin = f.value;
   fetch(SUPA_URL + '/rest/v1/athlete_objectifs', {
     method:'POST',
-    headers:{ 'apikey':SUPA_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+    headers:_entetes({ 'Prefer':'return=minimal' }),
     body: JSON.stringify(corps)
   }).then(function(r){
     b.disabled = false; b.textContent = 'Ajouter';
@@ -1711,7 +1741,7 @@ function _echAjouter(){
 function _echSupprimer(id){
   if(!confirm('Retirer cette échéance ?')) return;
   fetch(SUPA_URL + '/rest/v1/athlete_objectifs?id=eq.' + id, {
-    method:'DELETE', headers:{ 'apikey':SUPA_KEY, 'Prefer':'return=minimal' }
+    method:'DELETE', headers:_entetes({ 'Prefer':'return=minimal' })
   }).then(function(){ _echCharger(); }).catch(function(){});
 }
 
@@ -2112,13 +2142,13 @@ function openProgModal(progId, seanceId){
   document.getElementById('progModal').classList.add('open');
   var fetches = [
     fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + progId + '&select=*', {
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      headers: _entetes()
     }).then(function(r){ return r.json(); })
   ];
   if(seanceId){
     fetches.push(
       fetch(SUPA_URL + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, {
-        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+        headers: _entetes()
       }).then(function(r){ return r.json(); })
     );
   }
@@ -2774,7 +2804,7 @@ function _submitRpe(){
 
   fetch(SUPA_URL+'/rest/v1/athlete_feedback', {
     method:'POST',
-    headers:{'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+    headers:_entetes({'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body:JSON.stringify(body)
   }).then(function(r){
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Envoyer mon ressenti';} }); }
@@ -3114,7 +3144,7 @@ function _submitCapFeedback() {
 
   fetch(SUPA_URL+'/rest/v1/athlete_feedback', {
     method: 'POST',
-    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    headers: _entetes({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
     // douleur/effort dans leurs colonnes dediees — rpe/duree_min mis a NULL
     // (reserves aux seances standard : rpe = Borg, duree_min = duree reelle)
     body: JSON.stringify({ seance_id: _capCurrentSeanceId, douleur: _capCurrentPain, effort: _capCurrentRpe, rpe: null, duree_min: null, submitted_at: new Date().toISOString() })

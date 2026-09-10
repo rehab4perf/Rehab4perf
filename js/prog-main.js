@@ -44,8 +44,10 @@ function _loadCyclesForPatient(){
   renderCycleTimeline();
   if(typeof renderCycleList === 'function') renderCycleList(); // le panneau peut rester ouvert pendant le switch
   var _forPatientId = _progPatient.id; // capture : ignorer la reponse si le patient a change entre-temps
+  // Sous le jeton du praticien, jamais la seule clé publique : celle-ci ne
+  // rend plus que le patient d'un lien athlète (migration 20260912).
   _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _forPatientId + '&select=cycles', {
-    headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' }
+    headers: _sbHeaders()
   })
   .then(function(r){ return r.json(); })
   .then(function(data){

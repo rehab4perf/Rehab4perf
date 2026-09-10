@@ -57,6 +57,53 @@ Corollaire côté JavaScript : **un identifiant injecté dans un `onclick` se
 quote toujours**. Un bigint non quoté passe, un uuid casse l'appel — et le type
 d'une clé n'est pas une chose sur laquelle parier depuis le navigateur.
 
+**`clinical_notes.praticien_id` et `clinical_notes.patient_id` sont en
+`text`**, alors que partout ailleurs ces colonnes sont des `uuid`. Une
+politique qui les compare à `auth.uid()` sans `::text` fait échouer toute sa
+migration. Pour sonder un type sans lire de ligne :
+`?<colonne>=eq.zz&limit=0` — l'erreur nomme le type (`invalid input syntax
+for type uuid`), un `[]` veut dire texte.
+
+## RLS — la base filtre, pas l'application
+
+```bash
+node qualite/rls-cas.js           # migrations + code
+node qualite/rls-cas.js --live    # comptages réels, après application
+```
+
+Chaque requête du produit filtre elle-même par `patient_id=eq.` : l'écran
+n'affichait donc jamais les lignes d'autrui, et **rien ne signalait que la
+base les rendait à qui les demandait sans filtre**. Mesuré le 2026-09-10 :
+un praticien de démo tout neuf voyait 868 programmes (3 à lui) — et la clé
+**publique**, écrite dans `athlete.html`, les mêmes, plus 275 notes cliniques.
+
+Deux migrations : `20260911_rls_praticien_ses_lignes` (appliquée le
+2026-09-10) borne `authenticated` à ses lignes ;
+`20260912_rls_anon_par_lien` borne `anon` au patient désigné par l'en-tête
+`x-r4p-patient` (ou `x-r4p-prog`) qu'envoie `athlete.html`. La seconde ne
+s'applique **qu'après** le déploiement de cette page, sinon l'espace athlète
+est vide.
+
+**Toutes deux sont RESTRICTIVE**, et c'est le point à ne pas perdre : les
+politiques en place ne sont pas dans le dépôt. Des politiques permissives se
+combinent en OU — en ajouter une bien écrite ne ferme rien tant qu'une large
+reste. Une restrictive se combine en ET avec toutes : elle borne sans avoir à
+connaître ni supprimer les autres, et s'annule d'un `DROP POLICY`.
+
+**Tout appel REST d'`athlete.html` passe par `_entetes()`** (`_entetesKine()`
+pour les notes cliniques, qui ne s'ouvrent jamais par un lien et partent
+sous la session du praticien). Un appel aux en-têtes écrits à la main
+revient vide dès la migration appliquée. Seule exception : les Edge
+Functions, dont le CORS refuserait ces en-têtes.
+
+**Le builder ne lit jamais sous la seule clé publique** — il lisait les
+cycles ainsi, et les aurait perdus avec la même migration.
+
+L'uuid du patient devient le secret du lien : non devinable, mais **non
+révocable**. La correction de fond est un jeton par patient ; elle ne
+changera que les fonctions `r4p_lien_*()`, pas une politique — voir l'en-tête
+de `20260912`.
+
 ## Deployment
 
 Deployment is fully automatic: `git push origin main` triggers a Netlify build. There is no build step — this is a static site served as-is. Never use `netlify deploy` manually unless Netlify CI is broken.

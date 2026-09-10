@@ -507,10 +507,19 @@ d'une date fantaisiste.
 **Une échéance reprise est souvent recopiée dans le bilan** : sans le garde-fou
 `texte|date`, elle s'afficherait deux fois, une par source.
 
-**Exposition résiduelle assumée et écrite dans la migration** : sans identité
-côté athlète, la lecture anonyme ne peut pas être restreinte par ligne. C'est
-déjà la posture des tables `athlete_*` ; le correctif est un jeton par patient
-dans le lien de partage, qui dépasse cette table.
+**La table existe désormais en base** — mesuré le 2026-09-10, la clé publique
+en voit des lignes : ce paragraphe disait « non appliquée », ce n'est plus
+vrai.
+
+**L'exposition résiduelle n'était pas une fatalité.** Elle disait : « sans
+identité côté athlète, la lecture anonyme ne peut pas être restreinte par
+ligne ». Elle le peut — PostgREST expose les en-têtes de la requête à
+Postgres (`request.headers`). `athlete.html` envoie `x-r4p-patient` via
+`_entetes()`, et `20260912_rls_anon_par_lien` borne `anon` à ce patient sur
+toutes les tables de l'espace athlète, `athlete_objectifs` comprise. Le jeton
+par patient reste la correction de fond (révocable) ; il ne changera que la
+fonction `r4p_lien_patient()`. Voir la section RLS de `CLAUDE.md` et
+`node qualite/rls-cas.js`.
 
 ## Charge d'entraînement — Foster, et pourquoi PAS le carré
 
