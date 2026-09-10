@@ -258,6 +258,34 @@ Le fond de journée du calendrier (`_dayCycleBg`) garde la **première** couleur
 qui couvre la date — décision du praticien : un chevauchement ne se voit pas
 sur la grille, et une bande par cycle l'aurait chargée.
 
+## Ressenti de l'athlète — une séance n'affiche que le sien
+
+```bash
+node qualite/athlete-etat-seance-cas.js
+```
+
+Douleur par exercice, exercices terminés, note de séance et tours d'AMRAP
+vivent dans le navigateur de l'athlète sous `r4p-*-<id de séance>`, mais les
+exercices n'y sont désignés que par leur **position** (`b0e0`). Charger sous
+le mauvais id pose donc l'état d'une autre séance sur les mêmes cases.
+
+C'est ce qui arrivait : le chargement tournait **avant** que `buildRpeCard`
+ne pose l'id de la séance ouverte — avec celui de la précédente — et sans id
+il ne remettait rien à zéro. Constaté par le praticien sur une séance
+**dupliquée** : elle s'ouvrait avec le 1/10 de l'originale, que l'athlète
+aurait envoyé sans l'avoir saisi.
+
+**La duplication ne copie aucun retour** — `athlete_feedback` est lié à
+`seance_id`, et `_calDuplicateEvent` crée une séance neuve. Elle rendait
+seulement le défaut visible en reproduisant les mêmes exercices aux mêmes
+positions ; toute séance ouverte après une autre était touchée.
+
+`_chargerEtatSeance(id)` est le **seul** chargement : il pose l'id d'abord et
+repart de zéro. Les deux chemins d'ouverture l'appellent — `openProgModal`
+(calendrier) et `renderProgInMain` (lien de séance unique). Les tours d'AMRAP
+étaient chargés une seule fois au démarrage, sous une clé sans id : ils
+passent par lui aussi.
+
 ## Empreinte de séance du builder
 
 ```bash

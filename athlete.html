@@ -1144,8 +1144,7 @@ function renderProgInMain(prog){
     var existing = (Array.isArray(fbArr) && fbArr.length) ? fbArr[0] : null;
     var raw = prog.donnees || [];
     var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
-    _loadPainRatings();
-    _loadSessionNote();
+    _chargerEtatSeance(_seanceId);
     _initExoEffortsFromFeedback(existing && existing.exo_data);
     html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
     html += (isCap || isHsr) ? _buildCapPainCard(_seanceId, existing) : buildRpeCard(_seanceId, _blocsVisibles(blocs), existing);
@@ -2176,8 +2175,7 @@ function openProgModal(progId, seanceId){
       var fbArr = Array.isArray(results[1]) ? results[1] : [];
       existing = fbArr.length ? fbArr[0] : null;
     }
-    _loadPainRatings();
-    _loadSessionNote();
+    _chargerEtatSeance(seanceId);
     var donnees = prog.donnees || {};
     var isCap = donnees.type === 'cap' || (prog.nom && prog.nom.indexOf('CAP —') === 0);
     var isHsr = donnees.type === 'hsr' || (prog.nom && prog.nom.indexOf('HSR —') === 0);
@@ -2221,14 +2219,28 @@ var _doneExos    = {}; // { 'exoKey': true }
 
 function _exoKey(blocIdx, exoIdx){ return 'b'+blocIdx+'e'+exoIdx; }
 
-function _loadPainRatings(){
+/* État de la séance ouverte — douleur par exercice, exercices terminés, note,
+   tours d'AMRAP. Rangé sous l'id de la séance, mais les exercices n'y sont
+   désignés que par leur POSITION (b0e0) : charger sous le mauvais id pose
+   l'état d'une autre séance sur les mêmes cases.
+   C'est ce qui arrivait. Le chargement tournait AVANT que buildRpeCard ne pose
+   l'id de la séance ouverte — donc avec celui de la PRÉCÉDENTE — et sans id il
+   ne remettait rien à zéro. Une séance dupliquée, aux mêmes exercices, s'ouvrait
+   ainsi avec la douleur de l'originale, et l'athlète l'envoyait sans l'avoir
+   saisie. On pose l'id d'abord, et l'on repart de zéro
+   (qualite/athlete-etat-seance-cas.js). */
+function _chargerEtatSeance(seanceId){
+  _currentSeanceId = seanceId || '';
+  _painRatings = {}; _doneExos = {}; _sessionNote = ''; _toursRealises = {};
   if(!_currentSeanceId) return;
-  try {
-    var raw = localStorage.getItem('r4p-pain-'+_currentSeanceId);
-    _painRatings = raw ? JSON.parse(raw) : {};
-    var rawDone = localStorage.getItem('r4p-done-'+_currentSeanceId);
-    _doneExos = rawDone ? JSON.parse(rawDone) : {};
-  } catch(e){ _painRatings = {}; _doneExos = {}; }
+  var lire = function(prefixe, defaut){
+    try { var raw = localStorage.getItem(prefixe + _currentSeanceId); return raw ? (JSON.parse(raw) || defaut) : defaut; }
+    catch(e){ return defaut; }
+  };
+  _painRatings   = lire('r4p-pain-', {});
+  _doneExos      = lire('r4p-done-', {});
+  _sessionNote   = lire('r4p-snote-', '');
+  _toursRealises = lire('r4p-tours-', {});
 }
 
 function _savePainRatings(){
@@ -2834,21 +2846,9 @@ function _submitRpe(){
 // ── Note de séance ────────────────────────────────────────────
 var _sessionNote = '';
 
-function _loadSessionNote(){
-  if(!_currentSeanceId) return;
-  try {
-    var raw = localStorage.getItem('r4p-snote-'+_currentSeanceId);
-    _sessionNote = raw ? JSON.parse(raw) : '';
-  } catch(e){ _sessionNote = ''; }
-}
-
 /* Tours réalisés sur un AMRAP. Le praticien vise un nombre, l'athlète note ce
    qu'il a fait : c'est ce qui rend un AMRAP comparable d'une séance à l'autre. */
-var _toursRealises = {};
-try {
-  var _tr = localStorage.getItem('r4p-tours-' + (_currentSeanceId || _seanceId || ''));
-  if(_tr) _toursRealises = JSON.parse(_tr) || {};
-} catch(e){}
+var _toursRealises = {}; // chargé à l'ouverture de la séance, par _chargerEtatSeance
 
 window._saveTours = function(blocId, val){
   _toursRealises[blocId] = val;
