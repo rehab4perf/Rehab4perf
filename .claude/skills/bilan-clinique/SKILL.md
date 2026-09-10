@@ -115,6 +115,32 @@ La forme `[clé, libellé]` de `_crMobTable` ne servait qu'au poignet. Elle a é
 retirée avec lui : un mécanisme qui ne sert plus est un piège pour la lecture
 suivante.
 
+## Genou — l'extension se teste en un seul endroit
+
+```bash
+node qualite/genou-extension-cas.js
+```
+
+La page posait l'extension deux fois : « Mobilités Flexion / Extension »
+(passive, active) et, après les contractions flash, une section « Extension du
+Genou — Tests Fonctionnels » du bloc AMI (passive, active sur table, active en
+charge). Décision du praticien : « Extension active en charge » rejoint le
+premier bloc — **ajoutée en fin de liste**, index 2, les deux premières
+intactes — et la section du bloc AMI quitte la page.
+
+`tb-ge-ext*` **restent** au catalogue, dans les listes du CR, des pastilles et
+du registre `BILAN_BLOCKS` : une table ne se supprime jamais
+(`check-catalogue.js`), et `cr-sections-cas.js` exige que toute table du genou
+soit réclamée par une section. Sans lignes dans la page, elles ne produisent
+rien. Leurs valeurs restent en base sans être affichées — même régime que
+`mob-co-*` : assumé. Le validateur de `CLAUDE.md` les signale donc en « TESTS
+sans tbody » : c'est attendu.
+
+La nouvelle ligne prend les réponses du bloc (Normal / Réduit / Récurvatum),
+pas le Validé / Pas validé de l'ancienne section : un résultat ancien ne s'y
+reporte donc pas, et rien ne le traduit d'office — ce serait une décision
+clinique.
+
 ## Pliométrie qualitative — critère partagé
 
 Le groupe `plioq` illustre un cas à connaître avant d'ajouter un critère

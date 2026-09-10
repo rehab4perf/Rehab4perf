@@ -1117,12 +1117,15 @@ const TESTS = {
   ]},
   'tb-ge-mob-ext':    {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:[
     'Extension passive <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, extension passive associée à la RE. ✚ Récurvatum unilatéral → atteinte PAPI, PAPE et LCP ; Bilatéral → hyperlaxité constitutionnelle ; Douleur ant. → corne ant. ménisques</span>',
-    "Extension active <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, extension active du genou. ✚ Défaut d'extension active → lésion quadriceps / tendon patellaire / fracture patella</span>"
+    "Extension active <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, extension active du genou. ✚ Défaut d'extension active → lésion quadriceps / tendon patellaire / fracture patella</span>",
+    // Ajoutée en FIN (append-only) : elle vivait dans la section « Extension du
+    // Genou » du bloc AMI, retirée de la page car elle doublait ce bloc.
+    'Extension active en charge <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Debout, en appui : verrouillage actif du genou en extension complète.</span>'
   ]},
   'tb-ge-mob-flex-g': {type:'ortho',opts:['Normal','Réduit','N/A'],items:['Flexion passive','Flexion active']},
   'tb-ge-mob-flex-d': {type:'ortho',opts:['Normal','Réduit','N/A'],items:['Flexion passive','Flexion active']},
-  'tb-ge-mob-ext-g':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Extension passive','Extension active']},
-  'tb-ge-mob-ext-d':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Extension passive','Extension active']},
+  'tb-ge-mob-ext-g':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Extension passive','Extension active','Extension active en charge']},
+  'tb-ge-mob-ext-d':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Extension passive','Extension active','Extension active en charge']},
   'tb-ge-lig':    {type:'ortho',items:[
     'Laxité en varus à 0° — Verrouillage complet <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Varus en extension complète (DD). ✚ Laxité → atteinte du LCL + PAPE (atteinte grave, souvent associée au pivot central)</span>',
     'Laxité en valgus à 0° — Verrouillage complet <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Valgus en extension complète (DD). ✚ Laxité → atteinte du LCM + PAPI (atteinte grave du plan médial)</span>',
@@ -1163,6 +1166,10 @@ const TESTS = {
   "tb-ge-plicae": {type:'ortho',items:["Hugston's Plicae Test <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou fléchi à 90°. Translation médiale de la patella (pulpe des doigts sur zone plicae), tibia en RI sous fémur, flexion/extension genou. ✚ Douleur sous les doigts identique à la situation réelle → épaississement plicae médiale. Peut être associé à un ressaut ou claquement</span>"]},
   "tb-ge-plicae-g":{type:'ortho',items:["Hugston's Plicae Test"]},
   "tb-ge-plicae-d":{type:'ortho',items:["Hugston's Plicae Test"]},
+  /* Plus affichés : leur section (bloc AMI) doublait « Mobilités Flexion /
+     Extension », qui porte désormais l'extension en charge. Ils RESTENT au
+     catalogue — des bilans enregistrés y rattachent des valeurs, et une table
+     ne se supprime jamais (qualite/genou-extension-cas.js). */
   'tb-ge-ext':    {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-g':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-d':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
@@ -12017,7 +12024,8 @@ function _applyLabels(container, cote) {
 function _updateGenouBilateral(){
   var cote = _getCoteForScope(['genou']);
   var bilateral = (cote === 'BILATÉRAL');
-  var blocks = ['global','mob','lig','lca','men','rot','sbit','plicae','ext'];
+  // Plus de conteneur « ext » : la section « Extension du Genou » a quitté la page.
+  var blocks = ['global','mob','lig','lca','men','rot','sbit','plicae'];
   blocks.forEach(function(b){
     var single = document.getElementById('ge-single-' + b);
     var bil    = document.getElementById('ge-bilateral-' + b);
