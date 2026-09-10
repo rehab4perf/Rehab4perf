@@ -8129,7 +8129,7 @@ var PROTOCOLS_REF = [
     id: 'lca',
     type: 'rehab',
     name: 'LCA',
-    icon: '🦵',
+    icon: 'genou',
     category: 'Pathologie',
     joint: 'Genou',
     source: 'Antoine Peronnaud',
@@ -8406,7 +8406,7 @@ var PROTOCOLS_REF = [
     id: 'flexion-dorsale-cheville',
     type: 'library',
     name: 'Flexion dorsale cheville',
-    icon: '🦶',
+    icon: 'pied',
     category: 'Mobilité',
     source: 'Antoine Peronnaud',
     duration: 'Séance unique',
@@ -8530,7 +8530,7 @@ var PROTOCOLS_REF = [
     id: 'menisque',
     type: 'rehab',
     name: 'Réparation Méniscale',
-    icon: '🦵',
+    icon: 'genou',
     category: 'Pathologie',
     joint: 'Genou',
     source: 'Kinesport',
@@ -8660,7 +8660,7 @@ var PROTOCOLS_REF = [
     id: 'lcm-chirurgical',
     type: 'rehab',
     name: 'LCM post-chirurgical',
-    icon: '🦵',
+    icon: 'genou',
     category: 'Pathologie',
     source: 'Kinesport',
     duration: '20 semaines (RTP 6–9 mois)',
@@ -9708,11 +9708,27 @@ var PROTO_ICONS = [
   { key: 'autre',  label: 'Autre',  src: 'icon-dossier.svg'},
 ];
 
-function _resolveProtoIcon(val, size) {
+/* L'icône d'un protocole est TOUJOURS un SVG du jeu PROTO_ICONS — les mêmes
+   que les onglets du bilan. La bibliothèque intégrée portait encore des émojis
+   (🦵, 🦶) : un compte NEUF, qui reçoit sa liste copiée d'elle, les affichait,
+   pendant que les comptes anciens gardaient l'icône choisie à la main.
+
+   Une valeur inconnue retombe sur l'ARTICULATION du protocole, puis sur
+   l'émoji reconnu, puis sur « Autre » — JAMAIS la valeur brute. C'est ce qui
+   répare les listes déjà enregistrées avec un émoji, sans toucher à leurs
+   données. Voir qualite/protocoles-icones-cas.js. */
+var _PROTO_ICON_PAR_ARTICULATION = { 'genou':'genou', 'épaule':'epaule', 'epaule':'epaule', 'hanche':'hanche',
+  'rachis':'rachis', 'cheville':'pied', 'pied':'pied', 'main':'main', 'poignet':'main', 'lma':'lma' };
+var _PROTO_ICON_PAR_EMOJI = { '🦵':'genou', '🦶':'pied', '💪':'muscu' };
+function _resolveProtoIcon(val, size, joint) {
   size = size || 28;
-  var entry = PROTO_ICONS.find(function(x){ return x.key === val; });
-  if(entry) return '<img src="'+entry.src+'" width="'+size+'" height="'+size+'" alt="'+entry.label+'" style="display:block">';
-  return val || '';
+  var cle = val;
+  if(!PROTO_ICONS.find(function(x){ return x.key === cle; })){
+    var j = String(joint || '').trim().toLowerCase().split(/[\s\/,]+/)[0];
+    cle = _PROTO_ICON_PAR_ARTICULATION[j] || _PROTO_ICON_PAR_EMOJI[val] || 'autre';
+  }
+  var entry = PROTO_ICONS.find(function(x){ return x.key === cle; });
+  return '<img src="'+entry.src+'" width="'+size+'" height="'+size+'" alt="'+entry.label+'" style="display:block">';
 }
 
 function _buildProtoIconPicker(selectedKey) {
@@ -9781,7 +9797,7 @@ function _renderProtocolCard(proto) {
 
   return '<div class="proto-card" id="proto-card-'+proto.id+'">'
     + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
-    + '<span class="proto-card-header-icon">'+_resolveProtoIcon(proto.icon, 28)+'</span>'
+    + '<span class="proto-card-header-icon">'+_resolveProtoIcon(proto.icon, 28, proto.joint)+'</span>'
     + '<div class="proto-card-header-info">'
     + '<h3>'+_escHtml(proto.name)+'</h3>'
     + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration)
@@ -9912,7 +9928,7 @@ function _renderProtocolCardLibrary(proto) {
 
   return '<div class="proto-card" id="proto-card-'+proto.id+'">'
     + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
-    + '<span class="proto-card-header-icon">'+_resolveProtoIcon(proto.icon, 28)+'</span>'
+    + '<span class="proto-card-header-icon">'+_resolveProtoIcon(proto.icon, 28, proto.joint)+'</span>'
     + '<div class="proto-card-header-info">'
     + '<h3>'+_escHtml(proto.name)+'</h3>'
     + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration||'')
