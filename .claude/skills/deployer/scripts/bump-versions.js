@@ -116,4 +116,14 @@ if (toucheAth) bumpSW(SW_ATH, 'r4p-athlete');
 
 console.log((dry ? 'À FAIRE (rien écrit) — ' : 'Fait — ') + 'tampon ' + neuf);
 console.log(lignes.length ? lignes.join('\n') : '  (aucune référence concernée)');
+
+/* Les captures du centre d'aide photographient des écrans : un fichier servi qui
+   change peut en rendre certaines périmées. Signalé ICI, au moment où l'on
+   publie — le seul moment où l'on y pense. Informatif, jamais bloquant. */
+try {
+  var _cap = '.claude/skills/captures-aide/scripts/captures.js';
+  if (!dry && fs.existsSync(_cap))
+    process.stdout.write(cp.execFileSync(process.execPath, [_cap, '--fraicheur', '--court'], { encoding: 'utf8' }));
+} catch (e) {}
+
 if (lignes.some(function (l) { return l.indexOf('  !') === 0; })) process.exit(1);

@@ -7,6 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const vm = require('vm');
+const crypto = require('crypto');
 
 const DEPOT   = path.resolve(__dirname, '..', '..', '..', '..');
 const SORTIE  = path.join(DEPOT, 'aide', 'img');
@@ -16,6 +17,7 @@ const CONFIG  = path.join(RACINE, 'config.json');
 const APP     = 'https://app.rehab4perf.com/';
 const CLE_SESSION = 'sb-sxdobjodxkwexaspepdm-auth-token';
 const VUE     = { width: 1280, height: 800 };
+const FRAICHEUR = path.join(__dirname, '..', 'fraicheur.json');
 
 function stop(msg) { console.error('\n  ✗ ' + msg + '\n'); process.exit(1); }
 
@@ -35,6 +37,70 @@ function attendues() {
     if (e && e.img) out.push({ fichier: `${s.id}-${a.id}-${i + 1}.png`, ou: `${s.titre} › ${a.titre}`, etape: e.t });
   })));
   return out;
+}
+
+/* ── Repère de fraîcheur ─────────────────────────────────────────────────
+   Une capture est une photo FIGÉE : modifier l'écran ne la refait pas. Chaque
+   capture réussie retient l'empreinte des fichiers de son écran ; `--fraicheur`
+   liste celles dont un fichier a changé depuis. Informatif, jamais bloquant :
+   un changement de logique sans effet visuel se VALIDE sans refaire l'image. */
+
+/* L'empreinte git d'un fichier (même valeur que `git hash-object`), calculée
+   sans git : l'outil doit marcher hors dépôt comme dedans. */
+function empreinte(rel) {
+  const p = path.join(DEPOT, rel);
+  if (!fs.existsSync(p)) return null;
+  const c = fs.readFileSync(p);
+  return crypto.createHash('sha1').update('blob ' + c.length + '\0').update(c).digest('hex');
+}
+/* Les fichiers dont dépend une capture : le préfixe le plus LONG l'emporte —
+   « programme-cycles-6 » (vue athlète) avant « programme- ». */
+function sourcesDe(fichier, SOURCES) {
+  const cle = Object.keys(SOURCES).filter(k => fichier.indexOf(k) === 0).sort((a, b) => b.length - a.length)[0];
+  return cle ? SOURCES[cle] : [];
+}
+function lireFraicheur() { try { return JSON.parse(fs.readFileSync(FRAICHEUR, 'utf8')); } catch (e) { return {}; } }
+function ecrireFraicheur(m) {
+  const trie = {}; Object.keys(m).sort().forEach(k => { trie[k] = m[k]; });      // diff stable
+  fs.writeFileSync(FRAICHEUR, JSON.stringify(trie, null, 1) + '\n');
+}
+function releve(fichier, SOURCES) {
+  const s = {}; sourcesDe(fichier, SOURCES).forEach(r => { s[r] = empreinte(r); });
+  return { date: new Date().toISOString().slice(0, 10), sources: s };
+}
+/* Pure : quelles captures présentes sont PEUT-ÊTRE périmées ? */
+function perimees(manifeste, presentes, sourcesDeFn, empreinteFn) {
+  const out = [];
+  presentes.forEach(f => {
+    const m = manifeste[f];
+    if (!m) { out.push({ fichier: f, raison: 'jamais relevée' }); return; }
+    const changes = sourcesDeFn(f).filter(r => (m.sources || {})[r] !== empreinteFn(r));
+    if (changes.length) out.push({ fichier: f, raison: changes.join(', ') + ' modifié depuis le ' + m.date });
+  });
+  return out;
+}
+function presentes() {
+  return attendues().map(c => c.fichier).filter(f => fs.existsSync(path.join(SORTIE, f)));
+}
+function fraicheur(court) {
+  const R = require('./recettes');
+  const liste = perimees(lireFraicheur(), presentes(), f => sourcesDe(f, R.SOURCES), empreinte);
+  if (!liste.length) { if (!court) console.log('\n  ✓ ' + presentes().length + ' captures à jour de leur écran.\n'); return; }
+  console.log('\n  ⚠ ' + liste.length + ' capture(s) du centre d\'aide peut-être périmée(s) — leur écran a changé :');
+  liste.forEach(x => console.log('     · ' + x.fichier + ' — ' + x.raison));
+  console.log('    refaire      : node .claude/skills/captures-aide/scripts/captures.js --seule <fichier>');
+  console.log('    image juste  : node .claude/skills/captures-aide/scripts/captures.js --valider <fichier>  (ou --valider tout)\n');
+}
+function valider(quoi) {
+  if (!quoi) stop('préciser --valider <fichier> ou --valider tout');
+  const R = require('./recettes'), m = lireFraicheur();
+  const cibles = quoi === 'tout' ? presentes() : [quoi];
+  cibles.forEach(f => {
+    if (!fs.existsSync(path.join(SORTIE, f))) stop(f + ' : aucune image à valider');
+    m[f] = releve(f, R.SOURCES);
+  });
+  ecrireFraicheur(m);
+  console.log('\n  ✓ ' + cibles.length + ' capture(s) déclarée(s) à jour de leur écran.\n');
 }
 
 /* LA GARDE, en une fonction pour qu'un fichier de cas puisse l'EXECUTER.
@@ -228,6 +294,8 @@ async function captures(seule, manquantes) {
     }
   }
   await ctx.close();
+  /* Chaque capture RÉUSSIE retient l'empreinte des fichiers de son écran. */
+  if (bilan.ok.length) { const m = lireFraicheur(); bilan.ok.forEach(f => { m[f] = releve(f, R.SOURCES); }); ecrireFraicheur(m); }
   console.log(`\n  ${bilan.ok.length} capturée(s) · ${bilan.echec.length} en échec · ${bilan.sans.length} sans recette`);
   /* Une écriture tentée n'est pas une erreur de capture — elle a été coupée —
      mais elle dit qu'une recette a cliqué sur quelque chose qui modifie : on
@@ -240,7 +308,7 @@ async function captures(seule, manquantes) {
   if (bilan.echec.length) process.exit(1);
 }
 
-module.exports = { refusCompte, attendues, optionsLancement, ecritureInterdite };
+module.exports = { refusCompte, attendues, optionsLancement, ecritureInterdite, empreinte, sourcesDe, perimees };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
@@ -248,6 +316,8 @@ if (require.main === module) {
   (async () => {
     if (a[0] === 'connexion') return connexion(opt('--demo'));
     if (a.includes('--liste')) return liste();
+    if (a.includes('--fraicheur')) return fraicheur(a.includes('--court'));
+    if (a.includes('--valider')) return valider(opt('--valider'));
     return captures(opt('--seule'), a.includes('--manquantes'));
   })().catch(e => stop(e.message));
 }

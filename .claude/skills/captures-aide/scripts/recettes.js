@@ -319,4 +319,28 @@ const RECETTES = {
   }
 };
 
-module.exports = { RECETTES, outils };
+/* Les fichiers dont dépend chaque capture — pour le repère de fraîcheur. Le
+   préfixe le plus LONG l'emporte : les vues athlète d'une étape du Programme
+   dépendent d'athlete.html, pas du builder. Une capture sans source ferait
+   échouer le fichier de cas : elle ne serait jamais signalée périmée. */
+const SOURCES = {
+  'premiers-pas-creer-patient': ['index.html'],
+  'premiers-pas-mon-compte':    ['account.html'],
+  'bilan-':                     ['bilan.html', 'js/bilan.js'],
+  'outils-':                    ['outils.html'],
+  'patients-':                  ['patients.html', 'js/patients-data.js'],
+  'programme-':                 ['programme.html', 'js/prog-data.js', 'js/prog-main.js'],
+  'programme-etapes-7':         ['athlete.html'],
+  'programme-cycles-6':         ['athlete.html'],
+  'programme-protocoles-4':     ['athlete.html'],
+  'calculateurs-':              ['programme.html', 'js/prog-main.js'],
+  'generateurs-':               ['programme.html', 'js/prog-main.js'],
+  'athlete-':                   ['athlete.html'],
+  'athlete-lien-athlete':       ['programme.html', 'js/prog-main.js'],
+  'strava-connecter-strava':    ['index.html'],
+  'notifications-cloche':       ['index.html'],
+  'notifications-pastilles':    ['programme.html', 'js/prog-main.js'],
+  'notifications-reglages':     ['account.html']
+};
+
+module.exports = { RECETTES, outils, SOURCES };

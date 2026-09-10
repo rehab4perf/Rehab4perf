@@ -55,6 +55,31 @@ la démo, **fermer la fenêtre privée** plutôt que cliquer « Déconnexion ».
 moteur le détecte (« aucune session ouverte ») et n'écrit rien ; il suffit de
 relancer `connexion`.
 
+## Repère de fraîcheur — quelles captures refaire après une modification
+
+Une capture est une photo FIGÉE : modifier un écran ne la refait pas. Chaque
+capture réussie retient l'empreinte (celle de git) des fichiers de son écran,
+dans `fraicheur.json`. Les fichiers de chaque écran sont déclarés dans
+`SOURCES` (`scripts/recettes.js`) ; le préfixe le plus long l'emporte — les
+vues athlète d'une étape du Programme dépendent d'`athlete.html`, pas du
+builder.
+
+```bash
+node scripts/captures.js --fraicheur              # liste les captures peut-être périmées
+node scripts/captures.js --valider <fichier>      # l'image reste juste : la déclarer à jour
+node scripts/captures.js --valider tout
+```
+
+**Le signal arrive tout seul au moment de publier** : `bump-versions.js` (skill
+`deployer`) appelle `--fraicheur --court` à chaque mise en ligne et affiche
+les captures dont un fichier d'écran vient de changer. Informatif, jamais
+bloquant.
+
+Le repère ne sait pas si un changement est VISUEL : une correction de logique
+dans `js/bilan.js` fait signaler toutes les captures du bilan. D'où
+`--valider` — sans lui, l'avertissement crierait à chaque publication et
+finirait par ne plus être lu.
+
 ## Itérer sur un lot
 
 `--manquantes` ne rejoue que les images absentes. Chaque recette part d'un

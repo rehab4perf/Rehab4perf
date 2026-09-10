@@ -171,6 +171,45 @@ console.log('\nChaque recette part d\'un état connu');
   ok('--manquantes se fonde sur les fichiers présents', /manquantes\)\s*cibles\s*=\s*cibles\.filter\([^)]*existsSync/.test(cCa));
 }
 
+console.log('\nLe repère de fraîcheur désigne les captures dont l\'écran a changé');
+{
+  /* Une capture est une photo FIGÉE. Le repère retient l'empreinte des
+     fichiers de chaque écran ; la publication signale celles dont un fichier a
+     changé. On EXÉCUTE les vraies fonctions. */
+  const Rr = require(path.join(R, '.claude', 'skills', 'captures-aide', 'scripts', 'recettes.js'));
+  const tout = C.attendues();
+  const sans = tout.filter(c => !C.sourcesDe(c.fichier, Rr.SOURCES).length).map(c => c.fichier);
+  ok('chaque capture attendue déclare les fichiers de son écran', !sans.length, sans.join(', '));
+  const absents = [...new Set(tout.reduce((a, c) => a.concat(C.sourcesDe(c.fichier, Rr.SOURCES)), []))]
+    .filter(f => !fs.existsSync(path.join(R, f)));
+  ok('… et ces fichiers existent', !absents.length, absents.join(', '));
+  /* Le préfixe le plus LONG l'emporte : la vue athlète d'une étape du
+     Programme dépend d'athlete.html, pas du builder. */
+  ok('le préfixe le plus long l\'emporte', C.sourcesDe('programme-cycles-6.png', Rr.SOURCES).join() === 'athlete.html',
+     C.sourcesDe('programme-cycles-6.png', Rr.SOURCES).join());
+  ok('… le lien athlète, lui, vit dans le Programme',
+     C.sourcesDe('athlete-lien-athlete-1.png', Rr.SOURCES).indexOf('js/prog-main.js') >= 0);
+  /* La décision, sur un jeu d'essai. */
+  const SRC = { 'bilan-': ['bilan.html'], 'outils-': ['outils.html'] };
+  const H = { 'bilan.html': 'NEUF', 'outils.html': 'A' };
+  const man = { 'bilan-x-1.png':  { date: '2026-09-10', sources: { 'bilan.html': 'VIEUX' } },
+                'outils-y-1.png': { date: '2026-09-10', sources: { 'outils.html': 'A' } } };
+  const res = C.perimees(man, ['bilan-x-1.png', 'outils-y-1.png', 'bilan-z-2.png'], f => C.sourcesDe(f, SRC), r => H[r]);
+  ok('un écran modifié rend sa capture périmée', res.some(x => x.fichier === 'bilan-x-1.png'));
+  ok('… et pas celles des autres écrans', !res.some(x => x.fichier === 'outils-y-1.png'));
+  ok('une capture jamais relevée est signalée', res.some(x => x.fichier === 'bilan-z-2.png' && /jamais/.test(x.raison)));
+  /* L'empreinte est celle de git : c'est elle qu'on comparera, dans un dépôt. */
+  const gitH = require('child_process').execFileSync('git', ['hash-object', 'aide.html'], { cwd: R, encoding: 'utf8' }).trim();
+  ok('l\'empreinte vaut celle de git', C.empreinte('aide.html') === gitH);
+  /* Deux raccords, sur le texte (navigateur requis pour l'exécution) : une
+     capture réussie est relevée, et la PUBLICATION affiche le signal. */
+  const dCa = src.indexOf('async function captures(');
+  const cCa = src.slice(dCa, src.indexOf('\n}\n', dCa));
+  ok('une capture réussie retient son relevé', /bilan\.ok\.forEach\(f => \{ m\[f\] = releve\(/.test(cCa));
+  const bump = fs.readFileSync(path.join(R, '.claude', 'skills', 'deployer', 'scripts', 'bump-versions.js'), 'utf8');
+  ok('la publication signale les captures périmées', /\[_cap, '--fraicheur', '--court'\]/.test(bump));
+}
+
 console.log('\nLa liste attendue est lue dans le contenu réel');
 const att = C.attendues();
 /* Recompter indépendamment dans js/aide-content.js : si les deux divergent,

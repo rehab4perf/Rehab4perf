@@ -115,3 +115,10 @@ endroits opposés :
 
 Poser la question du numéro de version **avant** de modifier quoi que ce soit
 fait gagner des allers-retours entiers.
+
+## Captures du centre d'aide
+
+`bump-versions.js` affiche aussi, à chaque publication, les captures du centre
+d'aide dont un fichier d'écran vient de changer (« ⚠ N capture(s)… peut-être
+périmée(s) »). Informatif, jamais bloquant : les refaire ou les valider se fait
+avec la skill `captures-aide`.
