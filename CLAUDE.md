@@ -395,6 +395,26 @@ All messages use `postMessage` with `window.location.origin` as target. `index.h
 
 Both `bilan.js` and `prog-data.js` each define a local `R4P_KEYS` constant — the single source of truth for all storage key strings within their respective module. Never hardcode key strings directly.
 
+**Une donnée de compte se range sous `_cleCompte(clé)`** (`prog-data.js`), qui
+suffixe l'uid — et rend `null` sans compte identifié : rien n'est alors lu ni
+écrit (`node qualite/cache-compte-cas.js`). Aucune déconnexion ne vide le
+localStorage, et l'« isolation de session » d'`index.html` ne purge que ses
+propres clés, et seulement si l'e-mail en cache diffère (or la déconnexion
+efface justement ce cache). Protocoles personnalisés et favoris vivaient sous
+des clés communes : le praticien suivant dans le même navigateur voyait la liste
+du précédent, et sa synchro visait la ligne `templates` de l'autre par le
+`-sid` commun. **La RLS refuse ce PATCH sans erreur — 200, zéro ligne** : il
+n'obtenait jamais sa propre ligne `__r4p_protocols_meta__`, et l'espace athlète
+de ses patients restait vide. D'où la seconde règle : **un PATCH en
+`return=representation` qui rend `[]` n'a rien écrit** — on recrée la ligne, on
+ne croit pas l'écriture faite.
+
+Restent communes, sans synchro en base : `r4p_picker_favs` (épingles du
+picker), `r4p-deleted-defaults` (exercices intégrés masqués), et les caches
+`r4p-templates` / `r4p-template-groups` / `r4p-seances` / `r4p-cal-events`, lus
+seulement en mode sans jeton. Les clés préfixées par un id de patient sont sûres
+(un patient n'a qu'un praticien).
+
 ---
 
 ## bilan.html / bilan.js

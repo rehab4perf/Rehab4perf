@@ -8789,20 +8789,28 @@ function closeProtoPanel() {
    ══════════════════════════════════════════════════════ */
 var _customProtocols  = [];
 var _customProtoSupaId = null; // ID du record Supabase meta
+var _customProtosUid   = null; // compte auquel appartient la liste en mémoire
 
+/* Relit la liste du compte CONNECTÉ, en oubliant d'abord celle en mémoire :
+   elle peut être celle d'un autre compte (jeton rafraîchi pour un autre uid).
+   Clés par compte : voir _cleCompte() dans prog-data.js. */
 function _loadCustomProtocols(){
+  _customProtocols = []; _customProtoSupaId = null; _customProtosUid = _progUid || null;
+  var cle = _cleCompte(R4P_KEYS.CUSTOM_PROTOCOLS);
+  if(!cle) return;
   try {
-    var raw = localStorage.getItem(R4P_KEYS.CUSTOM_PROTOCOLS);
+    var raw = localStorage.getItem(cle);
     _customProtocols = raw ? JSON.parse(raw) : [];
-    var sid = localStorage.getItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID);
+    var sid = localStorage.getItem(_cleCompte(R4P_KEYS.CUSTOM_PROTOCOLS_SID));
     if(sid) _customProtoSupaId = sid;
   } catch(e){ _customProtocols = []; }
 }
 
 function _getAllProtocols(){
-  /* Si _customProtocols est peuplé, on l'utilise seul.
-     Sinon fallback sur PROTOCOLS_REF (avant migration). */
-  var protos = _customProtocols.length ? _customProtocols : PROTOCOLS_REF;
+  /* Si _customProtocols est peuplé ET appartient au compte connecté, on l'utilise seul.
+     Sinon fallback sur PROTOCOLS_REF (avant migration, ou liste d'un autre compte). */
+  var aCeCompte = _customProtosUid === (_progUid || null);
+  var protos = (_customProtocols.length && aCeCompte) ? _customProtocols : PROTOCOLS_REF;
   var _badCol = function(c){ return !c || c === '#000000' || c.indexOf('var(') === 0; };
   return protos.map(function(p){
     var result = p;
@@ -8832,8 +8840,11 @@ function _getAllProtocols(){
 }
 
 function _saveCustomProtocols(callback){
+  /* La liste en mémoire n'est pas celle du compte connecté : ne l'écrire nulle part. */
+  if(_customProtosUid !== (_progUid || null)){ if(callback) callback(); return; }
+  var cle = _cleCompte(R4P_KEYS.CUSTOM_PROTOCOLS), cleSid = _cleCompte(R4P_KEYS.CUSTOM_PROTOCOLS_SID);
   /* 1. LocalStorage (immédiat) */
-  try { localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS, JSON.stringify(_customProtocols)); } catch(e){}
+  if(cle) try { localStorage.setItem(cle, JSON.stringify(_customProtocols)); } catch(e){}
   /* 2. Supabase sync (si connecté) */
   if(!_progToken || !_progUid){ if(callback) callback(); return; }
   var donnees = JSON.stringify({ protocols: _customProtocols });
@@ -8841,31 +8852,46 @@ function _saveCustomProtocols(callback){
   if(_customProtoSupaId){
     _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+_customProtoSupaId, {
       method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}), body: body
-    }).then(function(r){ if(callback) callback(); });
+    }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){
+      /* La RLS refuse sans erreur : 200, zéro ligne. L'id ne désigne pas (plus)
+         une ligne de ce compte — la créer, plutôt que de croire l'écriture faite. */
+      if(Array.isArray(rows) && !rows.length){
+        _customProtoSupaId = null;
+        try{ localStorage.removeItem(cleSid); }catch(e){}
+        _saveCustomProtocols(callback);
+        return;
+      }
+      if(callback) callback();
+    }).catch(function(){ if(callback) callback(); });
   } else {
     _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
       method:'POST', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json','Prefer':'return=representation'}), body: body
     }).then(function(r){ return r.ok ? r.json() : null; })
     .then(function(rows){
-      if(rows && rows.length){ _customProtoSupaId = rows[0].id; try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID, String(rows[0].id)); }catch(e){} }
+      if(rows && rows.length){ _customProtoSupaId = rows[0].id; try{ localStorage.setItem(cleSid, String(rows[0].id)); }catch(e){} }
       if(callback) callback();
-    });
+    }).catch(function(){ if(callback) callback(); });
   }
 }
 
 function _fetchCustomProtocolsFromSupabase(callback){
   if(!_progToken || !_progUid){ callback && callback(); return; }
-  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.'+_progUid+'&select=id,donnees&limit=1', {headers:_sbHeaders()})
+  if(_customProtosUid !== _progUid) _loadCustomProtocols();
+  var uid = _progUid;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.'+uid+'&select=id,donnees&limit=1', {headers:_sbHeaders()})
   .then(function(r){ return r.ok ? r.json() : []; })
   .then(function(rows){
+    /* Réponse arrivée après un changement de compte : elle n'est plus à personne ici. */
+    if(uid !== _progUid){ callback && callback(); return; }
     if(rows && rows.length){
       _customProtoSupaId = rows[0].id;
-      try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID, String(rows[0].id)); }catch(e){}
+      try{ localStorage.setItem(_cleCompte(R4P_KEYS.CUSTOM_PROTOCOLS_SID), String(rows[0].id)); }catch(e){}
       var d = rows[0].donnees;
       if(typeof d === 'string') try{ d = JSON.parse(d); }catch(e){ d = null; }
       if(d && Array.isArray(d.protocols)){
         _customProtocols = d.protocols;
-        try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS, JSON.stringify(_customProtocols)); }catch(e){}
+        try{ localStorage.setItem(_cleCompte(R4P_KEYS.CUSTOM_PROTOCOLS), JSON.stringify(_customProtocols)); }catch(e){}
       }
     }
     /* Migration : si toujours vide, seeder depuis PROTOCOLS_REF */

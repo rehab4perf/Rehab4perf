@@ -26,6 +26,21 @@ var R4P_KEYS = {
   PEVO_CARDIO_PREFIX   : 'r4p-pevo-cardio-'
 };
 
+/* Données d'UN compte : la clé porte l'uid. Protocoles personnalisés et
+   favoris vivaient sous des clés communes qu'aucune déconnexion ne vide : le
+   compte suivant dans le même navigateur héritait de la liste du précédent,
+   et sa synchro visait la ligne `templates` de l'autre par le `-sid` commun —
+   refusée par la RLS sans erreur (200, zéro ligne), si bien qu'il n'avait
+   jamais la sienne. Sans compte identifié, pas de clé : rien n'est lu ni
+   écrit. Voir qualite/cache-compte-cas.js. */
+function _cleCompte(base){ return _progUid ? base + ':' + _progUid : null; }
+/* Les anciennes clés communes n'appartiennent à personne de sûr : effacées.
+   Ce qu'elles portaient est en base, relu à la prochaine synchro. */
+(function(){
+  [R4P_KEYS.CUSTOM_PROTOCOLS, R4P_KEYS.CUSTOM_PROTOCOLS_SID, R4P_KEYS.FAV_EXOS, R4P_KEYS.FAV_EXOS_SID]
+    .forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
+})();
+
 /* ================================================================
    NETWORK HELPER — fetch with exponential-backoff retry
    Retries on: network error (TypeError) or HTTP 5xx / 429.
@@ -336,12 +351,15 @@ function getTypeClass(t){ return {renfo:'renfo',automassage:'automassage',therap
 
 /* ── FAVORITES ── */
 function getFavs(){
-  try { return new Set(JSON.parse(localStorage.getItem(R4P_KEYS.FAV_EXOS)||'[]')); } catch(e){ return new Set(); }
+  var cle = _cleCompte(R4P_KEYS.FAV_EXOS);
+  if(!cle) return new Set();
+  try { return new Set(JSON.parse(localStorage.getItem(cle)||'[]')); } catch(e){ return new Set(); }
 }
 function toggleFav(id){
   var favs = getFavs();
   if(favs.has(id)) favs.delete(id); else favs.add(id);
-  localStorage.setItem(R4P_KEYS.FAV_EXOS, JSON.stringify(Array.from(favs)));
+  var cle = _cleCompte(R4P_KEYS.FAV_EXOS);
+  if(cle) try { localStorage.setItem(cle, JSON.stringify(Array.from(favs))); } catch(e){}
   _saveFavsToSupabase();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
@@ -357,26 +375,31 @@ function _saveFavsToSupabase(){
   if(_favExoSupaId){
     _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+_favExoSupaId, {
       method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}), body: body
-    });
+    }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){
+      /* La RLS refuse sans erreur : 200, zéro ligne. L'id ne désigne pas (plus)
+         une ligne de ce compte — la créer, plutôt que de croire l'écriture faite. */
+      if(Array.isArray(rows) && !rows.length){ _favExoSupaId = null; _saveFavsToSupabase(); }
+    }).catch(function(){});
   } else {
     _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
       method:'POST', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json','Prefer':'return=representation'}), body: body
     }).then(function(r){ return r.ok ? r.json() : null; })
     .then(function(rows){
-      if(rows && rows.length){
-        _favExoSupaId = rows[0].id;
-        try{ localStorage.setItem(R4P_KEYS.FAV_EXOS_SID, String(rows[0].id)); }catch(e){}
-      }
-    });
+      if(rows && rows.length) _favExoSupaId = rows[0].id;
+    }).catch(function(){});
   }
 }
 
 function _fetchFavsFromSupabase(callback){
   if(!_progToken || !_progUid){ callback && callback(); return; }
+  var uid = _progUid;
   /* Récupère TOUS les records (pas limit=1) pour gérer les doublons inter-devices */
-  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_favs_meta__&praticien_id=eq.'+_progUid+'&select=id,donnees&order=id.asc', { headers: _sbHeaders() })
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_favs_meta__&praticien_id=eq.'+uid+'&select=id,donnees&order=id.asc', { headers: _sbHeaders() })
   .then(function(r){ return r.ok ? r.json() : []; })
   .then(function(rows){
+    /* Réponse arrivée après un changement de compte : elle n'est plus à personne ici. */
+    if(uid !== _progUid){ callback && callback(); return; }
     if(rows && rows.length){
       /* Union de tous les records (gère race condition multi-device) */
       var merged = getFavs();
@@ -389,17 +412,18 @@ function _fetchFavsFromSupabase(callback){
       });
       /* Garder le record le plus ancien (id le plus petit), supprimer les doublons */
       _favExoSupaId = rows[0].id;
-      try{ localStorage.setItem(R4P_KEYS.FAV_EXOS_SID, String(rows[0].id)); }catch(e){}
       if(rows.length > 1){
         rows.slice(1).forEach(function(row){
           _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+row.id, { method:'DELETE', headers: _sbHeaders() });
         });
       }
-      try{ localStorage.setItem(R4P_KEYS.FAV_EXOS, JSON.stringify(Array.from(merged))); }catch(e){}
+      try{ localStorage.setItem(_cleCompte(R4P_KEYS.FAV_EXOS), JSON.stringify(Array.from(merged))); }catch(e){}
       /* Toujours re-sauvegarder pour consolider l'union sur le record canonique */
       _saveFavsToSupabase();
     } else {
-      /* Premier chargement : seeder Supabase depuis le local */
+      /* Premier chargement : seeder Supabase depuis le local (de CE compte).
+         Un id resté en mémoire serait celui d'un autre compte. */
+      _favExoSupaId = null;
       _saveFavsToSupabase();
     }
     renderLib(document.getElementById('searchInput').value.toLowerCase());

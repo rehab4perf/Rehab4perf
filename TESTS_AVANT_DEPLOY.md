@@ -38,6 +38,7 @@ node qualite/echeances-cas.js
 node qualite/cr-coupures-cas.js
 node qualite/modele-ouvert-cas.js
 node qualite/rls-cas.js
+node qualite/cache-compte-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le
