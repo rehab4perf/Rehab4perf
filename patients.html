@@ -653,12 +653,20 @@ function render(s, hasBilanPlan, bounds){
   document.getElementById('pv-root').innerHTML = h;
 }
 
-/* Sélection ciblée dans le JSON : on ne rapatrie que les deux clés utiles au lieu
-   du « donnees » complet (plusieurs dizaines de Ko par bilan). Repli sur le JSON
-   entier si la projection est refusée, pour ne pas perdre la fonctionnalité. */
+/* Sélection ciblée dans le JSON : on ne rapatrie que les clés utiles au lieu du
+   « donnees » complet (plusieurs dizaines de Ko par bilan). Repli sur le JSON
+   entier si la projection est refusée, pour ne pas perdre la fonctionnalité.
+
+   Poids, taille, activité et médecin y figurent pour la FICHE : quand elle n'a
+   pas sa propre valeur, elle affiche celle du bilan le plus récent
+   (`r4pResolveFicheField`). Ils manquaient — le résolveur lisait des clés que
+   la requête ne rapportait jamais, et la fiche restait vide alors que le bilan
+   contenait tout. Tout champ de la fiche adossé au bilan doit figurer ICI et
+   dans le repli (qualite/fiche-bilan-cas.js). */
 function fetchBilans(uid){
   return sb.from('bilans')
-    .select('patient_id,date,zones:donnees->>f-pain-zones,motif:donnees->>f-motif,sport:donnees->>f-sport')
+    .select('patient_id,date,zones:donnees->>f-pain-zones,motif:donnees->>f-motif,sport:donnees->>f-sport,'
+          + 'poids:donnees->>f-poids,taille:donnees->>f-taille,activite:donnees->>f-activite,medecin:donnees->>f-medecin')
     .eq('praticien_id', uid)
     .then(function(res){
       if (!res.error) return res.data || [];
@@ -667,7 +675,8 @@ function fetchBilans(uid){
           if (r2.error) throw r2.error;
           return (r2.data || []).map(function(b){
             var d = b.donnees || {};
-            return { patient_id: b.patient_id, date: b.date, zones: d['f-pain-zones'], motif: d['f-motif'], sport: d['f-sport'] };
+            return { patient_id: b.patient_id, date: b.date, zones: d['f-pain-zones'], motif: d['f-motif'], sport: d['f-sport'],
+                     poids: d['f-poids'], taille: d['f-taille'], activite: d['f-activite'], medecin: d['f-medecin'] };
           });
         });
     });
