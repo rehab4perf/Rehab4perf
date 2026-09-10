@@ -62,13 +62,24 @@ async function emailSession(page) {
   } catch (e) { return ''; }                       // page en cours de navigation
 }
 
+/* Les options de lancement, en fonction pure pour qu'un fichier de cas les
+   verifie SANS lancer Chrome.
+
+   La fenetre de CONNEXION est de taille libre (`viewport: null`) : le
+   praticien s'y connecte a la main, elle doit suivre la taille de l'ecran.
+   Playwright REFUSE alors `deviceScaleFactor` — les deux ensemble levaient
+   avant meme l'ouverture, et le mode connexion n'a jamais tourne dans sa
+   premiere version. Seules les CAPTURES, a taille fixe, passent en ×2. */
+function optionsLancement(headless) {
+  return headless
+    ? { channel: 'chrome', headless: true, viewport: VUE, deviceScaleFactor: 2 }
+    : { channel: 'chrome', headless: false, viewport: null };
+}
+
 function lancer(headless) {
   const { chromium } = require('playwright-core');
   fs.mkdirSync(PROFIL, { recursive: true, mode: 0o700 });
-  return chromium.launchPersistentContext(PROFIL, {
-    channel: 'chrome', headless,
-    viewport: headless ? VUE : null, deviceScaleFactor: 2
-  });
+  return chromium.launchPersistentContext(PROFIL, optionsLancement(headless));
 }
 
 /* ── connexion : le praticien se connecte LUI-MEME ──────────────────────── */
@@ -157,7 +168,7 @@ async function captures(seule) {
   if (bilan.echec.length) process.exit(1);
 }
 
-module.exports = { refusCompte, attendues };
+module.exports = { refusCompte, attendues, optionsLancement };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

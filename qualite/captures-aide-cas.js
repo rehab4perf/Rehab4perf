@@ -70,6 +70,24 @@ ok('captures() consulte la garde avant la première écriture',
 ok('… et s\'arrête sur son refus', /if \(refus\) \{[^}]*stop\(/.test(corps));
 ok('connexion() la consulte aussi', /refusCompte\(email, demo\)/.test(src));
 
+console.log('\nLes options de lancement sont acceptables par Playwright');
+/* La premiere version passait `deviceScaleFactor` a la fenetre de CONNEXION,
+   de taille libre (`viewport: null`). Playwright refuse les deux ensemble et
+   levait AVANT d'ouvrir la fenetre : le mode connexion n'a jamais tourne, et
+   aucun contrôle ne l'a vu — seuls les chemins sans fenetre avaient ete
+   essayes. On verifie la combinaison, sans lancer Chrome. */
+if (typeof C.optionsLancement !== 'function') {
+  ok('le script expose optionsLancement', false);
+} else {
+  const co = C.optionsLancement(false), ca = C.optionsLancement(true);
+  ok('connexion : fenêtre visible, de taille libre', co.headless === false && co.viewport === null);
+  ok('… et SANS deviceScaleFactor, que Playwright refuse avec une taille libre',
+     !('deviceScaleFactor' in co), JSON.stringify(co));
+  ok('captures : taille fixe 1280×800', ca.viewport && ca.viewport.width === 1280 && ca.viewport.height === 800);
+  ok('… en Retina ×2', ca.deviceScaleFactor === 2);
+  ok('les deux pilotent le Chrome installé', co.channel === 'chrome' && ca.channel === 'chrome');
+}
+
 console.log('\nLa liste attendue est lue dans le contenu réel');
 const att = C.attendues();
 /* Recompter indépendamment dans js/aide-content.js : si les deux divergent,
