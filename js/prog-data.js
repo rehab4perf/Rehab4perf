@@ -4971,7 +4971,7 @@ function _closePevoTt(){
 
 /* ── Barre de filtre de date pevo ── */
 function _renderPevoFilterBar(){
-  var presets = [{label:'1 mois',days:30},{label:'3 mois',days:90},{label:'6 mois',days:180},{label:'1 an',days:365}];
+  var presets = [{label:'1 semaine',days:7},{label:'1 mois',days:30},{label:'3 mois',days:90},{label:'6 mois',days:180},{label:'1 an',days:365}];
   var h = '<div class="pevo-filter-bar">';
   h += '<button class="pevo-filter-btn'+(_pevoFilterDays===null&&!_pevoFilterFrom?' active':'')+'" onclick="setPevoFilter(null)">Tout</button>';
   presets.forEach(function(p){

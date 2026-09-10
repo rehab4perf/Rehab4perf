@@ -1841,18 +1841,23 @@ function _volCharge(a, ddn){
    Le libelle annonce toujours la fenetre reellement employee : « Tout » est
    borne a deux ans, au-dela les barres hebdomadaires cessent d'etre lisibles —
    et un libelle qui dit « tout » sur une fenetre bornee serait un mensonge. */
+/* Plancher à UNE semaine, plus à deux : « 1 semaine » en aurait montré deux
+   sous un bouton qui en annonce une. Une semaine se compare à la précédente
+   comme toute période à la sienne, et chaque vue tient sur une seule semaine
+   (qualite/volume-sport-cas.js). */
 function _volFenetreSemaines(){
   if(typeof _pevoFilterDays !== 'undefined' && _pevoFilterDays)
-    return Math.max(2, Math.ceil(_pevoFilterDays / 7));
+    return Math.max(1, Math.ceil(_pevoFilterDays / 7));
   if(typeof _pevoFilterFrom !== 'undefined' && (_pevoFilterFrom || _pevoFilterTo)){
     var a = new Date((_pevoFilterFrom || '') + 'T00:00:00');
     var b = new Date((_pevoFilterTo || '') + 'T00:00:00');
     if(!isNaN(a) && !isNaN(b) && b > a)
-      return Math.max(2, Math.min(104, Math.ceil((b - a) / (7 * 86400000))));
+      return Math.max(1, Math.min(104, Math.ceil((b - a) / (7 * 86400000))));
   }
   return 52;
 }
 function _volLibelleFenetre(n){
+  if(n === 1) return 'dernière semaine';
   if(n % 52 === 0 && n >= 52) return (n / 52) + (n === 52 ? ' dernière année' : ' dernières années');
   if(n % 4 === 0 && n >= 8)  return (n / 4) + ' derniers mois';
   return n + ' dernières semaines';

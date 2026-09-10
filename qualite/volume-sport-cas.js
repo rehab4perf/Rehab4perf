@@ -313,6 +313,26 @@ var lbl = fenetre(null).lbl;
 egal('le libellé dit la fenêtre, pas « 12 semaines »', '1 dernière année', lbl(52));
 egal('… en mois quand c\'est rond', '3 derniers mois', lbl(12));
 egal('… en semaines sinon', '5 dernières semaines', lbl(5));
+
+/* ── « 1 semaine » ─────────────────────────────────────────────────────────
+   Demandé par le praticien, à côté de « 1 mois », « 3 mois »… La fenêtre était
+   plancher à DEUX semaines : « 1 semaine » en aurait montré deux, sous un
+   bouton qui en annonce une — et `_volLibelleFenetre(1)` aurait écrit
+   « 1 dernières semaines ». Une semaine se compare à la précédente, comme
+   toute période à la sienne : rien n'imposait ce plancher. */
+egal('1 semaine → 1 semaine (plus de plancher à deux)', 1, fenetre(7).n);
+egal('… et son libellé est au singulier', 'dernière semaine', lbl(1));
+var dP = pdata.indexOf('function _renderPevoFilterBar(');
+var presetsTxt = dP > 0 ? pdata.slice(dP, pdata.indexOf('\n}\n', dP)) : '';
+ok('le bouton « 1 semaine » est dans la barre, en tête des préréglages',
+   /var presets = \[\{label:'1 semaine',days:7\},\{label:'1 mois',days:30\}/.test(presetsTxt),
+   (presetsTxt.match(/var presets = \[[^\]]*\]/) || ['absent'])[0]);
+/* Le rendu, sur UNE semaine : sa référence est la semaine d'avant. */
+var uneSem = { sports: res.sports, semaines: res.semaines.slice(-2) };
+var h1 = rendre(uneSem);
+ok('une semaine se rend, sans valeur absurde', h1.indexOf('vol-bloc') > 0 && !/NaN|Infinity|undefined/.test(h1),
+   (h1.match(/.{40}(NaN|Infinity|undefined).{40}/) || [''])[0]);
+ok('… avec ses tuiles et ses cadres par sport', /vol-tuiles/.test(h1) && /vol-cadre"/.test(h1));
 ok('plus aucun libellé ne dit « cette semaine »',
    !/cette semaine|Cette semaine|12 dernières semaines/.test(pdata),
    (pdata.match(/cette semaine|12 dernières semaines/gi) || []).join(' | '));
