@@ -1,0 +1,12 @@
+{
+  "name": "rehab4perf-captures-aide",
+  "private": true,
+  "description": "Captures du centre d'aide — outil local, jamais servi (voir SKILL.md).",
+  "scripts": {
+    "connexion": "node scripts/captures.js connexion",
+    "captures": "node scripts/captures.js"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

@@ -18,3 +18,7 @@ marketing/
 
 # Jeu de test golden-master (donnees patients reelles - ne jamais commiter)
 tests-golden/
+
+# Outils locaux des skills (captures du centre d'aide) : leurs dependances ne
+# se commitent pas — Netlify publie la RACINE du depot, tout y serait servi.
+.claude/skills/*/node_modules/
