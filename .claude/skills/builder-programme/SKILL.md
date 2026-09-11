@@ -79,8 +79,8 @@ Deux formats de template coexistent et sont tous deux lus : avec séparateurs
 (`node qualite/modele-verbes-cas.js`). Il se posait quand la séance était VIDE :
 le même clic « Ajouter » voulait dire « j'ajoute » ou « je modifie le modèle »
 selon l'état de la séance, sans que rien ne le dise — signalé par le praticien.
-Deux verbes désormais, un par bouton : **Ajouter** (⤓, « Ajouter » du panneau
-Biblio, « + Ajouter à la séance ») ne change jamais la nature de la séance —
+Deux verbes désormais, un par bouton : **Ajouter** (« + Ajouter à la séance » ; le
+⤓ de l'en-tête, qui faisait la même chose, a été retiré — un bouton par geste) ne change jamais la nature de la séance —
 ni lien au modèle (un modèle ouvert le reste), ni séance planifiée, ni phase
 liée ; **Modifier le modèle** (crayon, carte du répertoire) ferme la séance en
 cours, en le demandant si elle n'est pas enregistrée. Un bandeau

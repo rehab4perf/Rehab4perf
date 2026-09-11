@@ -171,7 +171,9 @@ ok('le bandeau est rafraîchi avec les boutons (appelé par _refreshSaveBtn)', /
 console.log('\nLes boutons disent ce qu\'ils font');
 const picker = fn('_pickerRenderTemplate');
 ok('bibliothèque : « Ajouter à la séance » et « Modifier le modèle », côte à côte', /Ajouter à la séance/.test(picker) && /modifierModele\(/.test(picker) && /Modifier le modèle/.test(picker));
-ok('… le ⤓ n\'a plus d\'autre sens qu\'ajouter', /picker-load-btn[^>]*title="Ajouter à la séance[^"]*"/.test(picker), (picker.match(/picker-load-btn[^>]*title="[^"]*"/) || ['absent'])[0]);
+/* Le ⤓ de l'en-tête faisait la même chose que « + Ajouter à la séance » :
+   un seul bouton par geste — celui qui dit ce qu'il fait. */
+ok('plus de ⤓ en doublon de « Ajouter à la séance »', !/picker-load-btn/.test(picker) && !/picker-load-btn/.test(html));
 ok('panneau Biblio : un crayon à côté de « Ajouter »', /builder-lib-edit[^>]*modifierModele\(/.test(pmain));
 ok('répertoire : « Modifier le modèle », plus « Ouvrir dans le builder »', /modifierModele\([^)]*\)">Modifier le modèle</.test(fn('_renderTmplCardTree')) && !/Ouvrir dans le builder/.test(fn('_renderTmplCardTree')));
 ok('« Utiliser pour un patient » existe dans l\'en-tête du builder', /id="builder-utiliser-btn"[^>]*onclick="utiliserModele\(\)"/.test(html));

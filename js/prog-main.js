@@ -5117,7 +5117,6 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
   if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
   h += '<button class="picker-fav-btn'+(isFavPicker?' active':'')+'" onclick="event.stopPropagation();_togglePickerFav(\''+escJS(String(p.id))+'\')" title="Épingler en favoris">★</button>';
-  h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Ajouter à la séance en cours — le modèle n\'est pas modifié">⤓</button>';
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
 
