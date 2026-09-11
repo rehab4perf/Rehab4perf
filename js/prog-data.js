@@ -5300,6 +5300,7 @@ function _buildUaWeekChart(weeks, chartId){
   if(!(maxV > 0)) return '';
   var plotW = VW-PAD.left-PAD.right, plotH = VH-PAD.top-PAD.bottom;
   var bw = Math.min(42, plotW/n*0.62);
+  var _auj = _pevoAujourdhuiIso();
   var html = '';
   [0, 0.5, 1].forEach(function(f){
     var gy = (VH-PAD.bottom)-f*plotH;
@@ -5313,10 +5314,17 @@ function _buildUaWeekChart(weeks, chartId){
     var pct = (i>0 && weeks[i-1].ua>0) ? Math.round((w.ua-weeks[i-1].ua)/weeks[i-1].ua*100) : null;
     var spike = pct !== null && pct > 30;
     var barCol = spike ? '#E67E22' : '#4A90D9';
-    html += '<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+((VH-PAD.bottom)-h).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="4" fill="'+barCol+'" opacity="0.85"/>';
+    /* Une barre = une SEMAINE, et le repère le dit (qualite/volume-axe-cas.js) :
+       « 07/09 » se lisait comme un jour, c'était le lundi d'une semaine. */
+    var fin = _pevoPlus(w.date, 6);
+    var n1 = +w.date.slice(8), m1 = +w.date.slice(5, 7), n2 = +fin.slice(8), m2 = +fin.slice(5, 7);
+    var enCours = w.date <= _auj && _auj <= fin;
+    var bulle = 'Semaine du ' + (m1 === m2 ? n1 : _pevoFmtCourt(w.date, true)) + ' au ' + _pevoFmtCourt(fin, true) + ' · ' + w.ua + ' UA';
+    var repere = n <= 8 ? n1 + '/' + m1 + '–' + n2 + '/' + m2 : (i % Math.ceil(n / 8) === 0 ? n1 + '/' + m1 : '');
+    html += '<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+((VH-PAD.bottom)-h).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="4" fill="'+barCol+'" opacity="0.85"><title>'+bulle+'</title></rect>';
     html += '<text x="'+cx.toFixed(1)+'" y="'+((VH-PAD.bottom)-h-5).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+(spike?'#B45309':'var(--navy)')+'">'+w.ua+'</text>';
-    var d = w.date ? w.date.split('-') : ['','',''];
-    html += '<text x="'+cx.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+(d[2]||'?')+'/'+(d[1]||'?')+'</text>';
+    if(repere) html += '<text x="'+cx.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9"'
+      + (enCours ? ' font-weight="700" fill="var(--accent)"' : ' fill="#C0BDB8"') + '>'+repere+'</text>';
     if(pct !== null){
       var pCol = pct > 30 ? '#DC2626' : pct > 10 ? '#E67E22' : '#27AE60';
       html += '<text x="'+cx.toFixed(1)+'" y="'+(VH-PAD.bottom+24)+'" text-anchor="middle" font-size="8.5" font-weight="600" fill="'+pCol+'">'+(pct>=0?'+':'')+pct+'%</text>';
@@ -5382,6 +5390,8 @@ function _buildUaTrendSection(){
     +'<div class="pevo-card-header"><span class="pevo-card-title">'+title+'</span>'
     +'<div class="pevo-card-kpis">'+kpiHtml+'</div></div>'
     +toggle
+    /* Ce que vaut une barre, ou un point (qualite/volume-axe-cas.js). */
+    +'<div class="vol-axe-leg">'+(weeks ? 'Une barre = une semaine (lundi → dimanche)' : 'Un point = une séance notée')+'</div>'
     +svg
     +'</div></div>';
 }

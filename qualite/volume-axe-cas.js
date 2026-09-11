@@ -74,6 +74,19 @@ console.log('\nLa feuille');
 [['athlete.html', ath], ['programme.html', prog]].forEach(([n, s]) =>
   ok(n + ' définit le repère, aujourd\'hui et la légende', /\.vol-axe \{/.test(s) && /\.vol-axe span\.auj \{/.test(s) && /\.vol-axe-leg \{/.test(s)));
 
+/* ── La charge UA « par semaine » de l'Évolution (praticien) ──────────────────
+   Même défaut : « 07/09 » sous une barre se lisait comme un jour — c'était le
+   lundi d'une semaine. */
+console.log('\nÉvolution praticien : la charge UA par semaine');
+const pd = fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8');
+const fp = fnDe(pd);
+let u = '';
+try { vm.runInContext(fp('_buildUaWeekChart'), ctx); u = ctx._buildUaWeekChart([{ date: '2026-08-31', ua: 300 }, { date: '2026-09-07', ua: 450 }], 1); } catch (e) { u = 'ERREUR ' + e.message; }
+ok('chaque barre porte sa semaine : 31/8–6/9, 7/9–13/9', />31\/8–6\/9</.test(u) && />7\/9–13\/9</.test(u), (u.match(/>[\d\/–]+</g) || []).join(' '));
+ok('… la semaine en cours en gras', /font-weight="700" fill="var\(--accent\)">7\/9–13\/9</.test(u));
+ok('… et une bulle', /<title>Semaine du 7 au 13 sept\. · 450 UA<\/title>/.test(u), (u.match(/<title>[^<]*<\/title>/g) || []).join(' '));
+ok('la section dit ce que vaut une barre, ou un point', /Une barre = une semaine \(lundi → dimanche\)/.test(fp('_buildUaTrendSection')) && /Un point = une séance notée/.test(fp('_buildUaTrendSection')));
+
 /* ── 1. Revenir d'un jour ────────────────────────────────────────────────── */
 console.log('\nRevenir d\'un jour');
 const fa = fnDe(ath);
