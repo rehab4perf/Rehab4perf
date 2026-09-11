@@ -1887,39 +1887,61 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 /* La formule est NOMMEE sous le titre : un chiffre lu dans un autre outil ne
    se compare au notre que si l'on sait comment chacun le calcule. */
 .bilan-foster-formule { font-size:var(--fs-2xs); color:var(--muted); margin:-4px 0 8px; font-variant-numeric:tabular-nums; }
-.bilan-week-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 13px; margin-bottom:10px; }
-.bilan-wc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
-.bilan-wc-label { font-size:var(--fs-sm); font-weight:700; color:var(--navy); }
-.bilan-wc-charge { font-size:var(--fs-xl); font-weight:800; color:var(--accent); }
-.bilan-wc-total { text-align:right; margin-top:3px; margin-bottom:6px; }
-.bilan-day-bars { display:flex; gap:3px; align-items:flex-end; height:30px; overflow:hidden; }
-.bilan-day-col { flex:1; display:flex; align-items:flex-end; }
-.bilan-day-bar { width:100%; border-radius:3px 3px 0 0; min-height:2px; }
-.bilan-day-labels { display:flex; gap:3px; margin-bottom:4px; }
-.bilan-day-lbl-col { flex:1; display:flex; justify-content:center; }
-.bilan-day-lbl { font-size:.55rem; color:var(--muted); }
-.bilan-day-ua { font-size:.52rem; color:var(--muted); margin-top:1px; }
-.bilan-indicators { display:flex; gap:7px; flex-wrap:wrap; margin-top:9px; }
-.bilan-ind { background:var(--bg); border-radius:8px; padding:6px 10px; text-align:center; flex:1; min-width:64px; }
-.bilan-ind-val { font-size:var(--fs-lg); font-weight:800; color:var(--navy); }
-.bilan-ind-lbl { font-size:.58rem; color:var(--muted); margin-top:2px; line-height:1.3; }
-.bilan-ind-badge { display:inline-block; font-size:.56rem; font-weight:700; padding:1px 5px; border-radius:4px; margin-top:3px; }
+/* ── Bilan de charge — une échelle, un état, une tendance ─────────────
+   (qualite/bilan-charge-cas.js) Barres en HTML : leur texte garde sa taille
+   quelle que soit la largeur du panneau — un SVG étiré l'aurait grossi. */
+.bc-chip { display:inline-block; font-size:var(--fs-2xs); font-weight:700; padding:2px 6px; border-radius:4px;
+  text-transform:none; letter-spacing:0; }
+.bc-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin-bottom:10px; }
+.bc-kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 13px; }
+.bc-kpi-l { font-size:var(--fs-2xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+.bc-kpi-v { font-size:var(--fs-2xl); font-weight:800; color:var(--navy); line-height:1.2; margin-top:3px;
+  font-variant-numeric:tabular-nums; }
+.bc-kpi-v small { font-size:var(--fs-sm); font-weight:600; color:var(--muted); margin-left:4px; }
+.bc-kpi-s { font-size:var(--fs-xs); color:var(--muted); margin-top:5px; line-height:1.5; }
+.bc-carte { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+.bc-sem { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px 26px; }
+.bc-sem-tete { display:flex; align-items:baseline; gap:6px; font-size:var(--fs-sm); font-weight:700; color:var(--navy); margin-bottom:8px; }
+.bc-sem-tete em { font-style:normal; font-weight:600; color:var(--accent); }
+.bc-sem-tete span { margin-left:auto; color:var(--accent); font-variant-numeric:tabular-nums; }
+.bc-jours { display:flex; gap:5px; align-items:flex-end; height:132px; border-bottom:1px solid var(--border2); }
+.bc-jour { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+.bc-val { font-size:var(--fs-2xs); color:var(--text2); font-variant-numeric:tabular-nums; margin-bottom:3px; white-space:nowrap; }
+.bc-zero { color:var(--text3); }
+.bc-barre { width:100%; max-width:46px; background:var(--accent); border-radius:4px 4px 0 0; }
+.bc-avenir { width:100%; max-width:46px; height:34px; border:1px dashed var(--border2); border-bottom:none; border-radius:4px 4px 0 0; }
+.bc-lbls { display:flex; gap:5px; margin-top:5px; }
+.bc-lbl { flex:1; min-width:0; text-align:center; font-size:var(--fs-2xs); color:var(--muted); }
+.bc-lbl.auj { color:var(--accent); font-weight:800; }
+.bc-acwr { display:grid; grid-template-columns:200px minmax(0, 1fr); gap:22px; align-items:start; }
+@media (max-width:760px) { .bc-acwr { grid-template-columns:1fr; } }
+.bc-ratio { font-size:var(--fs-4xl); font-weight:800; line-height:1.15; margin:4px 0 5px; font-variant-numeric:tabular-nums; }
+.bc-acwr-det { font-size:var(--fs-xs); color:var(--muted); margin-top:10px; line-height:1.7; }
+.bc-acwr-det b { color:var(--text); font-weight:700; font-variant-numeric:tabular-nums; }
+.bc-tend-svg { display:block; width:100%; height:150px; }
+.bc-bande { fill:var(--ok-l); }
+.bc-chro { fill:none; stroke:var(--ok-d); stroke-width:2; stroke-dasharray:5 4; }
+.bc-axe { stroke:var(--border2); stroke-width:1; }
+.bc-b { fill:var(--accent); }
+.bc-b.prud { fill:var(--warn); }
+.bc-b.risque { fill:var(--alerte); }
+.bc-b.encours { fill:var(--accent); opacity:.35; }
+.bc-tend-lbls { display:grid; grid-template-columns:repeat(8, minmax(0, 1fr)); margin-top:5px; }
+.bc-tend-lbl { text-align:center; font-size:var(--fs-2xs); color:var(--muted); }
+.bc-tend-lbl b { display:block; color:var(--text2); font-weight:700; font-variant-numeric:tabular-nums; }
+.bc-tend-lbl i { display:block; font-style:normal; color:var(--accent); }
+.bc-leg { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:10px; font-size:var(--fs-2xs); color:var(--muted); }
+.bc-leg span { display:inline-flex; align-items:center; gap:5px; }
+.bc-sw { display:inline-block; width:14px; height:9px; border-radius:2px; }
+.bc-sw-b { background:var(--accent); }
+.bc-sw-bande { background:var(--ok-l); border:1px solid var(--ok-b); }
+.bc-sw-chro { height:0; border-top:2px dashed var(--ok-d); border-radius:0; }
+.bc-sw-risque { background:var(--alerte); }
 .bi-green { background:var(--ok-l); color:var(--ok-d); }
 .bi-orange { background:var(--warn-l); color:var(--warn-d); }
 .bi-red { background:var(--alerte-l); color:var(--alerte); }
 .bi-grey { background:var(--border); color:var(--muted); }
 .bilan-no-fb { font-size:var(--fs-sm); color:var(--muted); font-style:italic; padding:6px 0; }
-.bilan-acwr-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 14px; margin-top:4px; }
-.bilan-acwr-title { font-size:var(--fs-xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px; }
-.bilan-acwr-vals { display:flex; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
-.bilan-acwr-val { text-align:center; }
-.bilan-acwr-val-num { font-size:1.1rem; font-weight:800; }
-.bilan-acwr-val-lbl { font-size:var(--fs-2xs); color:var(--muted); margin-top:1px; }
-.bilan-acwr-bar-wrap { position:relative; height:16px; border-radius:8px; overflow:visible; background:linear-gradient(to right,var(--acwr-cyan-l) 0%,var(--acwr-vert-l) 30%,var(--acwr-vert-l) 55%,var(--acwr-ambre-l) 65%,var(--acwr-rouge-l) 80%,var(--acwr-rouge-l) 100%); }
-.bilan-acwr-zones { display:flex; font-size:.54rem; color:var(--muted); margin-top:3px; }
-.bilan-acwr-zones span { flex:1; text-align:center; }
-.bilan-acwr-marker { position:absolute; top:50%; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 5px rgba(0,0,0,.25); transform:translate(-50%,-50%); transition:left .4s; }
-.bilan-prog { font-size:var(--fs-sm); margin-top:6px; font-weight:600; }
 
 /* ── Strip semaine Foster ── */
 .bilan-week-foster { display:flex; gap:0; background:var(--accent-ll); border-radius:8px; overflow:hidden; }
@@ -4765,6 +4787,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260911i"></script>
+<script src="js/prog-main.js?v=20260911j"></script>
 </body>
 </html>

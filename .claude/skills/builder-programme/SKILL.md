@@ -677,6 +677,42 @@ c'est ce qui garantit que les deux origines de la carte — RPE déclaré et RPE
 estimé depuis la fréquence cardiaque — restent sur la même échelle. Le RPE y est
 borné à 10, la charge Strava de repli n'étant pas un produit RPE × durée.
 
+## Bilan de charge sous l'agenda — une échelle, un état, une tendance
+
+```bash
+node qualite/bilan-charge-cas.js
+```
+
+Décision du praticien (maquettes A + B, 2026-09-11). L'ancien bilan empilait
+une carte par semaine du mois, **chacune à sa propre hauteur maximale** :
+585 UA dessinait une barre aussi haute que 760 UA la semaine d'avant. La
+couleur suivait des **seuils fixes par jour** (150 / 300 UA) — chez un athlète
+qui s'entraîne, tout était rouge. Les jours à venir ressemblaient à des jours
+de repos, et « Prog. −43 % » comparait cinq jours à sept.
+
+- **A** — `_bcJoursHtml` : les deux dernières semaines sur **une** échelle,
+  valeur au-dessus de chaque barre, jours à venir en pointillé. En tête :
+  charge 7 jours, semaine **à jour égal** (lundi → jour de référence, contre
+  le même intervalle de la semaine d'avant), monotonie des 7 derniers jours
+  (`_foster7`, partagée avec `_calcWeekStats`).
+- **B** — `_bcTendance` : 8 semaines en barres, charge chronique (28 j ÷ 4) et
+  bande favorable 0,8–1,3 × chronique, **semaine par semaine**. Une semaine
+  hors bande prend la couleur d'**état** (`prud`, `risque`) ; la couleur ne dit
+  plus rien d'un jour isolé. **Pas de bande ni d'état sans 28 jours
+  d'historique** : une reprise s'afficherait en « risque » à un ratio de 4.
+- **La date de lecture** (`_bcReference`) : aujourd'hui pour le mois en cours
+  ou à venir ; pour un mois passé, son **dernier dimanche** — les semaines
+  restent entières. `_calcACWR(uaMap, refDate)` accepte cette date.
+
+Les barres sont en HTML, pas en SVG : le panneau fait jusqu'à 1 500 px, et le
+texte d'un SVG étiré grossirait avec lui. Le SVG de B est en
+`preserveAspectRatio="none"` **sans aucun texte**, et sa ligne en
+`vector-effect="non-scaling-stroke"`.
+
+Plus d'emoji dans les badges : la pastille colorée porte l'état, le mot le
+nomme. La ligne « UA = RPE × durée (min) — méthode de Foster » reste
+(`charge-foster-cas`).
+
 ## Générateur CAP (retour à la course)
 
 Les règles cliniques sont dans `SPEC-CAP.md` — **à lire avant toute

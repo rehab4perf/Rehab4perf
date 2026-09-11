@@ -1805,13 +1805,11 @@ function _buildUaMap(){
   return map;
 }
 
-/* ── Stats Foster pour une semaine (lundi en Date) ── */
-function _calcWeekStats(mondayDate, uaMap){
-  var days = [];
-  for(var i=0;i<7;i++){
-    var d = new Date(mondayDate.getTime()+i*24*60*60*1000);
-    days.push(uaMap[_dateStr(d)]||0);
-  }
+/* ── Stats Foster sur sept jours ─────────────────────────────────
+   Monotonie = moyenne / écart-type des charges quotidiennes ; contrainte
+   (strain) = charge × monotonie. Écrite une fois : la semaine calendaire de la
+   vue Semaine et les sept derniers jours du bilan passent par elle. */
+function _foster7(days){
   var charge = days.reduce(function(a,b){return a+b;},0);
   var moy = charge/7;
   var variance = days.reduce(function(a,b){return a+Math.pow(b-moy,2);},0)/7;
@@ -1820,10 +1818,19 @@ function _calcWeekStats(mondayDate, uaMap){
   var strain = monotonie!==null ? Math.round(charge*monotonie) : null;
   return {charge:charge, moy:Math.round(moy*10)/10, ecart:Math.round(ecart*10)/10, monotonie:monotonie, strain:strain, days:days};
 }
+/* ── Stats Foster pour une semaine (lundi en Date) ── */
+function _calcWeekStats(mondayDate, uaMap){
+  var days = [];
+  for(var i=0;i<7;i++){
+    var d = new Date(mondayDate.getTime()+i*24*60*60*1000);
+    days.push(uaMap[_dateStr(d)]||0);
+  }
+  return _foster7(days);
+}
 
-/* ── ACWR (7j / 28j) ── */
-function _calcACWR(uaMap){
-  var today = new Date(); today.setHours(0,0,0,0);
+/* ── ACWR (7j / 28j) — à une date de référence, aujourd'hui par défaut ── */
+function _calcACWR(uaMap, refDate){
+  var today = refDate ? new Date(refDate) : new Date(); today.setHours(0,0,0,0);
   var sum7=0, sum28=0;
   for(var i=0;i<28;i++){
     var d = new Date(today.getTime()-i*24*60*60*1000);
@@ -1842,28 +1849,188 @@ function _calcACWR(uaMap){
   return {aigue:sum7, chronic:Math.round(chronic), ratio:ratio};
 }
 
-/* ── Couleur + badge monotonie ── */
+/* ── Badges — la couleur porte l'état, le mot le nomme ───────────
+   Plus d'emoji : la pastille est déjà colorée, le symbole doublait la couleur
+   sans rien dire de plus. Les couleurs sont des JETONS de la page. */
 function _monBadge(m){
   if(m===null) return {cls:'bi-grey',txt:'N/A'};
-  if(m<1.5)   return {cls:'bi-green',txt:'✓ Bonne variabilité'};
-  if(m<2.0)   return {cls:'bi-orange',txt:'⚠ Vigilance'};
-  return          {cls:'bi-red',txt:'🔴 Monotonie élevée'};
+  if(m<1.5)   return {cls:'bi-green',txt:'Bonne variabilité'};
+  if(m<2.0)   return {cls:'bi-orange',txt:'Vigilance'};
+  return          {cls:'bi-red',txt:'Monotonie élevée'};
 }
-/* ── Couleur + badge ACWR ── */
 function _acwrBadge(r){
-  if(r===null)    return {cls:'bi-grey',txt:'Données insuffisantes',color:'#888'};
-  if(r<0.8)       return {cls:'bi-orange',txt:'Sous-charge',color:'#E67E22'};
-  if(r<=1.3)      return {cls:'bi-green',txt:'✓ Sweet spot',color:'#27AE60'};
-  if(r<=1.5)      return {cls:'bi-orange',txt:'⚠ Prudence',color:'#E67E22'};
-  return              {cls:'bi-red',txt:'🔴 Zone à risque',color:'var(--red)'};
+  if(r===null)    return {cls:'bi-grey',txt:'Données insuffisantes',color:'var(--muted)'};
+  if(r<0.8)       return {cls:'bi-orange',txt:'Sous-charge',color:'var(--warn)'};
+  if(r<=1.3)      return {cls:'bi-green',txt:'Sweet spot',color:'var(--ok)'};
+  if(r<=1.5)      return {cls:'bi-orange',txt:'Prudence',color:'var(--warn)'};
+  return              {cls:'bi-red',txt:'Zone à risque',color:'var(--alerte)'};
 }
-/* ── Progression % ── */
+/* ── Progression % (une hausse de plus de 10 % d'une semaine sur l'autre alerte) ── */
 function _progBadge(pct){
   if(pct===null)    return {cls:'bi-grey',txt:'—'};
-  var s = (pct>=0?'+':'')+Math.round(pct)+'%';
-  if(pct<=10)       return {cls:'bi-green',txt:s+' ✓'};
-  if(pct<=15)       return {cls:'bi-orange',txt:s+' ⚠'};
-  return                {cls:'bi-red',txt:s+' 🔴'};
+  var s = _bcPct(pct);
+  if(pct<=10)       return {cls:'bi-green',txt:s};
+  if(pct<=15)       return {cls:'bi-orange',txt:s};
+  return                {cls:'bi-red',txt:s};
+}
+
+/* ── Bilan de charge — une échelle, un état, une tendance ────────
+   L'ancien bilan empilait une carte par semaine du mois, chacune à SA hauteur
+   maximale : 585 UA dessinait une barre aussi haute que 760 UA la semaine
+   d'avant. La couleur suivait des seuils fixes par jour (150 / 300 UA) — chez
+   un athlète qui s'entraîne, tout était rouge, et le rouge n'alertait plus.
+   Les jours à venir ressemblaient à des jours de repos, et « Prog. −43 % »
+   comparait cinq jours à sept.
+
+   Décision du praticien (maquettes A + B) :
+   A — les deux dernières semaines sur UNE échelle, valeur au-dessus de chaque
+       barre, jours à venir en pointillé ; en tête, charge 7 jours, semaine À
+       JOUR ÉGAL, monotonie des sept derniers jours ;
+   B — l'ACWR, et 8 semaines en barres avec la charge chronique et la bande
+       favorable (0,8–1,3 × chronique). Une semaine qui sort de la bande prend
+       la couleur d'ÉTAT ; la couleur ne dit plus rien d'un jour isolé.
+   (qualite/bilan-charge-cas.js) */
+function _bcFmt(n){ return Math.round(n).toLocaleString('fr-FR'); }
+function _bcPct(p){ var r = Math.round(p); return (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r) + ' %'; }
+function _bcSomme(uaMap, de, a){
+  var s = 0, d = de;
+  while(d <= a){ s += uaMap[d] || 0; d = _pevoPlus(d, 1); }
+  return s;
+}
+/* La date à laquelle le bilan se lit : aujourd'hui pour le mois en cours (ou à
+   venir) ; pour un mois passé, son dernier DIMANCHE — les semaines affichées
+   restent entières et appartiennent au mois regardé. */
+function _bcReference(annee, mois, auj){
+  var fin = _pevoFinMois(annee, mois);
+  if(fin >= auj) return auj;
+  var w = (_pevoJour(fin).getDay() + 6) % 7;               // lundi = 0
+  return w === 6 ? fin : _pevoPlus(fin, -(w + 1));
+}
+
+/* A — deux semaines calendaires, jusqu'à celle de la référence. */
+function _bcJoursHtml(uaMap, refIso, todayIso){
+  var JL = ['L','M','M','J','V','S','D'], JC = ['lun.','mar.','mer.','jeu.','ven.','sam.','dim.'];
+  var lundi = _pevoLundi(refIso), lundis = [_pevoPlus(lundi, -7), lundi];
+  var max = 1, HMAX = 110;
+  lundis.forEach(function(l){
+    for(var i = 0; i < 7; i++){ var d = _pevoPlus(l, i); if(d <= todayIso) max = Math.max(max, uaMap[d] || 0); }
+  });
+  return '<div class="bc-sem">' + lundis.map(function(l, wi){
+    var fin = _pevoPlus(l, 6);
+    var enCours = wi === 1 && refIso === todayIso && todayIso < fin;
+    var cols = '', lbls = '';
+    for(var i = 0; i < 7; i++){
+      var d = _pevoPlus(l, i), v = Math.round(uaMap[d] || 0), jour = JC[i] + ' ' + _pevoFmtCourt(d, true);
+      if(d > todayIso)
+        cols += '<div class="bc-jour" title="'+jour+' · à venir"><span class="bc-val">à venir</span><div class="bc-avenir"></div></div>';
+      else if(v > 0)
+        cols += '<div class="bc-jour" title="'+jour+' · '+_bcFmt(v)+' UA"><span class="bc-val">'+_bcFmt(v)+'</span>'
+              + '<div class="bc-barre" data-ua="'+v+'" style="height:'+(v / max * HMAX).toFixed(1)+'px"></div></div>';
+      else
+        cols += '<div class="bc-jour" title="'+jour+' · aucune charge"><span class="bc-val bc-zero">0</span></div>';
+      lbls += '<span class="bc-lbl'+(d === todayIso ? ' auj' : '')+'">'+JL[i]+' '+(+d.slice(8))+'</span>';
+    }
+    var memeMois = l.slice(5, 7) === fin.slice(5, 7);
+    return '<div><div class="bc-sem-tete">'+_pevoFmtCourt(l, !memeMois)+' – '+_pevoFmtCourt(fin, true)
+      + (enCours ? ' <em>· en cours</em>' : '') + '<span>'+_bcFmt(_bcSomme(uaMap, l, fin))+' UA</span></div>'
+      + '<div class="bc-jours">'+cols+'</div><div class="bc-lbls">'+lbls+'</div></div>';
+  }).join('') + '</div>';
+}
+
+/* B — huit semaines, la charge chronique, la bande favorable.
+   Chaque semaine est jugée comme l'ACWR : sa charge contre la chronique des 28
+   jours qui finissent avec elle. Sans 28 jours d'historique, pas de bande ni de
+   couleur d'état : une reprise d'entraînement s'afficherait sinon en « risque »
+   avec un ratio de 4, sur une chronique qui ne veut encore rien dire. */
+function _bcTendance(uaMap, refIso, todayIso){
+  var lundiRef = _pevoLundi(refIso), sem = [];
+  var premiere = Object.keys(uaMap).filter(function(d){ return uaMap[d] > 0; }).sort()[0] || null;
+  for(var k = 7; k >= 0; k--){
+    var l = _pevoPlus(lundiRef, -7 * k), fin = _pevoPlus(l, 6);
+    var bout = fin <= refIso ? fin : refIso;
+    var tot = _bcSomme(uaMap, l, bout), chro = _bcSomme(uaMap, _pevoPlus(bout, -27), bout) / 4;
+    var valide = !!premiere && premiere <= _pevoPlus(bout, -27) && chro > 0;
+    var ratio = valide ? tot / chro : null;
+    var cls = bout < fin ? 'encours' : (ratio === null || ratio <= 1.3) ? '' : ratio <= 1.5 ? 'prud' : 'risque';
+    sem.push({ l:l, tot:tot, chro:chro, valide:valide, cls:cls, ratio:ratio });
+  }
+  var max = 1;
+  sem.forEach(function(s){ max = Math.max(max, s.tot, s.valide ? s.chro * 1.3 : 0); });
+  max *= 1.08;
+  var H = 150, CW = 100, y = function(v){ return (H - v / max * (H - 4)).toFixed(1); };
+  var svg = '<svg class="bc-tend-svg" viewBox="0 0 800 '+H+'" preserveAspectRatio="none" aria-hidden="true">';
+  sem.forEach(function(s, i){
+    if(s.valide) svg += '<rect class="bc-bande" x="'+(i * CW)+'" y="'+y(s.chro * 1.3)+'" width="'+CW+'" height="'
+                      + (y(s.chro * 0.8) - y(s.chro * 1.3)).toFixed(1)+'"></rect>';
+  });
+  sem.forEach(function(s, i){
+    var bulle = 'Semaine du '+_pevoFmtCourt(s.l, true)+' : '+_bcFmt(s.tot)+' UA'
+      + (s.cls === 'encours' ? ' (en cours)' : s.ratio !== null ? ' · ratio '+String(Math.round(s.ratio * 100) / 100).replace('.', ',') : '');
+    svg += '<rect class="bc-b'+(s.cls ? ' '+s.cls : '')+'" x="'+(i * CW + 25)+'" y="'+y(s.tot)+'" width="50" height="'
+         + (H - y(s.tot)).toFixed(1)+'"><title>'+bulle+'</title></rect>';
+  });
+  var pts = [];
+  sem.forEach(function(s, i){ if(s.valide) pts.push((i * CW)+','+y(s.chro), ((i + 1) * CW)+','+y(s.chro)); });
+  if(pts.length) svg += '<polyline class="bc-chro" vector-effect="non-scaling-stroke" points="'+pts.join(' ')+'"></polyline>';
+  svg += '<line class="bc-axe" x1="0" x2="800" y1="'+H+'" y2="'+H+'" vector-effect="non-scaling-stroke"></line></svg>';
+  var lbls = sem.map(function(s){
+    return '<span class="bc-tend-lbl">'+(+s.l.slice(8))+'/'+(+s.l.slice(5, 7))+'<b>'+_bcFmt(s.tot)+'</b>'
+         + (s.cls === 'encours' ? '<i>en cours</i>' : '')+'</span>';
+  }).join('');
+  return svg + '<div class="bc-tend-lbls">'+lbls+'</div>'
+    + '<div class="bc-leg"><span><i class="bc-sw bc-sw-b"></i>Charge de la semaine</span>'
+    + '<span><i class="bc-sw bc-sw-bande"></i>Zone favorable : 0,8 à 1,3 × la chronique</span>'
+    + '<span><i class="bc-sw bc-sw-chro"></i>Charge chronique (28 j ÷ 4)</span>'
+    + '<span><i class="bc-sw bc-sw-risque"></i>Au-dessus de la zone : prudence, puis risque</span></div>';
+}
+
+function _bilanChargeHtml(uaMap, refIso, todayIso, adhHtml){
+  var tete = '<div class="bilan-foster"><div class="bilan-foster-title" style="display:flex;align-items:center;gap:8px;">Bilan de charge'+(adhHtml || '')+'</div>'
+    /* La formule reste NOMMEE. Elle l'a ete pour signaler un changement
+       d'echelle ; elle le reste parce qu'un chiffre lu dans un autre outil ne
+       se compare au notre que si l'on sait comment chacun le calcule. */
+    + '<div class="bilan-foster-formule">UA = RPE × durée (min) — méthode de Foster'
+    + (refIso !== todayIso ? ' · lu au '+_pevoFmtCourt(refIso, true) : '')+'</div>';
+  var lundi = _pevoLundi(refIso);
+  if(!_bcSomme(uaMap, _pevoPlus(lundi, -49), refIso)){
+    if(refIso !== todayIso) return '';
+    return tete + '<div class="bilan-no-fb">En attente des retours athlète (RPE)</div></div>';
+  }
+  var acwr = _calcACWR(uaMap, _pevoJour(refIso));
+  var j7 = [];
+  for(var i = 6; i >= 0; i--) j7.push(uaMap[_pevoPlus(refIso, -i)] || 0);
+  var s7 = _foster7(j7), monB = _monBadge(s7.monotonie);
+  /* La semaine se compare À JOUR ÉGAL : lundi → jour de référence, contre le
+     même intervalle de la semaine d'avant. */
+  var jc = Math.round((_pevoJour(refIso) - _pevoJour(lundi)) / 86400000);
+  var semCur = _bcSomme(uaMap, lundi, refIso);
+  var semPrev = _bcSomme(uaMap, _pevoPlus(lundi, -7), _pevoPlus(lundi, jc - 7));
+  var pct = semPrev > 0 ? (semCur - semPrev) / semPrev * 100 : null, pB = _progBadge(pct);
+  var JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+  var cmp = jc === 6 ? 'vs semaine précédente' : 'à jour égal';
+  var bulleCmp = jc === 6 ? 'Comparé à la semaine précédente entière ('+_bcFmt(semPrev)+' UA).'
+                          : 'Du lundi au '+JOURS[jc]+', comparé au même intervalle de la semaine précédente ('+_bcFmt(semPrev)+' UA).';
+  var kpi = function(l, v, u, sub){
+    return '<div class="bc-kpi"><div class="bc-kpi-l">'+l+'</div><div class="bc-kpi-v">'+v+(u ? '<small>'+u+'</small>' : '')+'</div>'
+         + '<div class="bc-kpi-s">'+sub+'</div></div>';
+  };
+  var ab = _acwrBadge(acwr.ratio);
+  return tete + '<div class="bc-kpis">'
+    + kpi('Charge 7 jours', _bcFmt(acwr.aigue), 'UA', 'du '+_pevoFmtCourt(_pevoPlus(refIso, -6), true)+' au '+_pevoFmtCourt(refIso, true))
+    + kpi((refIso === todayIso && jc < 6) ? 'Semaine en cours' : 'Semaine du '+_pevoFmtCourt(lundi, true), _bcFmt(semCur), 'UA',
+          pct !== null ? '<span class="bc-chip '+pB.cls+'" title="'+bulleCmp+'">'+pB.txt+' '+cmp+'</span>' : 'Rien la semaine précédente')
+    + kpi('Monotonie', s7.monotonie !== null ? String(s7.monotonie).replace('.', ',') : '—', '',
+          '<span class="bc-chip '+monB.cls+'">'+monB.txt+'</span> 7 derniers jours'
+          + (s7.strain !== null ? ' · <span title="Contrainte (strain) = charge 7 jours × monotonie">contrainte '+_bcFmt(s7.strain)+'</span>' : ''))
+    + '</div>'
+    + '<div class="bc-carte">'+_bcJoursHtml(uaMap, refIso, todayIso)+'</div>'
+    + '<div class="bc-carte bc-acwr"><div>'
+    + '<div class="bc-kpi-l">ACWR — charge aiguë / chronique</div>'
+    + '<div class="bc-ratio" style="color:'+ab.color+';">'+(acwr.ratio !== null ? String(acwr.ratio).replace('.', ',') : '—')+'</div>'
+    + '<span class="bc-chip '+ab.cls+'">'+ab.txt+'</span>'
+    + '<div class="bc-acwr-det">Aiguë (7 j) <b>'+_bcFmt(acwr.aigue)+' UA</b><br>Chronique <b>'+_bcFmt(acwr.chronic)+' UA</b> / sem.'
+    + '<br>Zone favorable 0,8 – 1,3</div></div>'
+    + '<div class="bc-tend">'+_bcTendance(uaMap, refIso, todayIso)+'</div></div></div>';
 }
 
 /* ── Bilan vue mois : rendu dans #bilanCharge ── */
@@ -1871,38 +2038,16 @@ function _renderBilanCharge(){
   var el = document.getElementById('bilanCharge');
   if(!el) return;
   if(!_progPatient || (!_cloudCalEvents.length && !_stravaActivities.length)){ el.innerHTML=''; return; }
-
-  var uaMap = _buildUaMap();
-  // Vérifier qu'il y a au moins 1 séance planifiée OU 1 activité Strava dans le mois
-  var firstDay = new Date(_calYear,_calMonth,1);
-  var lastDay  = new Date(_calYear,_calMonth+1,0);
-  var firstStr = _dateStr(firstDay), lastStr = _dateStr(lastDay);
-  var ws = _getMondayOf(firstDay);
-  var weeks = [];
-  while(ws<=lastDay){
-    weeks.push(new Date(ws));
-    ws = new Date(ws.getTime()+7*24*60*60*1000);
-  }
-  var activeWeeks = weeks.filter(function(mon){
-    var end = new Date(mon.getTime()+6*24*60*60*1000);
-    var monStr = _dateStr(mon), endStr = _dateStr(end);
-    return _cloudCalEvents.some(function(e){ return e.date>=monStr&&e.date<=endStr; })
-        || _stravaActivities.some(function(a){ return a.date>=monStr&&a.date<=endStr; });
-  });
-  if(!activeWeeks.length){ el.innerHTML=''; return; }
-
-  var mo = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-  var dayNames = ['L','M','M','J','V','S','D'];
+  var auj = _pevoAujourdhuiIso();
 
   // Adhérence 30 jours : seances passees realisees (feedback ou activite Strava liee) / planifiees
-  var _adhToday = _dateStr(new Date());
   var _adhFrom = _dateStr(new Date(Date.now() - 30*24*3600*1000));
   var _linkedSeanceIds = {}, _actDates = {};
   _stravaActivities.forEach(function(a){
     if(a.seance_id) _linkedSeanceIds[String(a.seance_id)] = true;
     if(a.date) _actDates[a.date] = true;
   });
-  var _adhPast = _cloudCalEvents.filter(function(ev){ return ev.date && ev.date < _adhToday && ev.date >= _adhFrom; });
+  var _adhPast = _cloudCalEvents.filter(function(ev){ return ev.date && ev.date < auj && ev.date >= _adhFrom; });
   var _adhDone = _adhPast.filter(function(ev){
     var fb = ev.athlete_feedback;
     return (fb && ((fb.rpe !== null && fb.rpe !== undefined) || _fbDouleur(fb) !== null || fb.exo_data))
@@ -1912,94 +2057,11 @@ function _renderBilanCharge(){
   var _adhHtml = '';
   if(_adhPast.length >= 3){
     var _adhPct = Math.round(_adhDone / _adhPast.length * 100);
-    var _adhCol = _adhPct >= 80 ? '#27AE60' : _adhPct >= 50 ? '#E67E22' : '#E74C3C';
-    _adhHtml = '<span style="font-size:.72rem;font-weight:600;color:'+_adhCol+';margin-left:auto;">Adhérence 30j : '+_adhPct+'% ('+_adhDone+'/'+_adhPast.length+')</span>';
+    var _adhCls = _adhPct >= 80 ? 'bi-green' : _adhPct >= 50 ? 'bi-orange' : 'bi-red';
+    _adhHtml = '<span class="bc-chip '+_adhCls+'" style="margin-left:auto;" title="Séances passées réalisées (retour ou activité Strava) sur 30 jours">'
+             + 'Adhérence 30 j : '+_adhPct+' % ('+_adhDone+'/'+_adhPast.length+')</span>';
   }
-
-  /* La formule reste NOMMEE. Elle l'a ete pour signaler un changement d'echelle
-     ; elle le reste parce qu'un chiffre lu dans un autre outil ne se compare au
-     notre que si l'on sait comment chacun le calcule. */
-  var html = '<div class="bilan-foster"><div class="bilan-foster-title" style="display:flex;align-items:center;gap:8px;">📊 Bilan de charge'+_adhHtml+'</div>'
-    + '<div class="bilan-foster-formule">UA = RPE × durée (min) — méthode de Foster</div>';
-
-  // Carte par semaine
-  activeWeeks.forEach(function(mon, wi){
-    var end = new Date(mon.getTime()+6*24*60*60*1000);
-    var stats = _calcWeekStats(mon, uaMap);
-    var hasFb = stats.charge > 0;
-    var lbl = mon.getDate()+' '+mo[mon.getMonth()]
-            + (mon.getFullYear()!==end.getFullYear()?' '+mon.getFullYear():'')
-            + ' – '+end.getDate()+' '+mo[end.getMonth()];
-
-    html += '<div class="bilan-week-card">';
-    html += '<div class="bilan-wc-head"><span class="bilan-wc-label">'+lbl+'</span></div>';
-
-    if(hasFb){
-      // Mini barres UA par jour
-      var maxDay = Math.max.apply(null,stats.days)||1;
-      html += '<div class="bilan-day-bars">';
-      for(var i=0;i<7;i++){
-        var h = Math.max(2, Math.round(stats.days[i]/maxDay*30));
-        var col = stats.days[i]===0?'var(--border)':stats.days[i]<150?'#27AE60':stats.days[i]<300?'#E67E22':'var(--red)';
-        html += '<div class="bilan-day-col">'
-              + '<div class="bilan-day-bar" style="height:'+h+'px;background:'+col+';"></div>'
-              + '</div>';
-      }
-      html += '</div>';
-      html += '<div class="bilan-day-labels">';
-      for(var i=0;i<7;i++){
-        html += '<div class="bilan-day-lbl-col"><span class="bilan-day-lbl">'+dayNames[i]+'</span></div>';
-      }
-      html += '</div>';
-      html += '<div class="bilan-wc-total"><span class="bilan-wc-charge">⚡ '+stats.charge+' UA</span></div>';
-
-      // Indicators
-      var monB = _monBadge(stats.monotonie);
-      // Progression vs semaine précédente
-      var prevMon = new Date(mon.getTime()-7*24*60*60*1000);
-      var prevStats = _calcWeekStats(prevMon, uaMap);
-      var progPct = prevStats.charge>0 ? (stats.charge-prevStats.charge)/prevStats.charge*100 : null;
-      var progB = _progBadge(progPct);
-
-      html += '<div class="bilan-indicators">';
-      html += '<div class="bilan-ind"><div class="bilan-ind-val">'+(stats.monotonie!==null?stats.monotonie:'—')+'</div>'
-            + '<div class="bilan-ind-lbl">Monotonie</div>'
-            + '<div class="bilan-ind-badge '+monB.cls+'">'+monB.txt+'</div></div>';
-      html += '<div class="bilan-ind"><div class="bilan-ind-val">'+(stats.strain!==null?stats.strain:'—')+'</div>'
-            + '<div class="bilan-ind-lbl">Strain</div>'
-            + '<div class="bilan-ind-badge bi-grey">Charge × Mono.</div></div>';
-      html += '<div class="bilan-ind"><div class="bilan-ind-val">'+stats.moy+'</div>'
-            + '<div class="bilan-ind-lbl">Moy. / jour</div>'
-            + '<div class="bilan-ind-badge '+progB.cls+'">Prog. '+progB.txt+'</div></div>';
-      html += '</div>';
-    } else {
-      html += '<div class="bilan-no-fb">⏳ En attente des retours athlète (RPE)</div>';
-    }
-    html += '</div>';
-  });
-
-  // ACWR global
-  var acwr = _calcACWR(uaMap);
-  if(acwr.ratio!==null){
-    var ab = _acwrBadge(acwr.ratio);
-    // Position du marqueur : ratio 0→2, clampé 0-100%
-    var markerPct = Math.min(100,Math.max(0, acwr.ratio/2*100));
-    html += '<div class="bilan-acwr-card">'
-          + '<div class="bilan-acwr-title">ACWR — Ratio Charge Aiguë / Chronique</div>'
-          + '<div class="bilan-acwr-vals">'
-          + '<div class="bilan-acwr-val"><div class="bilan-acwr-val-num" style="color:'+ab.color+';">'+acwr.ratio+'</div><div class="bilan-acwr-val-lbl">Ratio ACWR</div></div>'
-          + '<div class="bilan-acwr-val"><div class="bilan-acwr-val-num">'+acwr.aigue+'</div><div class="bilan-acwr-val-lbl">Charge 7j (aiguë)</div></div>'
-          + '<div class="bilan-acwr-val"><div class="bilan-acwr-val-num">'+acwr.chronic+'</div><div class="bilan-acwr-val-lbl">Charge chronique / sem.</div></div>'
-          + '</div>'
-          + '<div class="bilan-acwr-bar-wrap">'
-          + '<div class="bilan-acwr-marker" style="left:'+markerPct+'%;background:'+ab.color+';"></div>'
-          + '</div>'
-          + '<div class="bilan-acwr-zones"><span>Sous-charge<br>&lt;0.8</span><span>✓ Sweet spot<br>0.8–1.3</span><span>⚠ Prudence<br>1.3–1.5</span><span>🔴 Risque<br>&gt;1.5</span></div>'
-          + '<div class="bilan-prog"><span class="bilan-ind-badge '+ab.cls+'">'+ab.txt+'</span></div>'
-          + '</div>';
-  }
-
-  el.innerHTML = html+'</div>';
+  el.innerHTML = _bilanChargeHtml(_buildUaMap(), _bcReference(_calYear, _calMonth, auj), auj, _adhHtml);
 }
 
 /* ── Bilan vue semaine : strip Foster complet ── */
@@ -2019,7 +2081,7 @@ function _weekBilanHTML(){
 
   var html = '<div class="bilan-week-foster">';
   // Charge
-  html += '<div class="bilan-wf-item"><div class="bilan-wf-val" style="color:var(--accent);">⚡ '+stats.charge+'</div><div class="bilan-wf-lbl">UA cette semaine</div></div>';
+  html += '<div class="bilan-wf-item"><div class="bilan-wf-val" style="color:var(--accent);">'+stats.charge+'</div><div class="bilan-wf-lbl">UA cette semaine</div></div>';
   if(stats.charge>0){
     // Monotonie
     html += '<div class="bilan-wf-item"><div class="bilan-wf-val">'+(stats.monotonie!==null?stats.monotonie:'—')+'</div>'
@@ -2033,7 +2095,7 @@ function _weekBilanHTML(){
           + '<div class="bilan-wf-lbl">ACWR</div>'
           + (acwr.ratio?'<div class="bilan-wf-badge '+acwrB.cls+'">'+acwrB.txt+'</div>':'')+'</div>';
   } else {
-    html += '<div class="bilan-wf-item" style="flex:3;"><div class="bilan-wf-lbl" style="padding:4px 0;">⏳ En attente des retours RPE de l\'athlète</div></div>';
+    html += '<div class="bilan-wf-item" style="flex:3;"><div class="bilan-wf-lbl" style="padding:4px 0;">En attente des retours RPE de l\'athlète</div></div>';
   }
   html += '</div>';
   return html;

@@ -125,7 +125,7 @@ console.log('\nLa charge, l\'ACWR et les courbes sont illustrées');
    fabriqué. Décision du praticien : schémas, comme pour Strava. */
 const sec = id => A.sections.find(s => s.id === id);
 const et = (sid, art, n) => (((sec(sid) || {}).articles || []).find(a => a.id === art) || {}).etapes?.[n - 1] || {};
-[['charges', 'bilan-charge', 1], ['charges', 'acwr', 2], ['programme', 'journal-evolution', 2]].forEach(([sid, art, n]) => {
+[['charges', 'bilan-charge', 2], ['charges', 'acwr', 3], ['programme', 'journal-evolution', 2]].forEach(([sid, art, n]) => {
   const e = et(sid, art, n);
   ok(`${sid}/${art} étape ${n} : un schéma`, !!e.svg);
   ok(`${sid}/${art} étape ${n} : plus de capture attendue`, !e.img);
