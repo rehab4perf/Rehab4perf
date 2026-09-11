@@ -96,7 +96,9 @@ ok('« Tout » n\'a pas de période bornée', per('tout', 0) === null);
 
 /* ── La navigation ───────────────────────────────────────────────────────── */
 console.log('\nLa navigation');
-const nav = ['_pevoPeriodeCourante', '_pevoAppliquerPeriode', 'setPevoUnite', 'pevoDecaler', 'pevoRevenirAujourdhui', '_renderPevoFilterBar', '_pevoFilterPts'];
+/* `setPevoUnite` retient l'unité (étape 2) : ses deux helpers viennent avec elle.
+   Sans compte dans ce banc, ils n'écrivent rien. */
+const nav = ['_pevoPrefCle', '_pevoSauverPref', '_pevoPeriodeCourante', '_pevoAppliquerPeriode', 'setPevoUnite', 'pevoDecaler', 'pevoRevenirAujourdhui', '_renderPevoFilterBar', '_pevoFilterPts'];
 let N = null;
 try {
   N = new Function('_renderPevoCharts', '_pevoGetSel', '_progPatient', '_pevoData', 'escH',
@@ -173,7 +175,9 @@ egal('septembre en cours : 10 + 5 km — le 31 août n\'y est pas', '15', val);
 egal('… contre 1 → 11 août : 10 km — le 20 août n\'y est pas', '▲ +50 %', ((h.match(/vol-d [a-z]+"[^>]*>([^<]*)</) || [])[1] || '').trim());
 ok('… le titre nomme la période', /Septembre 2026/.test(h), (h.match(/<div class="vol-titre">.*?<\/div>/) || ['absent'])[0]);
 ok('… l\'écart dit à quoi il se compare', /title="[^"]*août[^"]*"/.test(h));
-egal('… une barre par semaine du mois', 5, ((h.match(/<svg class="vol-spark"[\s\S]*?<\/svg>/) || [''])[0].match(/<rect/g) || []).length);
+/* Seules les barres VISIBLES comptent : chacune porte aussi une zone cliquable
+   transparente sur toute sa hauteur (étape 2 : une barre ouvre sa période). */
+egal('… une barre par semaine du mois', 5, ((h.match(/<svg class="vol-spark"[\s\S]*?<\/svg>/) || [''])[0].match(/<rect(?![^>]*fill="transparent")/g) || []).length);
 ok('… « 2 séances sur la période »', /2 séances sur la période/.test(h));
 /* La semaine du 7 au 13 sept. ne porte qu'une sortie (le 10) : singulier. */
 let h1 = '';

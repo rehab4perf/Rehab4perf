@@ -22,6 +22,7 @@ var R4P_KEYS = {
   LIB_CAT_COLLAPSED    : 'r4p-lib-cat-collapsed',
   J0_PREFIX            : 'r4p-j0-',
   PEVO_SEL_PREFIX      : 'r4p-pevo-sel-',
+  PEVO_PREF: 'r4p-pevo-pref',   // unité et étendue de l'Évolution, par compte (_cleCompte)
   PEVO_DUREE_PREFIX    : 'r4p-pevo-duree-',
   PEVO_CARDIO_PREFIX   : 'r4p-pevo-cardio-'
 };
@@ -5078,7 +5079,8 @@ function _pevoPeriode(unite, decalage, auj){
       ? 'Comparé ' + aRef + ', arrêtée elle aussi au ' + JOURS[(t.getDay() + 6) % 7] + '.'
       : 'Comparé ' + aRef + ', arrêté' + (feminin ? 'e' : '') + ' au même avancement (' + _pevoFmtCourt(refDebut, true) + ' → ' + _pevoFmtCourt(refFin, true) + ').';
   return { unite:unite, debut:debut, fin:fin, enCours:enCours, libelle:libelle,
-           refDebut:refDebut, refFin:refFin, compare:compare, buckets:_pevoBuckets(debut, fin, mode) };
+           refDebut:refDebut, refFin:refFin, compare:compare, buckets:_pevoBuckets(debut, fin, mode),
+           sousUnite: mode === 'jour' ? null : mode };   // la période qu'ouvre un clic sur une barre
 }
 /* Plage saisie : comparée à la plage de même durée juste avant. */
 function _pevoPeriodePerso(de, a){
@@ -5088,7 +5090,83 @@ function _pevoPeriodePerso(de, a){
            libelle:_pevoFmtCourt(de, true) + ' → ' + _pevoFmtCourt(a, true) + ' ' + _pevoJour(a).getFullYear(),
            refDebut:refDebut, refFin:refFin,
            compare:'Comparé aux ' + n + ' jours juste avant (' + _pevoFmtCourt(refDebut, true) + ' → ' + _pevoFmtCourt(refFin, true) + ').',
-           buckets:_pevoBuckets(de, a, n <= 182 ? 'semaine' : 'mois') };
+           buckets:_pevoBuckets(de, a, n <= 182 ? 'semaine' : 'mois'), sousUnite: n <= 182 ? 'semaine' : 'mois' };
+}
+/* « Tout » : de la première activité connue jusqu'à aujourd'hui, par mois,
+   sans période de comparaison. Il s'arrêtait à 52 semaines, sous l'ancienne
+   phrase « à jour égal » (qualite/pevo-etape2-cas.js). */
+function _pevoPeriodeTout(premiere, auj){
+  if(!premiere) return null;
+  return { unite:'tout', debut:premiere, fin:auj, enCours:false,
+           libelle:'Tout l\'historique · depuis le ' + _pevoFmtCourt(premiere, true) + ' ' + _pevoJour(premiere).getFullYear(),
+           refDebut:null, refFin:null, sousUnite:'mois',
+           compare:'« Tout » couvre tout l\'historique : rien à comparer.',
+           buckets:_pevoBuckets(premiere, auj, 'mois') };
+}
+/* Première date connue — activité Strava ou séance —, jamais le futur. */
+function _pevoPremiereDate(){
+  var auj = _pevoAujourdhuiIso(), min = null;
+  function voir(d){ d = String(d || '').slice(0, 10); if(d && d <= auj && (!min || d < min)) min = d; }
+  ((typeof _stravaActivities !== 'undefined' && _stravaActivities) || []).forEach(function(a){ voir(a && a.date); });
+  ((typeof _cloudCalEvents !== 'undefined' && _cloudCalEvents) || []).forEach(function(e){ voir(e && e.date); });
+  return min;
+}
+/* Ce que dit l'export : la période, et ce que montrent les courbes. Il n'en
+   disait rien — un document qui peut partir chez un médecin. */
+function _pevoLibelleExport(){
+  var p = _pevoPeriodeCourante();
+  if(!p) return 'Période : tout l\'historique';
+  return 'Période : ' + p.libelle
+    + (_pevoProgPortee === 'tout' ? ' · courbes sur toute la rééducation, période en bande' : ' · courbes sur la période seule');
+}
+/* L'unité et l'étendue sont retenues PAR COMPTE ; on rouvre toujours sur la
+   période en cours. Une plage personnalisée ne se rouvre pas : ses dates
+   sont celles d'hier. */
+function _pevoPrefCle(){
+  return (typeof _cleCompte === 'function' && typeof R4P_KEYS !== 'undefined') ? _cleCompte(R4P_KEYS.PEVO_PREF) : null;
+}
+function _pevoSauverPref(){
+  var cle = _pevoPrefCle(); if(!cle) return;
+  try { localStorage.setItem(cle, JSON.stringify({ unite:_pevoUnite, portee:_pevoProgPortee })); } catch(e){}
+}
+function _pevoChargerPref(){
+  var cle = _pevoPrefCle(), pref = null;
+  if(cle){ try { pref = JSON.parse(localStorage.getItem(cle) || 'null'); } catch(e){ pref = null; } }
+  var UNITES = ['semaine','mois','trimestre','annee','tout'];
+  _pevoUnite = (pref && UNITES.indexOf(pref.unite) >= 0) ? pref.unite : 'mois';
+  _pevoProgPortee = (pref && pref.portee === 'periode') ? 'periode' : 'tout';
+  _pevoDecalage = 0;
+  _pevoAppliquerPeriode();
+}
+/* ← → changent de période — sauf dans un champ, et seulement Évolution ouverte. */
+function _pevoClavier(e){
+  var ov = document.getElementById('pevoOverlay');
+  if(!ov || !ov.classList.contains('open')) return;
+  var t = e.target || {};
+  if(t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || '')) return;
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); pevoDecaler(-1); }
+  else if(e.key === 'ArrowRight'){ e.preventDefault(); pevoDecaler(1); }
+}
+/* Glisser vers la droite = revenir en arrière ; un geste court ou surtout
+   vertical est un défilement, pas un changement de période. */
+function _pevoSensGlisse(x0, y0, x1, y1){
+  var dx = x1 - x0, dy = y1 - y0;
+  if(Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return 0;
+  return dx > 0 ? -1 : 1;
+}
+/* Un clic sur une barre ouvre SA période : la semaine d'un mois, le mois
+   d'une année. Jamais au-delà d'aujourd'hui. */
+function pevoOuvrirPeriode(unite, iso){
+  var auj = _pevoAujourdhuiIso(), a = _pevoJour(auj), d = _pevoJour(iso), dec;
+  if(unite === 'semaine') dec = Math.round((_pevoJour(_pevoLundi(iso)) - _pevoJour(_pevoLundi(auj))) / (7 * 86400000));
+  else if(unite === 'mois') dec = (d.getFullYear() - a.getFullYear()) * 12 + (d.getMonth() - a.getMonth());
+  else if(unite === 'trimestre') dec = (d.getFullYear() - a.getFullYear()) * 4 + (Math.floor(d.getMonth() / 3) - Math.floor(a.getMonth() / 3));
+  else if(unite === 'annee') dec = d.getFullYear() - a.getFullYear();
+  else return;
+  _pevoUnite = unite; _pevoDecalage = Math.min(0, dec);
+  _pevoSauverPref();
+  _pevoAppliquerPeriode();
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
 }
 function _pevoPeriodeCourante(){
   if(_pevoUnite === 'perso')
@@ -5104,6 +5182,7 @@ function _pevoAppliquerPeriode(){
 }
 function setPevoUnite(u){
   _pevoUnite = u; _pevoDecalage = 0;
+  _pevoSauverPref();
   if(u === 'perso' && !(_pevoFilterFrom && _pevoFilterTo)){
     var auj = _pevoAujourdhuiIso(), d = _pevoJour(auj);
     _pevoFilterFrom = _pevoIso(new Date(d.getFullYear(), d.getMonth() - 3, d.getDate())); _pevoFilterTo = auj;
@@ -5182,6 +5261,7 @@ function _pevoFilterPts(pts){
 var _pevoProgPortee = 'tout';   // 'tout' = toute la rééducation, 'periode' = période seule
 function setPevoPortee(v){
   _pevoProgPortee = v === 'periode' ? 'periode' : 'tout';
+  _pevoSauverPref();
   _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
 }
 /* La bande n'a de sens que sur tout l'historique, et quand la période est bornée. */
@@ -5710,11 +5790,12 @@ function _renderPevoCharts(exoData, selectedKeys) {
        choisie, la premiere sert de reference a l'ecart. Comparer une periode
        de trois mois a la seule semaine precedente n'aurait aucun sens. */
     var _pevoPer = _pevoPeriodeCourante();
+    if(!_pevoPer && _pevoUnite === 'tout') _pevoPer = _pevoPeriodeTout(_pevoPremiereDate(), _pevoAujourdhuiIso());
     if(_pevoPer){
       /* Des semaines depuis le lundi de la RÉFÉRENCE jusqu'à la semaine en
          cours ; la somme se fait ensuite jour par jour, sur la plage exacte. */
       var _nbSem = Math.max(1, Math.round((_pevoJour(_pevoLundi(_pevoAujourdhuiIso()))
-                   - _pevoJour(_pevoLundi(_pevoPer.refDebut))) / (7 * 86400000)) + 1);
+                   - _pevoJour(_pevoLundi(_pevoPer.refDebut || _pevoPer.debut))) / (7 * 86400000)) + 1);
       volSectionHtml = _volHtml(_volumeParSport(_nbSem), _pevoPer);
     } else {
       volSectionHtml = _volHtml(_volumeParSport(_vn * 2), _vn);
@@ -5782,7 +5863,7 @@ function _volSomme(_volDonnees, debut, fin, cle){
   return t;
 }
 
-function _volBarres(vals, coul){
+function _volBarres(vals, coul, liens){
   var W = 240, H = 44, max = Math.max.apply(null, vals) || 1;
   var pas = W / vals.length, larg = Math.max(3, pas - 4), out = '';
   vals.forEach(function(v, i){
@@ -5791,6 +5872,10 @@ function _volBarres(vals, coul){
     out += '<rect x="'+x.toFixed(1)+'" y="'+(H-h).toFixed(1)+'" width="'+larg.toFixed(1)
         +  '" height="'+h.toFixed(1)+'" rx="2" fill="'+coul+'"'
         +  (i === vals.length-1 ? '' : ' opacity="0.4"')+'></rect>';
+    /* Zone cliquable sur toute la hauteur : une barre nulle s'ouvre aussi. */
+    var ln = liens && liens[i];
+    if(ln) out += '<rect x="'+(i*pas).toFixed(1)+'" y="0" width="'+pas.toFixed(1)+'" height="'+H+'" fill="transparent"'
+      + ' onclick="pevoOuvrirPeriode(\''+ln.unite+'\',\''+ln.date+'\')" style="cursor:pointer"><title>'+ln.titre+'</title></rect>';
   });
   return '<svg class="vol-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+out+'</svg>';
 }
@@ -5853,7 +5938,9 @@ function _volHtml(_volDonnees, fenetre){
   var der = { sports:{} }, av = { sports:{} };
   defs.forEach(function(sp){
     der.sports[sp.cle] = per ? _volSomme(_volDonnees, per.debut, per.fin, sp.cle) : cumul(sems, sp.cle);
-    av.sports[sp.cle]  = per ? _volSomme(_volDonnees, per.refDebut, per.refFin, sp.cle) : cumulRef(avant, sp.cle);
+    av.sports[sp.cle]  = per ? (per.refDebut ? _volSomme(_volDonnees, per.refDebut, per.refFin, sp.cle)
+                                           : { dist:0, duree:0, charge:0, n:0 })   // « Tout » : rien à comparer
+                             : cumulRef(avant, sp.cle);
   });
   if(per && per.compare) titreEcart = per.compare;
 
@@ -5917,6 +6004,11 @@ function _volHtml(_volDonnees, fenetre){
 
   /* ── Vue 3 : douze semaines, un cadre par sport ───────────────── */
   var cadres = actifs.map(function(sp){
+    /* Chaque barre ouvre sa période (la semaine d'un mois, le mois d'une année). */
+    var liens = (per && per.sousUnite) ? per.buckets.map(function(bk){
+      return { unite:per.sousUnite, date:bk.debut,
+               titre: per.sousUnite === 'semaine' ? 'Ouvrir la semaine du ' + (+bk.debut.slice(8, 10)) + '/' + bk.debut.slice(5, 7)
+                                                  : 'Ouvrir le mois ' + bk.debut.slice(5, 7) + '/' + bk.debut.slice(0, 4) }; }) : null;
     var vals = per
       ? per.buckets.map(function(bk){ return _volValeur(_volSomme(_volDonnees, bk.debut, bk.fin, sp.cle), sp); })
       : sems.map(function(sm){ return _volValeur(sm.sports[sp.cle] || vide, sp); });
@@ -5925,7 +6017,7 @@ function _volHtml(_volDonnees, fenetre){
       + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+escH(sp.nom)+'</span>'
       + '<span class="vol-c-val">'+_volFmt(_volValeur(c, sp), sp.unite)
       + (sp.unite === 'km' ? ' km' : '')+'</span></div>'
-      + _volBarres(vals, sp.couleur)+'</div>';
+      + _volBarres(vals, sp.couleur, liens)+'</div>';
   }).join('');
 
   /* La vue TABLEAU n'est pas un supplement : la couleur ne doit jamais porter
@@ -6245,13 +6337,13 @@ function _buildPevoExportHTML(){
   var html = '<!DOCTYPE html><html lang="fr"><head>'
     +'<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
     +'<link rel="stylesheet" href="/fonts/fonts.css">'
-    +'<title>Évolution des charges — '+patNom+'</title>'
+    +'<title>Évolution des charges — '+patNom+' — '+escH(_pevoLibelleExport().replace(/^Période : /, ''))+'</title>'
     +'<style>'+css+'</style></head><body><div class="page-wrap">'
     +'<div class="doc-header"><div class="doc-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="w"><span class="r">rehab<sup class="e">4</sup></span><span class="p">perf</span></span></div>'
     +'<div class="doc-meta">'+praticienMetaHTML+'</div></div>'
     +'<div class="patient-card"><div class="patient-avatar">'+initials+'</div>'
     +'<div><div class="patient-name">'+patNom+'</div></div></div>'
-    +'<div class="summary-bar">📊 Évolution des charges prescrites · Export généré le '+date+'</div>'
+    +'<div class="summary-bar">📊 Évolution des charges prescrites · '+escH(_pevoLibelleExport())+' · Export généré le '+date+'</div>'
     +'<div class="doc-body"><br>'+contentHTML+'</div>'
     +'</div></body></html>';
 
@@ -6284,6 +6376,18 @@ function openChargesEvo() {
   if(!_progPatient){ alert('Sélectionnez un patient d\'abord.'); return; }
   var overlay = document.getElementById('pevoOverlay');
   overlay.classList.add('open');
+  _pevoChargerPref();                       // la vue qu'on avait laissée, sur la période en cours
+  if(!document._pevoNavBranchee){
+    document._pevoNavBranchee = true;
+    document.addEventListener('keydown', _pevoClavier);
+    var _g = null;
+    overlay.addEventListener('touchstart', function(ev){ var t = ev.touches && ev.touches[0]; _g = t ? { x:t.clientX, y:t.clientY } : null; }, { passive:true });
+    overlay.addEventListener('touchend', function(ev){
+      var t = ev.changedTouches && ev.changedTouches[0]; if(!_g || !t) return;
+      var sens = _pevoSensGlisse(_g.x, _g.y, t.clientX, t.clientY); _g = null;
+      if(sens) pevoDecaler(sens);
+    }, { passive:true });
+  }
   var body = document.getElementById('pevoBody');
   body.innerHTML = '<div class="pevo-loading">Chargement des séances…</div>';
   _pevoData = null; _pevoDureeData = null; _pevoCardioData = null; _pevoCapPainData = null;
