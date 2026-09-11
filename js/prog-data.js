@@ -1355,12 +1355,21 @@ function addEmomBloc(atIndex){
   setActiveBloc(id);
 }
 
+/* JAMAIS de `renderSession()` ici : ces champs se tapent chiffre par chiffre.
+   Redessiner la séance remplace tous les champs par des neufs — celui qu'on
+   tapait disparaissait au premier chiffre, et le curseur avec lui (constaté
+   sur la durée d'un EMOM, l'intervalle avait le même défaut). La seule chose
+   qui dépend de la durée et de l'intervalle, la ligne de résumé, se met à jour
+   sur place (qualite/emom-duree-cas.js). */
 function updateChronoField(id, field, val){
   var b = blocs.find(function(x){ return x.id===id; });
   if(!b) return;
   b[field] = val;
-  if(field === 'intervalle' || field === 'dureeTotale') renderSession();
-  else if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
+  if(field === 'intervalle' || field === 'dureeTotale'){
+    var r = document.getElementById('emom-resume-' + id);
+    if(r){ var t = _emomResumeHtml(b); r.innerHTML = t; r.hidden = !t; }
+  }
+  if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
 
 function updateExoReps(blocId, exoId, val){
@@ -1377,6 +1386,14 @@ function _emomTours(b){
   var total = parseFloat(b.dureeTotale) || 0;
   var inter = parseFloat(b.intervalle) || 1;
   return inter > 0 ? Math.floor(total / inter) : 0;
+}
+
+/* Ligne de résumé d'un EMOM — vide tant qu'il n'a pas d'exercice. */
+function _emomResumeHtml(b){
+  if(!b || !(b.exos||[]).length) return '';
+  var tours = _emomTours(b);
+  var cycles = Math.ceil(tours / b.exos.length);
+  return tours + ' intervalles — chaque exercice revient ' + cycles + ' fois.';
 }
 
 /* Liste d'exercices commune aux deux formats : nom, répétitions, suppression. */
@@ -1456,11 +1473,11 @@ function _renderChronoBloc(b, idx){
   }
   h += '</div>';
 
-  if(!estAmrap && (b.exos||[]).length){
-    var tours = _emomTours(b);
-    var cycles = Math.ceil(tours / b.exos.length);
-    h += '<div class="chrono-resume">'+tours+' intervalles — chaque exercice revient '
-      +  cycles + (cycles > 1 ? ' fois' : ' fois') + '.</div>';
+  /* Le conteneur existe même vide : c'est lui que la frappe met à jour, sans
+     redessiner la séance (voir updateChronoField). */
+  if(!estAmrap){
+    var _res = _emomResumeHtml(b);
+    h += '<div class="chrono-resume" id="emom-resume-'+bid+'"'+(_res ? '' : ' hidden')+'>'+_res+'</div>';
   }
   h += _renderChronoExos(b);
   h += '<textarea class="texte-ta" style="margin-top:8px;min-height:44px;" placeholder="Consignes…" '
