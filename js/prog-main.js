@@ -5488,7 +5488,14 @@ var _DRAFT_KEY     = 'r4p-builder-draft';
 /* Le mode template a son propre brouillon : composer un template ne doit pas
    ecraser celui d'une seance laissee en plan, ni se faire proposer a sa
    place a la prochaine ouverture. */
-function _draftKey(){ return (_builderMode === 'template') ? _DRAFT_KEY + '-tmpl' : _DRAFT_KEY; }
+/* Un modele OUVERT a le sien aussi : le modifier ecrasait le brouillon d'une
+   seance patient, et ce brouillon etait propose par-dessus le modele a
+   l'ouverture (qualite/modele-verbes-cas.js). */
+function _draftKey(){
+  if(_builderMode === 'template') return _DRAFT_KEY + '-tmpl';
+  if(_builderFromTemplate && !_currentSeanceId && !_currentProgId) return _DRAFT_KEY + '-modele';
+  return _DRAFT_KEY;
+}
 var _builderSaved  = true; // devient false dès qu'on modifie sans sauvegarder
 var _lastSavedHash = ''; // empreinte du contenu au dernier save
 var _draftSaveTimer = null; // timer debounce
@@ -5560,6 +5567,9 @@ function _draftClear(){
 function _draftRestore(){
   // Proposer de restaurer uniquement si le builder est vide à l'ouverture
   if(blocs && blocs.length) return;
+  /* Jamais sur un modèle ouvert : le brouillon ne dit pas de QUEL modèle il
+     vient, et « Restaurer » aurait remplacé le modèle par autre chose. */
+  if(_builderFromTemplate && !_currentSeanceId && !_currentProgId) return;
   try {
     var raw = localStorage.getItem(_draftKey());
     if(!raw) return;
@@ -5774,6 +5784,11 @@ function duplicateTemplate(){
 }
 
 function loadTemplate(id, ouvrirModele){
+  /* L'ouverture a posé le lien au modèle avant le réseau : s'il échoue, le
+     défaire — « Mettre à jour » écraserait sinon le modèle par un vide. */
+  function _echecOuverture(){
+    if(ouvrirModele && String(_builderFromTemplate) === String(id)){ _builderFromTemplate = null; _refreshSaveBtn(); }
+  }
   /* Un template s'AJOUTE a la seance courante, il ne la remplace jamais.
      « Vider » est un geste separe : c'est lui qu'on emploie pour repartir du
      template seul. Il n'y a donc qu'un seul verbe, et rien ne se perd sans
@@ -5825,7 +5840,8 @@ function loadTemplate(id, ouvrirModele){
       _builderSaved = false;
     }
     _refreshDraftBadge();
-    _showToast('✚ « ' + (t.nom||'Modèle') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
+    _showToast(ouvrirModele ? '✎ Modèle « ' + (t.nom||'Modèle') + ' » ouvert'
+                            : '✚ « ' + (t.nom||'Modèle') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
   }
 
   if(_progToken && _progUid){
@@ -5833,10 +5849,10 @@ function loadTemplate(id, ouvrirModele){
     .then(function(r){ return r.json(); })
     .then(function(data){
       var t = Array.isArray(data) ? data[0] : null;
-      if(!t){ alert('Modèle introuvable.'); return; }
+      if(!t){ _echecOuverture(); alert('Modèle introuvable.'); return; }
       _applyTemplate(t);
     })
-    .catch(function(){ alert('Erreur chargement modèle.'); });
+    .catch(function(){ _echecOuverture(); alert('Erreur chargement modèle.'); });
   } else {
     _loadTemplates();
     var t = _templates.find(function(x){ return x.id === id; });
@@ -7444,6 +7460,11 @@ function _pickerExpandAll(){
    patient, sans le moindre signal. */
 function _sidebarLoadProg(id){
   _resetBuilderState();
+  /* Le mode se déclare TOUT DE SUITE : le modèle arrive par le réseau, et
+     d'ici là l'ouverture du builder proposait le brouillon d'une séance et
+     montrait le bandeau de protocole du patient. `loadTemplate` défait ce
+     lien si le chargement échoue. */
+  _builderFromTemplate = String(id);
   _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
   _updateActiveGroupBadge();
   _applyBuilderReadOnly(false);
@@ -7488,6 +7509,7 @@ function utiliserModele(){
   _currentProgId = null; _currentSeanceId = null;
   _builderSaved = false;
   _updateBuilderTitle(); _refreshSaveBtn(); _refreshDraftBadge();
+  if(typeof _builderLoadProtoContext === 'function') _builderLoadProtoContext();   // son protocole revient
   var nom = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
   _showToast('Séance de ' + nom + ' — le modèle reste intact');
 }
@@ -7701,6 +7723,9 @@ function _builderLoadProtoContext(){
   banner.style.display = 'none';
   banner.className = '';
   if(!_progPatient || !_progUid) return;
+  /* Un modèle n'est à aucun patient : son protocole n'a rien à faire sous
+     « aucun patient n'est concerné » (qualite/modele-verbes-cas.js). */
+  if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return;
 
   // Si une phase est déjà liée (ex: ouverture depuis _protoOpenInBuilder),
   // afficher directement le bon protocole sans aller chercher le "premier actif" sur Supabase

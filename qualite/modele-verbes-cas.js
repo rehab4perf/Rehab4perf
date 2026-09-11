@@ -85,6 +85,21 @@ const lib = fn('loadLibraryTemplate');
 ok('la bibliothèque publiée ajoute sans changer la nature de la séance', !!lib && !/_currentProgId = null/.test(lib) && !/_builderFromTemplate = null/.test(lib), lib.slice(0, 120));
 ok('le répertoire ouvre le modèle EXPLICITEMENT', /loadTemplate\(id, ?true\)/.test(fn('_sidebarLoadProg')), fn('_sidebarLoadProg').slice(0, 200));
 
+/* Vu en ligne à la première preuve : ouvrir un modèle proposait le BROUILLON
+   de la séance qu'on venait de fermer (« Restaurer » l'aurait mis à la place
+   du modèle), sous le bandeau de protocole du patient, avec « 1 bloc ajouté ». */
+console.log('\nOuvrir un modèle : ni brouillon de séance, ni protocole du patient');
+const clef = vm.createContext({ _DRAFT_KEY: 'r4p-draft', _builderMode: 'seance', _builderFromTemplate: 't1', _currentSeanceId: null, _currentProgId: null });
+vm.runInContext(fn('_draftKey'), clef);
+const kModele = clef._draftKey(); clef._builderFromTemplate = null; const kSeance = clef._draftKey();
+ok('un modèle ouvert a son propre brouillon (il n\'écrase plus celui d\'une séance)', kModele !== kSeance, kModele + ' / ' + kSeance);
+ok('aucun brouillon n\'est proposé sur un modèle ouvert', /if\(_builderFromTemplate && !_currentSeanceId && !_currentProgId\) return;/.test(fn('_draftRestore')));
+ok('le mode se déclare dès le clic, avant le réseau', /_builderFromTemplate = String\(id\);[\s\S]*loadTemplate\(id, ?true\)/.test(fn('_sidebarLoadProg')));
+ok('… et se défait si le chargement échoue', /function _echecOuverture\(\)[\s\S]{0,200}_builderFromTemplate = null/.test(fn('loadTemplate')) && (fn('loadTemplate').match(/_echecOuverture\(\); alert/g) || []).length === 2);
+ok('le bandeau de protocole du patient ne s\'affiche pas sur un modèle', /_builderFromTemplate && !_currentSeanceId && !_currentProgId\)\) return;/.test(fn('_builderLoadProtoContext')));
+ok('ouvrir dit « ouvert », pas « bloc ajouté »', /ouvrirModele \? '✎ Modèle « '/.test(fn('loadTemplate')));
+ok('« Utiliser pour un patient » fait revenir son protocole', /_builderLoadProtoContext\(\)/.test(fn('utiliserModele')));
+
 /* ── modifierModele / quitterModele / utiliserModele ─────────────────────── */
 function gestes(etat) {
   const trace = [];
