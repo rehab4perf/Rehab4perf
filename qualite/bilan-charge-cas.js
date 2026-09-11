@@ -88,8 +88,26 @@ console.log('\nB — la tendance qui explique l\'ACWR');
 ok('l\'ACWR est affiché, à la française', /bc-ratio[^>]*>1,43</.test(h), (h.match(/bc-ratio[^>]*>[^<]*/) || ['absent'])[0]);
 ok('huit semaines en barres', (h.match(/class="bc-b[ "]/g) || []).length === 8, (h.match(/class="bc-b[ "]/g) || []).length + ' barres');
 /* Sans 28 jours d'historique, pas de bande : le 20/7, le 27/7 et le 3/8 n'en ont pas (premier jour chargé : 20 juillet). */
-ok('… une bande favorable par semaine qui a 28 jours d\'historique (5 sur 8)', (h.match(/class="bc-bande"/g) || []).length === 5,
-   (h.match(/class="bc-bande"/g) || []).length + ' bandes');
+/* Une LIGNE, pas un escalier : l'escalier (un palier par semaine, un saut à
+   chaque frontière) se lisait saccadé — retour du praticien. Un point par
+   semaine jugée, au centre de sa barre, reliés en segments droits. */
+const chro = ((h.match(/class="bc-chro"[^>]*points="([^"]*)"/) || [])[1] || '').split(' ').filter(Boolean).map(p => +p.split(',')[0]);
+ok('la chronique est une ligne : un point par semaine qui a 28 jours d\'historique (5 sur 8), au centre de sa barre',
+   chro.join(',') === '350,450,550,650,750', chro.join(','));
+ok('… sans marche : jamais deux points à la même abscisse', chro.every((x, i) => !i || x > chro[i - 1]));
+ok('… une seule bande, qui suit la même ligne', (h.match(/<polygon class="bc-bande"/g) || []).length === 1 && !/<rect class="bc-bande"/.test(h),
+   (h.match(/class="bc-bande"/g) || []).length + ' bande(s)');
+/* Une semaine sans historique au milieu COUPE la ligne : la relier par-dessus
+   ferait croire à une référence qui n'existait pas. */
+const UA3 = Object.assign({}, UA);
+Object.keys(UA3).forEach(d => { if (d >= '2026-07-13' && d <= '2026-08-09') delete UA3[d]; });
+['2026-06-01', '2026-06-08', '2026-06-15', '2026-06-22', '2026-06-29', '2026-07-06'].forEach(l => [0, 1, 3, 4].forEach(i => { UA3[vm.runInContext('_pevoPlus', ctx)(l, i)] = 300; }));
+let h3 = ''; try { h3 = ctx._bilanChargeHtml(UA3, '2026-09-11', '2026-09-11', ''); } catch (e) { h3 = 'ERREUR ' + e.message; }
+/* 20/7 et 27/7 ont l'historique de juin ; 3/8 et 10/8 n'ont rien dans leurs
+   jours 8 à 28 ; à partir du 17/8, si. Deux tronçons, deux bandes. */
+ok('une coupure d\'historique coupe la ligne en deux tronçons', (h3.match(/class="bc-chro"/g) || []).length === 2
+   && (h3.match(/<polygon class="bc-bande"/g) || []).length === 2,
+   (h3.match(/class="bc-chro"[^>]*points="[^"]*"/g) || []).map(p => p.replace(/,[\d.]+/g, '')).join(' | '));
 ok('… et pas de couleur d\'état sur une reprise sans historique', (h.match(/class="bc-b risque"/g) || []).length === 1);
 ok('… et la charge chronique en ligne', /class="bc-chro"/.test(h));
 /* Vu en ligne sur le compte de démo : une séance cette semaine, une autre il y

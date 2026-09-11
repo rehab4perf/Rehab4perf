@@ -709,6 +709,13 @@ texte d'un SVG étiré grossirait avec lui. Le SVG de B est en
 `preserveAspectRatio="none"` **sans aucun texte**, et sa ligne en
 `vector-effect="non-scaling-stroke"`.
 
+**La chronique est une ligne, pas un escalier.** Premier jet : un palier par
+semaine et un saut à chaque frontière — le praticien l'a lu « saccadé ». Un
+point par semaine jugée, au CENTRE de sa barre (là où elle se compare), reliés
+en segments droits ; la bande suit les mêmes points. Pas de Bézier (même règle
+que les graphiques d'Évolution). Une semaine sans historique **coupe** la ligne
+en tronçons.
+
 Plus d'emoji dans les badges : la pastille colorée porte l'état, le mot le
 nomme. La ligne « UA = RPE × durée (min) — méthode de Foster » reste
 (`charge-foster-cas`).

@@ -1964,10 +1964,27 @@ function _bcTendance(uaMap, refIso, todayIso){
   sem.forEach(function(s){ max = Math.max(max, s.tot, s.valide ? s.chro * 1.3 : 0); });
   max *= 1.08;
   var H = 150, CW = 100, y = function(v){ return (H - v / max * (H - 4)).toFixed(1); };
-  var svg = '<svg class="bc-tend-svg" viewBox="0 0 800 '+H+'" preserveAspectRatio="none" aria-hidden="true">';
+  /* Une ligne, pas un escalier. Chaque semaine est jugée contre SA chronique,
+     posée au centre de sa barre ; les points se relient en segments droits.
+     L'escalier (un palier par semaine, un saut à chaque frontière) se lisait
+     saccadé — retour du praticien. Pas de Bézier non plus : elle inventerait
+     entre deux semaines une courbure qui n'a pas été mesurée (même règle que
+     les graphiques d'Évolution). Une semaine sans historique COUPE la ligne :
+     la relier par-dessus ferait croire à une référence qui n'existait pas. */
+  var troncons = [], cur = null;
   sem.forEach(function(s, i){
-    if(s.valide) svg += '<rect class="bc-bande" x="'+(i * CW)+'" y="'+y(s.chro * 1.3)+'" width="'+CW+'" height="'
-                      + (y(s.chro * 0.8) - y(s.chro * 1.3)).toFixed(1)+'"></rect>';
+    if(!s.valide){ cur = null; return; }
+    if(!cur) troncons.push(cur = []);
+    cur.push({ x:i * CW + CW / 2, c:s.chro });
+  });
+  troncons = troncons.map(function(t){
+    return t.length > 1 ? t : [{ x:t[0].x - 35, c:t[0].c }, { x:t[0].x + 35, c:t[0].c }];
+  });
+  var svg = '<svg class="bc-tend-svg" viewBox="0 0 800 '+H+'" preserveAspectRatio="none" aria-hidden="true">';
+  troncons.forEach(function(t){
+    var haut = t.map(function(p){ return p.x+','+y(p.c * 1.3); });
+    var bas = t.slice().reverse().map(function(p){ return p.x+','+y(p.c * 0.8); });
+    svg += '<polygon class="bc-bande" points="'+haut.concat(bas).join(' ')+'"></polygon>';
   });
   sem.forEach(function(s, i){
     var bulle = 'Semaine du '+_pevoFmtCourt(s.l, true)+' : '+_bcFmt(s.tot)+' UA'
@@ -1975,9 +1992,10 @@ function _bcTendance(uaMap, refIso, todayIso){
     svg += '<rect class="bc-b'+(s.cls ? ' '+s.cls : '')+'" x="'+(i * CW + 25)+'" y="'+y(s.tot)+'" width="50" height="'
          + (H - y(s.tot)).toFixed(1)+'"><title>'+bulle+'</title></rect>';
   });
-  var pts = [];
-  sem.forEach(function(s, i){ if(s.valide) pts.push((i * CW)+','+y(s.chro), ((i + 1) * CW)+','+y(s.chro)); });
-  if(pts.length) svg += '<polyline class="bc-chro" vector-effect="non-scaling-stroke" points="'+pts.join(' ')+'"></polyline>';
+  troncons.forEach(function(t){
+    svg += '<polyline class="bc-chro" vector-effect="non-scaling-stroke" points="'
+         + t.map(function(p){ return p.x+','+y(p.c); }).join(' ')+'"></polyline>';
+  });
   svg += '<line class="bc-axe" x1="0" x2="800" y1="'+H+'" y2="'+H+'" vector-effect="non-scaling-stroke"></line></svg>';
   var lbls = sem.map(function(s){
     return '<span class="bc-tend-lbl">'+(+s.l.slice(8))+'/'+(+s.l.slice(5, 7))+'<b>'+_bcFmt(s.tot)+'</b>'
