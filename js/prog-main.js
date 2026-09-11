@@ -1949,7 +1949,13 @@ function _bcTendance(uaMap, refIso, todayIso){
     var l = _pevoPlus(lundiRef, -7 * k), fin = _pevoPlus(l, 6);
     var bout = fin <= refIso ? fin : refIso;
     var tot = _bcSomme(uaMap, l, bout), chro = _bcSomme(uaMap, _pevoPlus(bout, -27), bout) / 4;
-    var valide = !!premiere && premiere <= _pevoPlus(bout, -27) && chro > 0;
+    /* …et de la charge AVANT les 7 derniers jours de la fenêtre, comme l'ACWR
+       (hasOlderData) : une chronique faite de la seule semaine jugée n'est pas
+       une référence. Vu sur le compte de démo — une séance cette semaine, une
+       autre il y a un an : l'ACWR disait « données insuffisantes », la bande
+       prétendait le contraire. */
+    var avant = _bcSomme(uaMap, _pevoPlus(bout, -27), _pevoPlus(bout, -7)) > 0;
+    var valide = !!premiere && premiere <= _pevoPlus(bout, -27) && avant && chro > 0;
     var ratio = valide ? tot / chro : null;
     var cls = bout < fin ? 'encours' : (ratio === null || ratio <= 1.3) ? '' : ratio <= 1.5 ? 'prud' : 'risque';
     sem.push({ l:l, tot:tot, chro:chro, valide:valide, cls:cls, ratio:ratio });
@@ -2025,7 +2031,7 @@ function _bilanChargeHtml(uaMap, refIso, todayIso, adhHtml){
     + '</div>'
     + '<div class="bc-carte">'+_bcJoursHtml(uaMap, refIso, todayIso)+'</div>'
     + '<div class="bc-carte bc-acwr"><div>'
-    + '<div class="bc-kpi-l">ACWR — charge aiguë / chronique</div>'
+    + '<div class="bc-kpi-l">ACWR · aiguë / chronique</div>'
     + '<div class="bc-ratio" style="color:'+ab.color+';">'+(acwr.ratio !== null ? String(acwr.ratio).replace('.', ',') : '—')+'</div>'
     + '<span class="bc-chip '+ab.cls+'">'+ab.txt+'</span>'
     + '<div class="bc-acwr-det">Aiguë (7 j) <b>'+_bcFmt(acwr.aigue)+' UA</b><br>Chronique <b>'+_bcFmt(acwr.chronic)+' UA</b> / sem.'
@@ -2084,14 +2090,14 @@ function _weekBilanHTML(){
   html += '<div class="bilan-wf-item"><div class="bilan-wf-val" style="color:var(--accent);">'+stats.charge+'</div><div class="bilan-wf-lbl">UA cette semaine</div></div>';
   if(stats.charge>0){
     // Monotonie
-    html += '<div class="bilan-wf-item"><div class="bilan-wf-val">'+(stats.monotonie!==null?stats.monotonie:'—')+'</div>'
+    html += '<div class="bilan-wf-item"><div class="bilan-wf-val">'+(stats.monotonie!==null?String(stats.monotonie).replace('.', ','):'—')+'</div>'
           + '<div class="bilan-wf-lbl">Monotonie</div>'
           + '<div class="bilan-wf-badge '+monB.cls+'">'+monB.txt+'</div></div>';
     // Strain
     html += '<div class="bilan-wf-item"><div class="bilan-wf-val">'+(stats.strain!==null?stats.strain:'—')+'</div>'
           + '<div class="bilan-wf-lbl">Strain</div></div>';
     // ACWR
-    html += '<div class="bilan-wf-item"><div class="bilan-wf-val" style="color:'+(acwrB.color||'var(--navy)')+';">'+(acwr.ratio!==null?acwr.ratio:'—')+'</div>'
+    html += '<div class="bilan-wf-item"><div class="bilan-wf-val" style="color:'+(acwrB.color||'var(--navy)')+';">'+(acwr.ratio!==null?String(acwr.ratio).replace('.', ','):'—')+'</div>'
           + '<div class="bilan-wf-lbl">ACWR</div>'
           + (acwr.ratio?'<div class="bilan-wf-badge '+acwrB.cls+'">'+acwrB.txt+'</div>':'')+'</div>';
   } else {

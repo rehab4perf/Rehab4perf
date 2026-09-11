@@ -1892,7 +1892,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
    quelle que soit la largeur du panneau — un SVG étiré l'aurait grossi. */
 .bc-chip { display:inline-block; font-size:var(--fs-2xs); font-weight:700; padding:2px 6px; border-radius:4px;
   text-transform:none; letter-spacing:0; }
-.bc-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin-bottom:10px; }
+/* 150 px et pas davantage : à 190, la troisième tuile passait seule à la ligne
+   vers 500 px de large, et laissait un trou à côté d'elle. */
+.bc-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:10px; }
 .bc-kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 13px; }
 .bc-kpi-l { font-size:var(--fs-2xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
 .bc-kpi-v { font-size:var(--fs-2xl); font-weight:800; color:var(--navy); line-height:1.2; margin-top:3px;
@@ -4787,6 +4789,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260911j"></script>
+<script src="js/prog-main.js?v=20260911k"></script>
 </body>
 </html>

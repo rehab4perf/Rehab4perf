@@ -92,6 +92,13 @@ ok('… une bande favorable par semaine qui a 28 jours d\'historique (5 sur 8)',
    (h.match(/class="bc-bande"/g) || []).length + ' bandes');
 ok('… et pas de couleur d\'état sur une reprise sans historique', (h.match(/class="bc-b risque"/g) || []).length === 1);
 ok('… et la charge chronique en ligne', /class="bc-chro"/.test(h));
+/* Vu en ligne sur le compte de démo : une séance cette semaine, une autre il y
+   a un an. La chronique n'est faite que de la semaine jugée — l'ACWR dit
+   « données insuffisantes », la bande ne doit pas prétendre le contraire. */
+const UA2 = { '2025-09-01': 300, '2026-09-08': 325 };
+let h2 = ''; try { h2 = ctx._bilanChargeHtml(UA2, '2026-09-11', '2026-09-11', ''); } catch (e) { h2 = 'ERREUR ' + e.message; }
+ok('pas de bande quand la chronique ne tient qu\'à la semaine elle-même', !/class="bc-bande"/.test(h2) && /Données insuffisantes/.test(h2),
+   (h2.match(/class="bc-bande"/g) || []).length + ' bande(s)');
 /* Semaine du 31 août : 3 148 contre une chronique de (4 × 1 500 … ) — ratio > 1,5. */
 ok('la semaine du pic sort de la bande, en couleur d\'état', /class="bc-b risque"/.test(h) || /class="bc-b prud"/.test(h));
 ok('la semaine en cours est marquée comme telle', /class="bc-b encours"/.test(h));
