@@ -146,7 +146,10 @@ if (N) {
 /* ── Le volume, sur la période exacte ────────────────────────────────────── */
 console.log('\nLe volume suit la période exacte');
 function tranche(src, deb, fin) { const d = src.indexOf(deb), f = src.indexOf(fin, d + 1); return d < 0 || f < d ? '' : src.slice(d, f); }
-const codeVol = tranche(pdata, "/* ── Volume d'entrainement par sport — trois vues", "/* ── Fin de volume-sport.js");
+/* Les repères des barres (qualite/volume-axe-cas.js) lisent les dates : on
+   joint les fonctions de période, tirées du vrai fichier. */
+const codeVol = ['_pevoJour', '_pevoIso', '_pevoPlus', '_pevoLundi', '_pevoFinMois', '_pevoAujourdhuiIso', '_pevoFmtCourt'].map(fn).join('\n')
+  + tranche(pdata, "/* ── Volume d'entrainement par sport — trois vues", "/* ── Fin de volume-sport.js");
 const S = new Function(tranche(pdata, 'var R4P_SPORTS = [', "/* ── Période de l'Évolution") + '\nreturn { S:R4P_SPORTS, A:R4P_SPORT_AUTRE };')();
 function semainesAvec(km) {                               // km : { 'AAAA-MM-JJ': km }
   const out = [];

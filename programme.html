@@ -2613,6 +2613,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .vol-c-val { font-size: var(--fs-lg); font-weight: 700; letter-spacing: -.02em;
   font-variant-numeric: tabular-nums; color: var(--text); }
 .vol-spark { display: block; width: 100%; height: 40px; }
+/* Repères sous les barres (qualite/volume-axe-cas.js) : ce que vaut une barre. */
+.vol-axe { display:flex; margin-top:3px; }
+.vol-axe span { flex:1 1 0; min-width:0; text-align:center; font-size:var(--fs-2xs); color:var(--text3);
+  white-space:nowrap; overflow:hidden; font-variant-numeric:tabular-nums; }
+.vol-axe span.auj { color:var(--accent); font-weight:700; }
+.vol-axe-leg { font-size:var(--fs-2xs); color:var(--text3); margin:0 2px 6px; }
 
 .vol-tbl { margin-top: 12px; }
 .vol-tbl summary { font-size: var(--fs-sm); font-weight: 600; color: var(--accent);
@@ -3661,7 +3667,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div><!-- /tool-panel-overlay -->
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
-<script src="js/volume-sport.js?v=20260911i"></script>
+<script src="js/volume-sport.js?v=20260911t"></script>
 <script src="js/prog-data.js?v=20260911q"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->

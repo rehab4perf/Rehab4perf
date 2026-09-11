@@ -374,6 +374,12 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
   background:var(--bg); border:1px solid var(--border); border-radius:8px;
   padding:5px 10px; font-size:var(--fs-sm); cursor:pointer; color:var(--text); flex-shrink:0;
 }
+/* Retour à la vue d'où l'on est entré dans un jour (qualite/volume-axe-cas.js). */
+.cal-retour-btn {
+  background:var(--surface); border:1px solid var(--accent); border-radius:8px; color:var(--accent);
+  padding:5px 10px; font-family:inherit; font-size:var(--fs-sm); font-weight:700; cursor:pointer; flex-shrink:0;
+}
+.cal-retour-btn:hover { background:var(--bg); }
 /* Vue toggle mois/semaine */
 .view-toggle {
   display:flex; gap:2px; background:var(--bg); border-radius:8px; padding:3px; flex-shrink:0;
@@ -695,7 +701,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
        la ligne meta du praticien n'a pas le protocole actif. -->
   <script src="js/protocoles-ref.js?v=20260910g"></script>
   <!-- Volume d'entraînement : le même calcul que le builder (qualite/athlete-volume-cas.js). -->
-  <script src="js/volume-sport.js?v=20260911i"></script>
+  <script src="js/volume-sport.js?v=20260911t"></script>
 </head>
 <body>
 
@@ -751,6 +757,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 .vol-c-nom { display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-sm); font-weight:700; color:var(--text); }
 .vol-c-val { font-size:var(--fs-lg); font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:var(--text); }
 .vol-spark { display:block; width:100%; height:40px; }
+/* Repères sous les barres (qualite/volume-axe-cas.js) : ce que vaut une barre. */
+.vol-axe { display:flex; margin-top:3px; }
+.vol-axe span { flex:1 1 0; min-width:0; text-align:center; font-size:var(--fs-2xs); color:var(--text3);
+  white-space:nowrap; overflow:hidden; font-variant-numeric:tabular-nums; }
+.vol-axe span.auj { color:var(--accent); font-weight:700; }
+.vol-axe-leg { font-size:var(--fs-2xs); color:var(--text3); margin:0 2px 6px; }
 .vol-tbl { margin-top:12px; }
 .vol-tbl summary { font-size:var(--fs-sm); font-weight:600; color:var(--accent); cursor:pointer; padding:6px 0; }
 .vol-tbl table { width:100%; border-collapse:collapse; font-size:var(--fs-sm); margin-top:6px; }
@@ -1034,6 +1046,8 @@ var _pratId   = '';    // praticien_id transmis via ?prat=
 var _calYear = new Date().getFullYear();
 var _calMonth = new Date().getMonth();
 var _calView = 'month'; // 'month' | 'week' | 'day'
+/* Vue d'où l'on est entré dans un jour — pour en revenir (qualite/volume-axe-cas.js). */
+var _calVuePrec = null;
 var _calWeekStart = _getMonday(new Date()); // Lundi de la semaine courante
 var _calDayDate   = (function(){ var d=new Date(); d.setHours(0,0,0,0); return d; }()); // Jour affiché
 var _calEvents         = []; // [{id, date, programme_id, programmes:{nom}}]
@@ -1273,6 +1287,7 @@ function renderCalendar(){
 }
 
 function setCalView(view){
+  _calVuePrec = null;          // un choix de vue à la main : plus rien à quoi revenir
   _calView = view;
   if(view === 'week'){
     if(_isMobile){
@@ -1308,6 +1323,13 @@ function goToToday(){
 }
 
 function jumpToDay(dateStr){
+  /* Taper un jour ouvrait la vue Jour sans rien pour revenir : il fallait
+     retrouver « Mois ». On garde la vue d'où l'on vient, et une entrée
+     d'historique — le retour du téléphone y ramène (qualite/volume-axe-cas.js). */
+  if(_calView !== 'day'){
+    _calVuePrec = { vue:_calView, annee:_calYear, mois:_calMonth, semaine:new Date(_calWeekStart) };
+    try { history.pushState({ r4pJour:dateStr }, ''); } catch(e){}
+  }
   var d = new Date(dateStr); d.setHours(0,0,0,0);
   _calDayDate   = d;
   _calWeekStart = _getMonday(d);
@@ -1316,6 +1338,19 @@ function jumpToDay(dateStr){
   _calView  = 'day';
   _renderCalGrid();
 }
+
+function retourVue(){
+  if(history.state && history.state.r4pJour){ history.back(); return; }   // « popstate » fait le reste
+  _revenirVuePrec();
+}
+function _revenirVuePrec(){
+  var p = _calVuePrec;
+  if(!p) return;
+  _calVuePrec = null;
+  _calView = p.vue; _calYear = p.annee; _calMonth = p.mois; _calWeekStart = p.semaine;
+  _renderCalGrid();
+}
+window.addEventListener('popstate', function(){ if(_calView === 'day' && _calVuePrec) _revenirVuePrec(); });
 
 function calMove(dir){
   if(_calView === 'day'){
@@ -1340,7 +1375,10 @@ function calMove(dir){
 
 /* ── Barre de navigation commune ── */
 function _buildCalNav(label){
-  return '<div class="cal-nav">'
+  var retour = (_calView === 'day' && _calVuePrec)
+    ? '<button class="cal-retour-btn" onclick="retourVue()">← Retour ' + (_calVuePrec.vue === 'week' ? 'à la semaine' : 'au mois') + '</button>'
+    : '';
+  return '<div class="cal-nav">' + retour
     + '<button class="cal-nav-btn" onclick="calMove(-1)">◀</button>'
     + '<h2>'+escH(label)+'</h2>'
     + '<button class="cal-nav-btn" onclick="calMove(1)">▶</button>'

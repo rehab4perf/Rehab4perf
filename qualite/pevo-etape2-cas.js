@@ -131,7 +131,10 @@ ok('le panneau passe « Tout » au volume, depuis la première date',
    /_pevoPeriodeTout\(_pevoPremiereDate\(\)/.test(fn('_renderPevoCharts')) || /_pevoPeriodeTout\(_prem/.test(fn('_renderPevoCharts')));
 /* Le volume sans référence : aucun écart inventé. */
 function tranche(src, deb, fin) { const d = src.indexOf(deb), f = src.indexOf(fin, d + 1); return d < 0 || f < d ? '' : src.slice(d, f); }
-const codeVol = tranche(pdata, "/* ── Volume d'entrainement par sport — trois vues", "/* ── Fin de volume-sport.js");
+/* Les repères des barres (qualite/volume-axe-cas.js) lisent les dates : on
+   joint les fonctions de période, tirées du vrai fichier. */
+const codeVol = ['_pevoJour', '_pevoIso', '_pevoPlus', '_pevoLundi', '_pevoFinMois', '_pevoAujourdhuiIso', '_pevoFmtCourt'].map(fn).join('\n')
+  + tranche(pdata, "/* ── Volume d'entrainement par sport — trois vues", "/* ── Fin de volume-sport.js");
 const S = new Function(tranche(pdata, 'var R4P_SPORTS = [', "/* ── Période de l'Évolution") + '\nreturn { S:R4P_SPORTS, A:R4P_SPORT_AUTRE };')();
 const pj = () => [0, 1, 2, 3, 4, 5, 6].map(() => ({ dist: 0, duree: 0, charge: 0, n: 0 }));
 const semaine = (debut, jour, km) => { const p = pj(); p[jour] = { dist: km * 1000, duree: 1800, charge: 100, n: 1 };

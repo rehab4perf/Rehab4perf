@@ -508,21 +508,60 @@ function _volSomme(_volDonnees, debut, fin, cle){
   return t;
 }
 
-function _volBarres(vals, coul, liens){
+/* Repères des barres (qualite/volume-axe-cas.js) : sur le lien athlète, rien
+   ne disait qu'une barre vaut un JOUR (vue Semaine) ou une SEMAINE (vue Mois).
+   Légende, un repère sous chaque barre, aujourd'hui en gras, une bulle. */
+function _volAxe(per){
+  var bk = per.buckets || [], auj = _pevoAujourdhuiIso();
+  var JL = ['L','M','M','J','V','S','D'], JC = ['lun.','mar.','mer.','jeu.','ven.','sam.','dim.'];
+  var MC = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  var duree = function(b){ return Math.round((_pevoJour(b.fin) - _pevoJour(b.debut)) / 86400000) + 1; };
+  var mode = bk.every(function(b){ return b.debut === b.fin; }) ? 'jour'
+           : bk.some(function(b){ return duree(b) > 7; }) ? 'mois' : 'semaine';
+  var pasEtiq = Math.max(1, Math.ceil(bk.length / 12));
+  var etiquettes = [], titres = [], actif = -1;
+  bk.forEach(function(b, i){
+    var d = _pevoJour(b.debut), n1 = +b.debut.slice(8), n2 = +b.fin.slice(8);
+    var e, t;
+    if(mode === 'jour'){ e = JL[(d.getDay() + 6) % 7] + ' ' + n1; t = JC[(d.getDay() + 6) % 7] + ' ' + _pevoFmtCourt(b.debut, true); }
+    else if(mode === 'semaine'){
+      e = n1 + '–' + n2;
+      t = b.debut.slice(5, 7) === b.fin.slice(5, 7) ? 'du ' + n1 + ' au ' + _pevoFmtCourt(b.fin, true)
+                                                    : 'du ' + _pevoFmtCourt(b.debut, true) + ' au ' + _pevoFmtCourt(b.fin, true);
+    }
+    else { e = MC[d.getMonth()]; t = MOIS[d.getMonth()] + ' ' + d.getFullYear(); }
+    etiquettes.push(i % pasEtiq === 0 ? e : '');
+    titres.push(t);
+    if(b.debut <= auj && auj <= b.fin) actif = i;
+  });
+  return { etiquettes:etiquettes, titres:titres, actif:actif,
+           legende:'Une barre = ' + (mode === 'jour' ? 'un jour' : mode === 'semaine' ? 'une semaine' : 'un mois') };
+}
+
+/* `axe` (une période) : toutes les barres pleines — « seule la dernière »
+   mettait en valeur la fin d'une période passée, ce qui ne voulait rien
+   dire —, une bulle par barre, et les repères dessous. */
+function _volBarres(vals, coul, liens, axe){
   var W = 240, H = 44, max = Math.max.apply(null, vals) || 1;
   var pas = W / vals.length, larg = Math.max(3, pas - 4), out = '';
   vals.forEach(function(v, i){
     var h = v > 0 ? Math.max(2, (v/max) * (H - 4)) : 0;
     var x = i*pas + (pas-larg)/2;
+    var bulle = axe && axe.titres ? escH(axe.titres[i]) : '';
     out += '<rect x="'+x.toFixed(1)+'" y="'+(H-h).toFixed(1)+'" width="'+larg.toFixed(1)
         +  '" height="'+h.toFixed(1)+'" rx="2" fill="'+coul+'"'
-        +  (i === vals.length-1 ? '' : ' opacity="0.4"')+'></rect>';
+        +  ((axe || i === vals.length-1) ? '' : ' opacity="0.4"')+'>'+(bulle ? '<title>'+bulle+'</title>' : '')+'</rect>';
     /* Zone cliquable sur toute la hauteur : une barre nulle s'ouvre aussi. */
     var ln = liens && liens[i];
     if(ln) out += '<rect x="'+(i*pas).toFixed(1)+'" y="0" width="'+pas.toFixed(1)+'" height="'+H+'" fill="transparent"'
-      + ' onclick="pevoOuvrirPeriode(\''+ln.unite+'\',\''+ln.date+'\')" style="cursor:pointer"><title>'+ln.titre+'</title></rect>';
+      + ' onclick="pevoOuvrirPeriode(\''+ln.unite+'\',\''+ln.date+'\')" style="cursor:pointer"><title>'+(bulle ? bulle + ' — ' : '')+ln.titre+'</title></rect>';
   });
-  return '<svg class="vol-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+out+'</svg>';
+  var svg = '<svg class="vol-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+out+'</svg>';
+  if(!axe) return svg;
+  return svg + '<div class="vol-axe">' + axe.etiquettes.map(function(t, i){
+    return '<span' + (i === axe.actif ? ' class="auj"' : '') + '>' + escH(t) + '</span>';
+  }).join('') + '</div>';
 }
 
 /* `nav` : le sélecteur de période propre à l'espace athlète, posé sous le
@@ -658,6 +697,7 @@ function _volHtml(_volDonnees, fenetre, opts){
   }
 
   /* ── Vue 3 : douze semaines, un cadre par sport ───────────────── */
+  var axeBase = per ? _volAxe(per) : null;
   var cadres = actifs.map(function(sp){
     /* Chaque barre ouvre sa période (la semaine d'un mois, le mois d'une année). */
     var liens = (per && per.sousUnite) ? per.buckets.map(function(bk){
@@ -672,7 +712,8 @@ function _volHtml(_volDonnees, fenetre, opts){
       + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+escH(sp.nom)+'</span>'
       + '<span class="vol-c-val">'+_volFmt(_volValeur(c, sp), sp.unite)
       + (sp.unite === 'km' ? ' km' : '')+'</span></div>'
-      + _volBarres(vals, sp.couleur, liens)+'</div>';
+      + _volBarres(vals, sp.couleur, liens, axeBase ? { etiquettes:axeBase.etiquettes, actif:axeBase.actif,
+          titres:axeBase.titres.map(function(t, i){ return t + ' · ' + _volFmt(vals[i], sp.unite) + (sp.unite === 'km' ? ' km' : ''); }) } : null)+'</div>';
   }).join('');
 
   /* La vue TABLEAU n'est pas un supplement : la couleur ne doit jamais porter
@@ -689,6 +730,7 @@ function _volHtml(_volDonnees, fenetre, opts){
   return _volCadre(
       '<div class="vol-tuiles">'+tuiles+'</div>'
     + (rep ? '<div class="vol-rep">'+rep+'</div><div class="vol-leg">'+leg+'</div>' : '')
+    + (axeBase ? '<div class="vol-axe-leg">'+axeBase.legende+'</div>' : '')
     + '<div class="vol-cadres">'+cadres+'</div>'
     + '<details class="vol-tbl"><summary>Voir les mêmes chiffres en tableau</summary>'
     + '<table>'+tbl+'</table></details>', per || n, opts.nav);
