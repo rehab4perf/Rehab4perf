@@ -74,9 +74,19 @@ Deux formats de template coexistent et sont tous deux lus : avec séparateurs
 (enregistrés après la refonte) et avec `etapeId` seul (avant).
 
 **Le lien `_builderFromTemplate`** — celui qui transforme le bouton en « Mettre
-à jour le template » — ne s'établit que si la séance était **vide** avant
-l'injection. Ajouté par-dessus autre chose, on compose une nouvelle séance : la
-mettre à jour écraserait le template avec un contenu qui n'est plus le sien.
+à jour le modèle » — ne se pose que sur demande **explicite** :
+`loadTemplate(id, true)`, appelé par `_sidebarLoadProg` via `modifierModele`
+(`node qualite/modele-verbes-cas.js`). Il se posait quand la séance était VIDE :
+le même clic « Ajouter » voulait dire « j'ajoute » ou « je modifie le modèle »
+selon l'état de la séance, sans que rien ne le dise — signalé par le praticien.
+Deux verbes désormais, un par bouton : **Ajouter** (⤓, « Ajouter » du panneau
+Biblio, « + Ajouter à la séance ») ne change jamais la nature de la séance —
+ni lien au modèle (un modèle ouvert le reste), ni séance planifiée, ni phase
+liée ; **Modifier le modèle** (crayon, carte du répertoire) ferme la séance en
+cours, en le demandant si elle n'est pas enregistrée. Un bandeau
+(`_majBandeauMode`) dit le mode en permanence : bleu pour la séance d'un
+patient, ambre pour un modèle (« Quitter le modèle », « Utiliser pour un
+patient »).
 
 `loadSeance` fait exception et remplace : charger une séance enregistrée est un
 autre geste, et il confirme.

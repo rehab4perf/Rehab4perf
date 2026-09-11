@@ -4930,7 +4930,8 @@ function _renderBuilderLibraryUI(){
         +'<div class="builder-lib-sname">'+escH(p.nom||'Sans nom')+'</div>'
         +(meta.length?'<div class="builder-lib-smeta">'+meta.join(' · ')+'</div>':'')
         +'</div>'
-        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter le contenu de ce modèle à la séance en cours">Ajouter</button>'
+        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter à la séance en cours — le modèle n\'est pas modifié">Ajouter</button>'
+        +'<button class="builder-lib-edit" onclick="modifierModele(\''+pid+'\')" title="Modifier le modèle lui-même">✎</button>'
         +'</div>';
     }).join('');
   }
@@ -5116,7 +5117,7 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
   if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
   h += '<button class="picker-fav-btn'+(isFavPicker?' active':'')+'" onclick="event.stopPropagation();_togglePickerFav(\''+escJS(String(p.id))+'\')" title="Épingler en favoris">★</button>';
-  h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Ajouter tout le contenu de cette séance à la séance en cours">⤓</button>';
+  h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Ajouter à la séance en cours — le modèle n\'est pas modifié">⤓</button>';
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
 
@@ -5126,7 +5127,12 @@ function _pickerRenderTemplate(p, search, addedLibIds){
     /* « Ajouter tous les blocs » passe par _injecterTemplate avec les donnees
        COMPLETES : la, les etapes sont pertinentes, on reprend le decoupage du
        repertoire tel quel. C'est le seul chemin qui importe des etapes. */
-    h += '<button class="picker-add-all" onclick="_addAllBlocsFromTemplate(\''+p.id+'\')">+ Ajouter tous les blocs</button>';
+    /* Deux verbes côte à côte, et leurs mots disent lequel fait quoi
+       (qualite/modele-verbes-cas.js). */
+    h += '<div class="picker-actions">'
+       + '<button class="picker-add-all" onclick="_addAllBlocsFromTemplate(\''+p.id+'\')" title="Copie tout le modèle dans la séance en cours — le modèle n\'est pas modifié">+ Ajouter à la séance</button>'
+       + '<button class="picker-edit-all" onclick="modifierModele(\''+escJS(String(p.id))+'\')" title="Ouvre le modèle lui-même : ce que vous changez s\'enregistre dans le modèle, chez aucun patient">✎ Modifier le modèle</button>'
+       + '</div>';
     srcReels.forEach(function(entree){
       var bloc = entree.b, bi = entree.i;
       if(bloc.type==='cardio'){
@@ -5459,16 +5465,16 @@ function loadLibraryTemplate(id){
     var t = data[0];
     var d = {};
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
-    // Comme partout : on AJOUTE, on ne remplace pas.
-    var seanceVide = !(blocs && blocs.length);
+    /* Comme partout : on AJOUTE, on ne remplace pas — et l'on ne change pas la
+       nature de la séance (qualite/modele-verbes-cas.js). Une séance vide
+       perdait ici son identité : planifiée, elle ne s'enregistrait plus chez le
+       patient ; un modèle ouvert perdait son lien. */
     var n = _injecterTemplate(d);
-    if(seanceVide) _currentProgId = null;
-    _builderFromTemplate = null; // vient de la bibliotheque : save creera un nouveau programme
     _applyBuilderReadOnly(false);
     renderSession();
     _updateBuilderTitle();
     _refreshSaveBtn();
-    if(!seanceVide){ _builderSaved = false; _refreshDraftBadge(); }
+    _builderSaved = false; _refreshDraftBadge();
     _showToast('🌐 « '+escH(t.nom||'Modèle')+' » — '+n+' bloc'+(n>1?'s':'')+' ajouté'+(n>1?'s':''));
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
@@ -5634,6 +5640,12 @@ function _refreshSaveBtn(){
   var btn = document.getElementById('prog-cloud-save-btn');
   var updBtn = document.getElementById('prog-update-btn');
   var planBtn = document.getElementById('builder-plan-btn');
+  /* « Utiliser pour un patient » n'existe qu'en modification d'un modèle ; le
+     bandeau de mode suit les mêmes changements que ce bouton. */
+  var utilBtn = document.getElementById('builder-utiliser-btn');
+  var enModele = _builderMode !== 'template' && !!(_builderFromTemplate && !_currentSeanceId && !_currentProgId);
+  if(utilBtn) utilBtn.style.display = enModele ? '' : 'none';
+  if(typeof _majBandeauMode === 'function') _majBandeauMode();
   if(!btn) return;
   /* Mode template : un seul verbe, et aucune question de destination a la
      sortie — elle a ete posee a l'entree. « Planifier » et « Mettre a jour le
@@ -5761,7 +5773,7 @@ function duplicateTemplate(){
   .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
 }
 
-function loadTemplate(id){
+function loadTemplate(id, ouvrirModele){
   /* Un template s'AJOUTE a la seance courante, il ne la remplace jamais.
      « Vider » est un geste separe : c'est lui qu'on emploie pour repartir du
      template seul. Il n'y a donc qu'un seul verbe, et rien ne se perd sans
@@ -5771,18 +5783,20 @@ function loadTemplate(id){
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
     if(!d.blocs && t._blocs) d = { blocs:t._blocs, etapes:t._etapes||[], notes:t.notes||'' };
 
-    var seanceVide = !(blocs && blocs.length);
     var n = _injecterTemplate(d);
 
     // Les notes du template ne s'imposent que si la seance n'en avait pas.
     if(d.notes && !(_notes||'').trim()) _notes = d.notes;
 
-    /* Le lien « cette seance EST ce template » n'a de sens que si le template
-       est seul dans la seance — c'est lui qui transforme le bouton en « Mettre
-       a jour le template ». Ajoute par-dessus autre chose, on compose une
-       nouvelle seance : le bouton doit proposer d'enregistrer, pas d'ecraser
-       le template avec un contenu qui n'est plus le sien. */
-    if(seanceVide){
+    /* Le lien « cette seance EST ce modele » — celui qui transforme le bouton
+       en « Mettre a jour le modele » — ne se pose que sur demande EXPLICITE :
+       « Modifier le modele » (qualite/modele-verbes-cas.js). Il se posait
+       quand la seance etait VIDE : le meme clic « Ajouter » voulait dire
+       « j'ajoute » ou « je modifie le modele » selon l'etat de la seance, et
+       rien ne le disait. Ajouter ne touche plus a la nature de la seance : ni
+       lien au modele (un modele ouvert le reste), ni seance planifiee, ni
+       phase liee. */
+    if(ouvrirModele){
       _currentProgId = null;
       _builderFromTemplate = String(t.id);
       /* Le champ de nom EST ce qui sera re-enregistre : le laisser vide, c'est
@@ -5792,8 +5806,6 @@ function loadTemplate(id){
       if(_pnEl && !(_pnEl.value||'').trim()) _pnEl.value = t.nom || '';
       _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
       _updateActiveGroupBadge();
-    } else {
-      _builderFromTemplate = null;
     }
 
     _applyBuilderReadOnly(false);
@@ -5804,8 +5816,8 @@ function loadTemplate(id){
     if(_builderReadOnly && pn) pn.readOnly = true;
     else if(pn) pn.readOnly = false;
 
-    if(seanceVide){
-      // Rien n'a ete compose : l'etat charge vaut « sauvegarde ».
+    if(ouvrirModele){
+      // Le modele vient d'etre ouvert, rien n'y est change : l'etat charge vaut « sauvegarde ».
       _lastSavedHash = _sessionHash();
       _builderSaved = true;
     } else {
@@ -7232,7 +7244,7 @@ function _toggleTmplCard(id){
 /* Le clic sur une carte ne redirige plus vers le builder : depuis l'agenda,
    il n'y a pas de seance en cours a laquelle ajouter quoi que ce soit, et
    un repertoire est fait pour etre consulte avant d'etre choisi. La carte se
-   deplie sur place ; « Ouvrir dans le builder » devient un geste explicite,
+   deplie sur place ; « Modifier le modèle » devient un geste explicite,
    au lieu d'etre le resultat d'un simple clic de consultation. */
 /* Retire du nom d'une phase le prefixe qui repete son protocole. Sous « LCA »,
    « LCA — Phase 1 : Recuperation » se lit « Phase 1 : Recuperation » : le
@@ -7303,7 +7315,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
 }
 
 /* Contenu deplie d'une carte : lecture seule, juste de quoi reconnaitre le
-   repertoire avant de decider. « Ouvrir dans le builder » reste le seul
+   repertoire avant de decider. « Modifier le modèle » reste le seul
    geste qui compose quelque chose — la regle « on ajoute sans rien demander »
    s'applique a lui, pas au simple fait de regarder. */
 /* Les separateurs ne sont pas des blocs : `{type:'etape'}` ouvre une etape
@@ -7379,7 +7391,7 @@ function _renderTmplCardTree(bl, pid, etapes){
     }
   });
   h += '</div>';
-  h += '<button class="stmpl-card-tree-open" onclick="event.stopPropagation();_sidebarLoadProg(\''+pid+'\')">Ouvrir dans le builder</button>';
+  h += '<button class="stmpl-card-tree-open" onclick="event.stopPropagation();modifierModele(\''+pid+'\')">Modifier le modèle</button>';
   return h;
 }
 
@@ -7421,7 +7433,7 @@ function _pickerExpandAll(){
   if(scroll) scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){ el.classList.add('open'); });
 }
 
-/* « Ouvrir dans le builder » depuis l'agenda vaut « + Seance », avec le
+/* « Modifier le modèle » depuis l'agenda vaut « + Seance », avec le
    repertoire dedans.
 
    Sans remise a zero, le repertoire s'ajoutait au contenu laisse en memoire —
@@ -7435,8 +7447,49 @@ function _sidebarLoadProg(id){
   _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
   _updateActiveGroupBadge();
   _applyBuilderReadOnly(false);
-  loadTemplate(id);
+  loadTemplate(id, true);
   _enterBuilderMode();
+}
+
+/* ── Modèles : deux verbes, jamais un troisième (qualite/modele-verbes-cas.js)
+   AJOUTER copie le contenu et ne change jamais la nature de la séance.
+   MODIFIER LE MODÈLE ouvre le modèle lui-même : c'est le SEUL chemin vers
+   « Mettre à jour le modèle ». Il ferme la séance en cours — si elle n'est pas
+   enregistrée, on le demande : elle se perdait sinon sans un mot. */
+function modifierModele(id){
+  var nonEnregistree = !!(blocs && blocs.length) && _sessionHash() !== _lastSavedHash;
+  if(!nonEnregistree){ _sidebarLoadProg(id); return; }
+  _confirmDialog({ id:'cd-modifier-modele', emoji:'✏️', title:'Modifier le modèle ?',
+    body:'La séance en cours n\'est pas enregistrée : elle sera fermée, et le modèle s\'ouvrira à sa place.',
+    confirmLabel:'Modifier le modèle', confirmColor:'var(--warn-d)' }, function(){ _sidebarLoadProg(id); });
+}
+/* « Quitter le modèle » : on en sort sans rien écrire. Modifié et pas mis à
+   jour, on le demande d'abord. */
+function quitterModele(){
+  var sortir = function(){
+    _resetBuilderState();
+    _lastSavedHash = _sessionHash(); _builderSaved = true;
+    _refreshDraftBadge();
+  };
+  if(!!(blocs && blocs.length) && _sessionHash() !== _lastSavedHash){
+    _confirmDialog({ id:'cd-quitter-modele', emoji:'↩️', title:'Quitter sans mettre à jour ?',
+      body:'Vos changements ne seront pas enregistrés dans le modèle, qui reste tel qu\'il était.',
+      confirmLabel:'Quitter sans mettre à jour' }, sortir);
+    return;
+  }
+  sortir();
+}
+/* « Utiliser pour un patient » : le contenu du modèle devient une séance du
+   patient sélectionné. Le lien au modèle tombe, le modèle n'est pas touché ;
+   on enregistre ou planifie ensuite, comme toute séance. */
+function utiliserModele(){
+  if(!_progPatient){ alert('Sélectionnez d\'abord le patient pour qui utiliser ce modèle.'); return; }
+  _builderFromTemplate = null;
+  _currentProgId = null; _currentSeanceId = null;
+  _builderSaved = false;
+  _updateBuilderTitle(); _refreshSaveBtn(); _refreshDraftBadge();
+  var nom = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+  _showToast('Séance de ' + nom + ' — le modèle reste intact');
 }
 
 /* La colonne `donnees` d'un template contient une CHAINE JSON — doSaveTemplate
@@ -7945,21 +7998,58 @@ function _updateBuilderTitle(){
     if(titleEl) titleEl.textContent = _activeGroupNom
       ? 'Nouvelle phase — ' + _activeGroupNom
       : 'Nouveau modèle';
-    if(dateBar) dateBar.style.display = 'none';
+    _majBandeauMode();
+    return;
+  }
+  /* Un modèle ouvert ne porte pas le nom du patient sélectionné : il n'est à
+     personne. */
+  if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){
+    var _mT = (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); });
+    if(titleEl) titleEl.textContent = 'Modèle : ' + (_mT ? (_mT.nom || 'Modèle') : 'Modèle');
+    _majBandeauMode();
     return;
   }
   var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
   if(titleEl) titleEl.textContent = patNom || 'Nouvelle séance';
-  if(dateBar){
-    if(_builderDate){
-      var p = _builderDate.split('-');
-      var months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-      dateBar.textContent = '📅 Séance du ' + parseInt(p[2]) + ' ' + months[parseInt(p[1])-1] + ' ' + p[0];
-      dateBar.style.display = 'block';
-    } else {
-      dateBar.style.display = 'none';
-    }
+  if(dateBar) _majBandeauMode();
+}
+
+/* ── Le bandeau de mode (qualite/modele-verbes-cas.js) ──────────────
+   Sous l'en-tête, en permanence : la séance d'un patient (bleu), ou la
+   modification d'un modèle (ambre) — « aucun patient n'est concerné ». Le
+   seul signe du mode était le libellé du bouton d'enregistrement : on le
+   découvrait en voulant enregistrer. */
+function _majBandeauMode(){
+  var bar = document.getElementById('builderDateBar');
+  if(!bar) return;
+  var enModele = _builderMode === 'template' || !!(_builderFromTemplate && !_currentSeanceId && !_currentProgId);
+  bar.classList.toggle('mode-modele', enModele);
+  if(_builderMode === 'template'){
+    bar.innerHTML = '✎ <b>' + escH(_activeGroupNom ? 'Nouvelle phase — ' + _activeGroupNom : 'Nouveau modèle')
+                  + '</b> — aucun patient n\'est concerné';
+    bar.style.display = '';
+    return;
   }
+  if(enModele){
+    var ref = (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); });
+    bar.innerHTML = '✎ <b>Modification du modèle « ' + escH(ref ? (ref.nom || 'Modèle') : 'Modèle') + ' »</b>'
+                  + ' — aucun patient n\'est concerné'
+                  + '<button type="button" class="bdb-quitter" onclick="quitterModele()">Quitter le modèle</button>';
+    bar.style.display = '';
+    return;
+  }
+  var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
+  var date = '';
+  if(_builderDate){
+    var p = _builderDate.split('-');
+    var M = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    date = parseInt(p[2]) + ' ' + M[parseInt(p[1])-1] + ' ' + p[0];
+  }
+  if(!patNom && !date){ bar.innerHTML = ''; bar.style.display = 'none'; return; }
+  /* « d'Antoine », « de Guillaume » : l'élision devant une voyelle. */
+  var de = /^[aeiouyhàâéèêëîïôöûü]/i.test(patNom) ? 'd’' : 'de ';
+  bar.innerHTML = '📅 ' + (patNom ? 'Séance ' + de + escH(patNom) + (date ? ' · ' + date : '') : 'Séance du ' + date);
+  bar.style.display = '';
 }
 
 // ── Override openCalPicker pour v2 : ouvrir le builder sur le jour cliqué ──
