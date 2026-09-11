@@ -4951,9 +4951,11 @@ var _pevoShowFuture  = false; // false = séances ≤ aujourd'hui seulement
 
 /* Attache les events tooltip sur les hit areas (même logique que bilan.html) */
 var _pevoTtOpen = null;
-var _pevoFilterDays = null; // null = tout, sinon jours
-var _pevoFilterFrom = '';
+var _pevoFilterDays = null; // reste à null : les préréglages glissants ont disparu
+var _pevoFilterFrom = '';   // bornes ISO de la période choisie ('' = sans borne)
 var _pevoFilterTo   = '';
+var _pevoUnite    = 'mois'; // semaine | mois | trimestre | annee | tout | perso
+var _pevoDecalage = 0;      // 0 = période en cours, -1 = la précédente…
 function _attachPevoEvents() {
   if(!document._pevoDocListener){
     document._pevoDocListener = true;
@@ -4986,51 +4988,176 @@ function _closePevoTt(){
   if(_pevoTtOpen){ var g=_pevoTtOpen.svgEl.getElementById(_pevoTtOpen.ttId); if(g) g.setAttribute('visibility','hidden'); _pevoTtOpen=null; }
 }
 
-/* ── Barre de filtre de date pevo ── */
+/* ── Période de l'Évolution : une UNITÉ et un DÉCALAGE ──────────────────
+   Les préréglages « 1 semaine, 1 mois, 3 mois… » ne donnaient qu'une fenêtre
+   glissante finissant aujourd'hui : impossible de regarder mars, et « 1 mois »
+   valait cinq semaines. Décision du praticien (piste 1) : une unité — semaine,
+   mois, trimestre, année — et des flèches pour reculer, jamais au-delà
+   d'aujourd'hui. Les périodes sont CALENDAIRES. L'écart se mesure contre la
+   période précédente de même unité, coupée au même avancement si la période
+   est en cours, entière sinon. « Tout » et « Personnalisé » restent
+   (qualite/pevo-periode-cas.js). */
+function _pevoJour(iso){ var x = String(iso).split('-'); return new Date(+x[0], +x[1] - 1, +x[2]); }
+function _pevoIso(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function _pevoPlus(iso, n){ var d = _pevoJour(iso); d.setDate(d.getDate() + n); return _pevoIso(d); }
+function _pevoLundi(iso){ var d = _pevoJour(iso); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return _pevoIso(d); }
+function _pevoFinMois(y, m){ return _pevoIso(new Date(y, m + 1, 0)); }
+function _pevoAujourdhuiIso(){ return _pevoIso(new Date()); }
+/* « 7 » ou « 7 sept. » */
+function _pevoFmtCourt(iso, avecMois){
+  var MC = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var d = _pevoJour(iso);
+  return d.getDate() + (avecMois ? ' ' + MC[d.getMonth()] : '');
+}
+/* Sous-périodes des barres : jours, semaines (lundi → dimanche, coupées aux
+   bornes) ou mois. */
+function _pevoBuckets(debut, fin, mode){
+  var out = [], cur = debut;
+  while(cur <= fin){
+    var f;
+    if(mode === 'jour') f = cur;
+    else if(mode === 'semaine') f = _pevoPlus(_pevoLundi(cur), 6);
+    else { var d = _pevoJour(cur); f = _pevoFinMois(d.getFullYear(), d.getMonth()); }
+    if(f > fin) f = fin;
+    out.push({ debut:cur, fin:f });
+    cur = _pevoPlus(f, 1);
+  }
+  return out;
+}
+function _pevoPeriode(unite, decalage, auj){
+  var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  var MC = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+  var t = _pevoJour(auj), y = t.getFullYear(), m = t.getMonth(), o = decalage || 0;
+  var debut, fin, refDebut, refFin, libelle, aRef, mode, feminin = false;
+  if(unite === 'semaine'){
+    debut = _pevoPlus(_pevoLundi(auj), 7 * o); fin = _pevoPlus(debut, 6);
+    refDebut = _pevoPlus(debut, -7); refFin = _pevoPlus(refDebut, 6);
+    libelle = 'Semaine du ' + _pevoFmtCourt(debut, _pevoJour(debut).getMonth() !== _pevoJour(fin).getMonth())
+            + ' au ' + _pevoFmtCourt(fin, true);
+    aRef = 'à la semaine du ' + _pevoFmtCourt(refDebut, true); mode = 'jour'; feminin = true;
+  } else if(unite === 'mois'){
+    var dm = new Date(y, m + o, 1), rm = new Date(y, m + o - 1, 1);
+    debut = _pevoIso(dm); fin = _pevoFinMois(dm.getFullYear(), dm.getMonth());
+    refDebut = _pevoIso(rm); refFin = _pevoFinMois(rm.getFullYear(), rm.getMonth());
+    libelle = MOIS[dm.getMonth()].charAt(0).toUpperCase() + MOIS[dm.getMonth()].slice(1) + ' ' + dm.getFullYear();
+    aRef = 'à ' + MOIS[rm.getMonth()] + (rm.getFullYear() !== dm.getFullYear() ? ' ' + rm.getFullYear() : '');
+    mode = 'semaine';
+  } else if(unite === 'trimestre'){
+    var q = Math.floor(m / 3) + o, yq = y + Math.floor(q / 4), qq = ((q % 4) + 4) % 4;
+    var rq = qq - 1, yr = yq; if(rq < 0){ rq = 3; yr--; }
+    debut = _pevoIso(new Date(yq, qq * 3, 1)); fin = _pevoFinMois(yq, qq * 3 + 2);
+    refDebut = _pevoIso(new Date(yr, rq * 3, 1)); refFin = _pevoFinMois(yr, rq * 3 + 2);
+    libelle = 'T' + (qq + 1) + ' ' + yq + ' · ' + MC[qq * 3] + ' → ' + MC[qq * 3 + 2];
+    aRef = 'au T' + (rq + 1) + ' ' + yr; mode = 'semaine';
+  } else if(unite === 'annee'){
+    var ya = y + o;
+    debut = ya + '-01-01'; fin = ya + '-12-31'; refDebut = (ya - 1) + '-01-01'; refFin = (ya - 1) + '-12-31';
+    libelle = String(ya); aRef = 'à l\'année ' + (ya - 1); mode = 'mois'; feminin = true;
+  } else return null;
+  var enCours = auj >= debut && auj <= fin, coupee = false;
+  if(enCours){
+    var ecoule = Math.round((_pevoJour(auj) - _pevoJour(debut)) / 86400000);
+    var coupe = _pevoPlus(refDebut, ecoule);
+    if(coupe < refFin){ refFin = coupe; coupee = true; }
+  }
+  var compare = !coupee
+    ? 'Comparé ' + aRef + (feminin ? ' entière.' : ' entier.')
+    : unite === 'semaine'
+      ? 'Comparé ' + aRef + ', arrêtée elle aussi au ' + JOURS[(t.getDay() + 6) % 7] + '.'
+      : 'Comparé ' + aRef + ', arrêté au même avancement (' + _pevoFmtCourt(refDebut, true) + ' → ' + _pevoFmtCourt(refFin, true) + ').';
+  return { unite:unite, debut:debut, fin:fin, enCours:enCours, libelle:libelle,
+           refDebut:refDebut, refFin:refFin, compare:compare, buckets:_pevoBuckets(debut, fin, mode) };
+}
+/* Plage saisie : comparée à la plage de même durée juste avant. */
+function _pevoPeriodePerso(de, a){
+  var n = Math.round((_pevoJour(a) - _pevoJour(de)) / 86400000) + 1;
+  var refFin = _pevoPlus(de, -1), refDebut = _pevoPlus(refFin, -(n - 1));
+  return { unite:'perso', debut:de, fin:a, enCours:false,
+           libelle:_pevoFmtCourt(de, true) + ' → ' + _pevoFmtCourt(a, true) + ' ' + _pevoJour(a).getFullYear(),
+           refDebut:refDebut, refFin:refFin,
+           compare:'Comparé aux ' + n + ' jours juste avant (' + _pevoFmtCourt(refDebut, true) + ' → ' + _pevoFmtCourt(refFin, true) + ').',
+           buckets:_pevoBuckets(de, a, n <= 182 ? 'semaine' : 'mois') };
+}
+function _pevoPeriodeCourante(){
+  if(_pevoUnite === 'perso')
+    return (_pevoFilterFrom && _pevoFilterTo && _pevoFilterTo >= _pevoFilterFrom) ? _pevoPeriodePerso(_pevoFilterFrom, _pevoFilterTo) : null;
+  return _pevoPeriode(_pevoUnite, _pevoDecalage, _pevoAujourdhuiIso());
+}
+/* Les courbes lisent `_pevoFilterFrom` / `_pevoFilterTo` : on y pose la période. */
+function _pevoAppliquerPeriode(){
+  _pevoFilterDays = null;
+  if(_pevoUnite === 'perso') return;               // les dates saisies font foi
+  var p = _pevoPeriodeCourante();
+  _pevoFilterFrom = p ? p.debut : ''; _pevoFilterTo = p ? p.fin : '';
+}
+function setPevoUnite(u){
+  _pevoUnite = u; _pevoDecalage = 0;
+  if(u === 'perso' && !(_pevoFilterFrom && _pevoFilterTo)){
+    var auj = _pevoAujourdhuiIso(), d = _pevoJour(auj);
+    _pevoFilterFrom = _pevoIso(new Date(d.getFullYear(), d.getMonth() - 3, d.getDate())); _pevoFilterTo = auj;
+  }
+  _pevoAppliquerPeriode();
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
+}
+function pevoDecaler(pas){
+  if(_pevoUnite === 'tout' || _pevoUnite === 'perso') return;
+  var n = _pevoDecalage + pas;
+  if(n > 0) return;                                // jamais au-delà d'aujourd'hui
+  _pevoDecalage = n;
+  _pevoAppliquerPeriode();
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
+}
+function pevoRevenirAujourdhui(){
+  _pevoDecalage = 0;
+  _pevoAppliquerPeriode();
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
+}
 function _renderPevoFilterBar(){
-  var presets = [{label:'1 semaine',days:7},{label:'1 mois',days:30},{label:'3 mois',days:90},{label:'6 mois',days:180},{label:'1 an',days:365}];
+  var U = [['semaine','Semaine'],['mois','Mois'],['trimestre','Trimestre'],['annee','Année'],['tout','Tout'],['perso','Personnalisé']];
+  var p = _pevoPeriodeCourante();
   var h = '<div class="pevo-filter-bar">';
-  h += '<button class="pevo-filter-btn'+(_pevoFilterDays===null&&!_pevoFilterFrom?' active':'')+'" onclick="setPevoFilter(null)">Tout</button>';
-  presets.forEach(function(p){
-    h += '<button class="pevo-filter-btn'+(_pevoFilterDays===p.days?' active':'')+'" onclick="setPevoFilter('+p.days+')">'+p.label+'</button>';
-  });
-  var customActive = _pevoFilterFrom||_pevoFilterTo;
-  h += '<button class="pevo-filter-btn'+(customActive?' active':'')+'" onclick="togglePevoCustomFilter()">🗓 Personnalisé</button>';
-  h += '<div id="pevo-custom-dates" style="display:'+(customActive?'flex':'none')+';gap:6px;align-items:center;flex-wrap:wrap;width:100%;margin-top:4px;">';
-  h += '<label style="font-size:.72rem;color:#6B6860">Du</label>';
-  h += '<input type="date" id="pevo-date-from" value="'+(_pevoFilterFrom||'')+'" onchange="setPevoCustomFilter()" style="font-size:.78rem;padding:3px 6px;border:1px solid #D3D1CB;border-radius:6px;">';
-  h += '<label style="font-size:.72rem;color:#6B6860">au</label>';
-  h += '<input type="date" id="pevo-date-to" value="'+(_pevoFilterTo||'')+'" onchange="setPevoCustomFilter()" style="font-size:.78rem;padding:3px 6px;border:1px solid #D3D1CB;border-radius:6px;">';
-  h += '</div>';
+  h += '<div class="pevo-unites" role="group" aria-label="Unité de période">'
+    + U.map(function(x){
+        return '<button class="pevo-unite-btn'+(_pevoUnite===x[0]?' active':'')+'" onclick="setPevoUnite(\''+x[0]+'\')">'+x[1]+'</button>';
+      }).join('') + '</div>';
+  if(p && _pevoUnite !== 'perso'){
+    h += '<div class="pevo-nav">'
+      +  '<button class="pevo-fleche" onclick="pevoDecaler(-1)" aria-label="Période précédente">‹</button>'
+      +  '<span class="pevo-periode-lbl">'+escH(p.libelle)+'</span>'
+      +  '<button class="pevo-fleche" onclick="pevoDecaler(1)" aria-label="Période suivante"'+(_pevoDecalage >= 0 ? ' disabled' : '')+'>›</button>'
+      +  '</div>';
+    if(_pevoDecalage < 0) h += '<button class="pevo-auj" onclick="pevoRevenirAujourdhui()">Aujourd\'hui</button>';
+  }
+  if(_pevoUnite === 'perso'){
+    h += '<div class="pevo-perso">'
+      +  '<label>Du</label><input type="date" id="pevo-date-from" value="'+escH(_pevoFilterFrom||'')+'" onchange="setPevoCustomFilter()">'
+      +  '<label>au</label><input type="date" id="pevo-date-to" value="'+escH(_pevoFilterTo||'')+'" onchange="setPevoCustomFilter()">'
+      +  '</div>';
+  }
   h += '<button class="pevo-future-toggle'+(_pevoShowFuture?' active':'')+'" onclick="togglePevoFuture()" title="Inclure les séances futures programmées">'
     + (_pevoShowFuture ? 'Programmé' : 'Réalisé') + '</button>';
   h += '</div>';
   return h;
 }
-function setPevoFilter(days){
-  _pevoFilterDays = days; _pevoFilterFrom = ''; _pevoFilterTo = '';
-  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
-}
-function togglePevoCustomFilter(){
-  var d = document.getElementById('pevo-custom-dates');
-  if(d) d.style.display = d.style.display==='none'?'flex':'none';
-}
 function setPevoCustomFilter(){
+  _pevoUnite = 'perso'; _pevoDecalage = 0;
   _pevoFilterFrom = (document.getElementById('pevo-date-from')||{}).value||'';
   _pevoFilterTo   = (document.getElementById('pevo-date-to')  ||{}).value||'';
   _pevoFilterDays = null;
   _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
 }
+/* Bornée MÊME en « Programmé » : une période passée ne montre pas les séances
+   d'après. L'ancien filtre levait la borne haute dès que le futur était
+   affiché — ce qui n'avait de sens qu'avec une fenêtre finissant aujourd'hui. */
 function _pevoFilterPts(pts){
   if(!pts) return pts;
   return pts.filter(function(p){
     if(!p.date) return true;
-    if(_pevoFilterDays !== null){
-      var cutoff = new Date(new Date()-_pevoFilterDays*86400000).toISOString().slice(0,10);
-      return p.date >= cutoff;
-    }
     if(_pevoFilterFrom && p.date < _pevoFilterFrom) return false;
-    if(!_pevoShowFuture && _pevoFilterTo && p.date > _pevoFilterTo) return false;
+    if(_pevoFilterTo && p.date > _pevoFilterTo) return false;
     return true;
   });
 }
@@ -5190,6 +5317,7 @@ function _buildUaTrendSection(){
 }
 
 function _renderPevoCharts(exoData, selectedKeys) {
+  _pevoAppliquerPeriode(); // les courbes suivent la période choisie
   var body = document.getElementById('pevoBody');
   if(!body) return;
   var allKeys = Object.keys(exoData);
@@ -5487,7 +5615,16 @@ function _renderPevoCharts(exoData, selectedKeys) {
     /* On agrege DEUX fenetres d'affilee : la seconde moitie est la periode
        choisie, la premiere sert de reference a l'ecart. Comparer une periode
        de trois mois a la seule semaine precedente n'aurait aucun sens. */
-    volSectionHtml = _volHtml(_volumeParSport(_vn * 2), _vn);
+    var _pevoPer = _pevoPeriodeCourante();
+    if(_pevoPer){
+      /* Des semaines depuis le lundi de la RÉFÉRENCE jusqu'à la semaine en
+         cours ; la somme se fait ensuite jour par jour, sur la plage exacte. */
+      var _nbSem = Math.max(1, Math.round((_pevoJour(_pevoLundi(_pevoAujourdhuiIso()))
+                   - _pevoJour(_pevoLundi(_pevoPer.refDebut))) / (7 * 86400000)) + 1);
+      volSectionHtml = _volHtml(_volumeParSport(_nbSem), _pevoPer);
+    } else {
+      volSectionHtml = _volHtml(_volumeParSport(_vn * 2), _vn);
+    }
   } catch(ex){}
   var parts = [volSectionHtml, uaSectionHtml, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
   body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
@@ -5525,6 +5662,31 @@ function _volValeur(cel, sp){ return sp.unite === 'km' ? cel.dist : cel.duree; }
 /* Vue 3 : un cadre par sport. PAS cinq couleurs empilees — cinq teintes ne se
    distinguent pas deux a deux, c'est mesure. Separees, chaque serie n'a plus
    qu'elle-meme a distinguer. */
+/* Somme d'un sport sur une plage EXACTE, jour par jour (détail `parJour`) :
+   septembre commence le 1er, pas au lundi de sa première semaine. Une cellule
+   sans détail ne compte que si la semaine entière tombe dans la plage. */
+function _volPlusIso(iso, n){
+  var x = String(iso).split('-'), d = new Date(+x[0], +x[1] - 1, +x[2] + n);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function _volSomme(_volDonnees, debut, fin, cle){
+  var t = { dist:0, duree:0, charge:0, n:0 };
+  ((_volDonnees && _volDonnees.semaines) || []).forEach(function(sm){
+    var c = sm.sports[cle]; if(!c) return;
+    if(!c.parJour){
+      if(sm.debut >= debut && _volPlusIso(sm.debut, 6) <= fin){ t.dist += c.dist; t.duree += c.duree; t.charge += c.charge; t.n += c.n; }
+      return;
+    }
+    for(var j = 0; j < 7; j++){
+      var jour = _volPlusIso(sm.debut, j);
+      if(jour < debut || jour > fin) continue;
+      var p = c.parJour[j];
+      t.dist += p.dist; t.duree += p.duree; t.charge += p.charge; t.n += p.n;
+    }
+  });
+  return t;
+}
+
 function _volBarres(vals, coul){
   var W = 240, H = 44, max = Math.max.apply(null, vals) || 1;
   var pas = W / vals.length, larg = Math.max(3, pas - 4), out = '';
@@ -5541,7 +5703,8 @@ function _volBarres(vals, coul){
 function _volCadre(corps, fen){
   return '<div class="vol-bloc no-print">'
     + '<div class="vol-titre">Volume d\'entraînement <span>'
-    + (typeof _volLibelleFenetre === 'function' ? _volLibelleFenetre(fen || 12) : '')
+    + ((fen && typeof fen === 'object') ? escH(fen.libelle || '')
+       : (typeof _volLibelleFenetre === 'function' ? _volLibelleFenetre(fen || 12) : ''))
     + ' · Strava et retours de séance</span></div>'
     + corps + '</div>';
 }
@@ -5551,7 +5714,9 @@ function _volHtml(_volDonnees, fenetre){
   var vide = { dist:0, duree:0, charge:0, n:0 };
   var defs = _volDonnees.sports || [];
   var toutes = _volDonnees.semaines;
-  var n = fenetre || Math.ceil(toutes.length / 2);
+  /* Une PÉRIODE (objet de _pevoPeriode) ou, pour « Tout », un nombre de semaines. */
+  var per = (fenetre && typeof fenetre === 'object') ? fenetre : null;
+  var n = per ? 1 : (fenetre || Math.ceil(toutes.length / 2));
   /* La seconde moitie est la periode CHOISIE, la premiere sa reference. */
   var sems = toutes.slice(-n), avant = toutes.slice(0, toutes.length - n);
 
@@ -5592,14 +5757,15 @@ function _volHtml(_volDonnees, fenetre){
     : 'Comparé à la période précédente de même longueur, à jour égal.';
   var der = { sports:{} }, av = { sports:{} };
   defs.forEach(function(sp){
-    der.sports[sp.cle] = cumul(sems, sp.cle);
-    av.sports[sp.cle]  = cumulRef(avant, sp.cle);
+    der.sports[sp.cle] = per ? _volSomme(_volDonnees, per.debut, per.fin, sp.cle) : cumul(sems, sp.cle);
+    av.sports[sp.cle]  = per ? _volSomme(_volDonnees, per.refDebut, per.refFin, sp.cle) : cumulRef(avant, sp.cle);
   });
+  if(per && per.compare) titreEcart = per.compare;
 
   var chargeTot = 0;
   defs.forEach(function(sp){ chargeTot += der.sports[sp.cle].charge; });
   var actifs = defs.filter(function(sp){ return der.sports[sp.cle].n > 0
-                                             || sems.some(function(sm){ return (sm.sports[sp.cle] || vide).n > 0; }); });
+                                             || (!per && sems.some(function(sm){ return (sm.sports[sp.cle] || vide).n > 0; })); });
   /* MASQUER EST INDISCERNABLE D'UNE PANNE. Sans activite, un bloc absent
      laissait le praticien sans moyen de savoir si la fonction avait disparu, si
      le patient n'etait pas relie a Strava, ou s'il n'avait simplement pas
@@ -5607,7 +5773,7 @@ function _volHtml(_volDonnees, fenetre){
   if(!actifs.length){
     return _volCadre('<div class="vol-rien">Aucune activité Strava ni retour de séance sur la période choisie.'
       + '<br><span>Si le patient s\'entraîne, vérifiez que son compte Strava est bien relié '
-      + 'dans l\'onglet Programme.</span></div>', n);
+      + 'dans l\'onglet Programme.</span></div>', per || n);
   }
 
   /* ── Vue 1 : la semaine en chiffres ───────────────────────────── */
@@ -5653,7 +5819,9 @@ function _volHtml(_volDonnees, fenetre){
 
   /* ── Vue 3 : douze semaines, un cadre par sport ───────────────── */
   var cadres = actifs.map(function(sp){
-    var vals = sems.map(function(sm){ return _volValeur(sm.sports[sp.cle] || vide, sp); });
+    var vals = per
+      ? per.buckets.map(function(bk){ return _volValeur(_volSomme(_volDonnees, bk.debut, bk.fin, sp.cle), sp); })
+      : sems.map(function(sm){ return _volValeur(sm.sports[sp.cle] || vide, sp); });
     var c = der.sports[sp.cle] || vide;
     return '<div class="vol-cadre"><div class="vol-c-tete"><span class="vol-c-nom">'
       + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+escH(sp.nom)+'</span>'
@@ -5678,7 +5846,7 @@ function _volHtml(_volDonnees, fenetre){
     + (rep ? '<div class="vol-rep">'+rep+'</div><div class="vol-leg">'+leg+'</div>' : '')
     + '<div class="vol-cadres">'+cadres+'</div>'
     + '<details class="vol-tbl"><summary>Voir les mêmes chiffres en tableau</summary>'
-    + '<table>'+tbl+'</table></details>', n);
+    + '<table>'+tbl+'</table></details>', per || n);
 }
 
 

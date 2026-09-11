@@ -355,9 +355,11 @@ egal('1 semaine → 1 semaine (plus de plancher à deux)', 1, fenetre(7).n);
 egal('… et son libellé est au singulier', 'dernière semaine', lbl(1));
 var dP = pdata.indexOf('function _renderPevoFilterBar(');
 var presetsTxt = dP > 0 ? pdata.slice(dP, pdata.indexOf('\n}\n', dP)) : '';
-ok('le bouton « 1 semaine » est dans la barre, en tête des préréglages',
-   /var presets = \[\{label:'1 semaine',days:7\},\{label:'1 mois',days:30\}/.test(presetsTxt),
-   (presetsTxt.match(/var presets = \[[^\]]*\]/) || ['absent'])[0]);
+/* Les préréglages glissants ont laissé place aux unités calendaires
+   (qualite/pevo-periode-cas.js) : la semaine se choisit par « Semaine ». */
+ok('la barre propose la semaine, par unité et non plus en préréglage',
+   /\['semaine','Semaine'\]/.test(presetsTxt) && !/var presets = \[/.test(presetsTxt),
+   presetsTxt.slice(0, 160));
 /* Le rendu, sur UNE semaine : sa référence est la semaine d'avant. */
 var uneSem = { sports: res.sports, semaines: res.semaines.slice(-2) };
 var h1 = rendre(uneSem);
