@@ -514,13 +514,19 @@ function _volSomme(_volDonnees, debut, fin, cle){
 function _volAxe(per){
   var bk = per.buckets || [], auj = _pevoAujourdhuiIso();
   var JL = ['L','M','M','J','V','S','D'], JC = ['lun.','mar.','mer.','jeu.','ven.','sam.','dim.'];
-  var MC = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  /* Sans point : « janv. févr. mars… » collés se lisaient « janvfévr.mars ». */
+  var MC = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
   var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   var duree = function(b){ return Math.round((_pevoJour(b.fin) - _pevoJour(b.debut)) / 86400000) + 1; };
   var mode = bk.every(function(b){ return b.debut === b.fin; }) ? 'jour'
            : bk.some(function(b){ return duree(b) > 7; }) ? 'mois' : 'semaine';
-  var pasEtiq = Math.max(1, Math.ceil(bk.length / 12));
+  /* Douze mois ne tiennent pas dans un cadre étroit : un repère tous les
+     trois mois (janv, avr, juil, oct), plus le mois en cours — le reste se
+     devine, et la bulle nomme chaque mois (qualite/volume-axe-cas.js). */
+  var pasEtiq = mode === 'mois' ? Math.max(3, Math.ceil(bk.length / 12 * 3))
+                                : Math.max(1, Math.ceil(bk.length / 12));
   var etiquettes = [], titres = [], actif = -1;
+  bk.forEach(function(b, i){ if(b.debut <= auj && auj <= b.fin) actif = i; });
   bk.forEach(function(b, i){
     var d = _pevoJour(b.debut), n1 = +b.debut.slice(8), n2 = +b.fin.slice(8);
     var e, t;
@@ -531,9 +537,8 @@ function _volAxe(per){
                                                     : 'du ' + _pevoFmtCourt(b.debut, true) + ' au ' + _pevoFmtCourt(b.fin, true);
     }
     else { e = MC[d.getMonth()]; t = MOIS[d.getMonth()] + ' ' + d.getFullYear(); }
-    etiquettes.push(i % pasEtiq === 0 ? e : '');
+    etiquettes.push((i % pasEtiq === 0 || i === actif) ? e : '');
     titres.push(t);
-    if(b.debut <= auj && auj <= b.fin) actif = i;
   });
   return { etiquettes:etiquettes, titres:titres, actif:actif,
            legende:'Une barre = ' + (mode === 'jour' ? 'un jour' : mode === 'semaine' ? 'une semaine' : 'un mois') };

@@ -68,7 +68,11 @@ ok('la bulle nomme la semaine', /<title>du 7 au 13 sept\. · 26 km<\/title>/.tes
 
 console.log('\nVue Année : une barre = un mois');
 try { h = rendu('annee'); } catch (e) { h = 'ERREUR ' + e.message; }
-ok('la légende le dit, et douze repères', /Une barre = un mois/.test(h) && (axe(h)[0] || []).length === 12, (axe(h)[0] || []).join(' '));
+ok('la légende le dit, et douze barres repérées', /Une barre = un mois/.test(h) && (axe(h)[0] || []).length === 12, (axe(h)[0] || []).join(' '));
+/* « janv.févr.mars… » collés : un repère tous les trois mois, plus le mois en
+   cours, sans point — demandé par le praticien. */
+ok('un mois sur trois, plus le mois en cours : janv avr juil *sept oct', (axe(h)[0] || []).filter(Boolean).join(' ') === 'janv avr juil *sept oct', (axe(h)[0] || []).filter(Boolean).join(' '));
+ok('… et la bulle nomme chaque mois', /<title>février 2026 · /.test(h));
 
 console.log('\nLa feuille');
 [['athlete.html', ath], ['programme.html', prog]].forEach(([n, s]) =>
