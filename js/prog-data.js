@@ -4535,7 +4535,7 @@ function _extractCardioLoads(seances) {
 }
 
 /* SVG courbe durée (axe Y en secondes, labels formatés Xm Ys). */
-function _buildPevoDureeChart(pts, chartId, nrsPts) {
+function _buildPevoDureeChart(pts, chartId, nrsPts, bande) {
   if(!pts || pts.length < 2) return '';
   nrsPts = nrsPts || null;
   var nrsValidArr = nrsPts ? nrsPts.filter(function(v){ return v !== null && !isNaN(v); }) : [];
@@ -4562,6 +4562,8 @@ function _buildPevoDureeChart(pts, chartId, nrsPts) {
     +'</linearGradient>'
     +(hasNrs ? '<linearGradient id="'+gNrsId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+CNRS+'" stop-opacity="0.18"/><stop offset="100%" stop-color="'+CNRS+'" stop-opacity="0.02"/></linearGradient>' : '')
     +'</defs>';
+  var _biD = _pevoBandeIdx(pts.map(function(p){ return p.date; }), bande);
+  if(_biD) html += _pevoBandeSvg(function(i){ return pxy(i, minV).x; }, n, _biD.i0, _biD.i1, PAD.left, VW-PAD.right, PAD.top, VH-PAD.bottom);
   // Grille Y gauche
   var step = Math.max(1, Math.ceil((maxV-minV)/4));
   for(var gv=Math.round(minV); gv<=maxV+step; gv+=step){
@@ -4630,7 +4632,7 @@ function _buildPevoDureeChart(pts, chartId, nrsPts) {
 }
 
 /* SVG courbe cardio — axe gauche : durée (vert), axe droit : intensité dominante (orange). */
-function _buildPevoCardioChart(pts, chartId, intensiteType, useKm) {
+function _buildPevoCardioChart(pts, chartId, intensiteType, useKm, bande) {
   var dureePts    = (pts || []).filter(function(p){ return p.duree !== null; });
   var kmPts       = (pts || []).filter(function(p){ return p.km !== null; });
   var intensitePts = intensiteType ? (pts || []).filter(function(p){ return p.intensite !== null; }) : [];
@@ -4683,6 +4685,9 @@ function _buildPevoCardioChart(pts, chartId, intensiteType, useKm) {
         + '<stop offset="100%" stop-color="'+CO+'" stop-opacity="0.02"/></linearGradient>'
       : '')
     + '</defs>';
+  var _biC = _pevoBandeIdx(allDates, bande);
+  if(_biC) html += _pevoBandeSvg(function(i){ return PAD.left + (i / Math.max(n - 1, 1)) * (VW - PAD.left - PAD.right); },
+                                 n, _biC.i0, _biC.i1, PAD.left, VW - PAD.right, PAD.top, VH - PAD.bottom);
 
   // Grille + axe gauche (durée ou km)
   var stepD = Math.max(useKm ? 0.1 : 1, (maxD - minD) / 4);
@@ -4762,7 +4767,7 @@ function _buildPevoCardioChart(pts, chartId, intensiteType, useKm) {
 }
 
 /* SVG mini-courbe NRS pour le modal Évolution (axe Y fixe 0-10). */
-function _buildPevoNrsChart(pts, chartId) {
+function _buildPevoNrsChart(pts, chartId, bande) {
   if(!pts || pts.length < 2) return '';
   var VW=500, VH=110;
   var PAD={top:18, right:18, bottom:30, left:34};
@@ -4775,6 +4780,8 @@ function _buildPevoNrsChart(pts, chartId) {
     +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.2"/>'
     +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
     +'</linearGradient></defs>';
+  var _biN = _pevoBandeIdx(pts.map(function(p){ return p.date; }), bande);
+  if(_biN) html += _pevoBandeSvg(function(i){ return pxy(i, 0).x; }, n, _biN.i0, _biN.i1, PAD.left, VW-PAD.right, PAD.top, VH-PAD.bottom);
   // Grille Y
   [0,2,4,6,8,10].forEach(function(gv){
     var gy = pxy(0, gv).y;
@@ -4815,7 +4822,7 @@ function _buildPevoNrsChart(pts, chartId) {
    vals  = tableau de nombres (1RM estimé)
    dates = labels JJ/MM
    meta  = [{bw:bool, reps:number, kg:number}] — pour colorer PdC vs chargé */
-function _buildPevoChart(vals, dates, chartId, meta, nrsPts, todayLastIdx) {
+function _buildPevoChart(vals, dates, chartId, meta, nrsPts, todayLastIdx, bande) {
   meta = meta || [];
   nrsPts = nrsPts || null;
   var VW=500, VH=115;
@@ -4845,6 +4852,8 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts, todayLastIdx) {
     +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.25"/>'
     +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
     +'</linearGradient></defs>';
+  var _bi = _pevoBandeIdx(meta.map(function(m){ return m && m.date; }), bande);
+  if(_bi) html += _pevoBandeSvg(function(i){ return pt(i, minV).x; }, n, _bi.i0, _bi.i1, PAD.left, VW-PAD.right, PAD.top, VH-PAD.bottom);
   // (grille Y et labels axe supprimés)
   // Dates X (partagées)
   var shownD={};
@@ -5162,6 +5171,63 @@ function _pevoFilterPts(pts){
   });
 }
 
+/* ── Progression : tout l'historique, la période en bande ────────────────
+   Une période, deux lectures. La CHARGE (volume, répartition, UA) est une
+   quantité : elle suit la période. La PROGRESSION (charge estimée par
+   exercice, durées, cardio, douleur CAP) est une trajectoire : ses courbes
+   gardent tout l'historique, la période y est une bande, et les chiffres de
+   tête portent sur la période. « Période seule » reste possible.
+   Aucune courbe ne disparaît plus en silence : la carte dit pourquoi
+   (qualite/pevo-progression-cas.js). */
+var _pevoProgPortee = 'tout';   // 'tout' = toute la rééducation, 'periode' = période seule
+function setPevoPortee(v){
+  _pevoProgPortee = v === 'periode' ? 'periode' : 'tout';
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
+}
+/* La bande n'a de sens que sur tout l'historique, et quand la période est bornée. */
+function _pevoBande(){
+  if(_pevoProgPortee !== 'tout' || !_pevoFilterFrom || !_pevoFilterTo) return null;
+  return { de:_pevoFilterFrom, a:_pevoFilterTo };
+}
+function _pevoBandeIdx(isoArr, bande){
+  if(!bande || !isoArr) return null;
+  var i0 = -1, i1 = -1;
+  isoArr.forEach(function(d, i){ if(d && d >= bande.de && d <= bande.a){ if(i0 < 0) i0 = i; i1 = i; } });
+  return i0 < 0 ? null : { i0:i0, i1:i1 };
+}
+/* Rectangle posé DERRIÈRE la courbe : des points de la période, plus une
+   demi-marge de chaque côté, sans jamais sortir du tracé. */
+function _pevoBandeSvg(xOf, n, i0, i1, gauche, droite, haut, bas){
+  var pas = n > 1 ? (xOf(1) - xOf(0)) : (droite - gauche);
+  var x0 = Math.max(gauche, xOf(i0) - pas / 2), x1 = Math.min(droite, xOf(i1) + pas / 2);
+  return '<rect class="pevo-bande" x="'+x0.toFixed(1)+'" y="'+haut+'" width="'+(x1 - x0).toFixed(1)+'" height="'+(bas - haut)
+    + '" rx="4" fill="var(--accent)" fill-opacity="0.08"/>';
+}
+/* En-tête de la section Progression : ce qu'on lit, et de quoi zoomer. Rien
+   sous « Tout », où il n'y a pas de période à distinguer. */
+function _pevoProgTete(){
+  if(!_pevoFilterFrom && !_pevoFilterTo) return '';
+  return '<div class="pevo-prog-tete"><span class="pevo-prog-titre">Progression</span>'
+    + '<div class="pevo-portee" role="group" aria-label="Étendue des courbes">'
+    + '<button class="pevo-portee-btn'+(_pevoProgPortee==='tout'?' active':'')+'" onclick="setPevoPortee(\'tout\')">Toute la rééducation</button>'
+    + '<button class="pevo-portee-btn'+(_pevoProgPortee==='periode'?' active':'')+'" onclick="setPevoPortee(\'periode\')">Période seule</button>'
+    + '</div></div>';
+}
+/* Points AFFICHÉS (tout l'historique ou la période) et points de la PÉRIODE. */
+function _pevoPtsProg(points){
+  var tous = points || [], per = _pevoFilterPts(tous) || [];
+  return { aff: _pevoProgPortee === 'tout' ? tous : per, per: per };
+}
+function _pevoKpiPeu(n){
+  return '<span class="pevo-kpi-neutral">' + (n ? n + ' séance sur la période' : 'Aucune séance sur la période') + '</span>';
+}
+/* Une carte qui n'a pas de quoi tracer le DIT, au lieu de disparaître. */
+function _pevoCarteVide(titre, nPer){
+  return '<div class="pevo-card"><div class="pevo-card-header"><span class="pevo-card-title">'+escH(titre)+'</span></div>'
+    + '<div class="pevo-card-vide">' + (nPer ? nPer + ' séance sur la période' : 'Aucune séance sur la période')
+    + ' — pas de courbe à tracer. <button class="pevo-portee-btn" onclick="setPevoPortee(\'tout\')">Voir toute la rééducation</button></div></div>';
+}
+
 function _extractCapPainData(seances) {
   var points = [];
   seances.forEach(function(s) {
@@ -5274,18 +5340,29 @@ function _buildUaTrendSection(){
   var pts = Object.keys(uaMap).sort().map(function(d){ return { date: d, ua: uaMap[d] }; })
     .filter(function(p){ return p.ua > 0 && (_pevoShowFuture || p.date <= today); });
   pts = _pevoFilterPts(pts);
-  if(!pts || pts.length < 2) return '';
+  /* Sur une période bornée, une section vide le DIT ; sans aucune borne ni
+     donnée, il n'y a rien à annoncer. */
+  if(!pts || pts.length < 2){
+    if(!_pevoFilterFrom && !_pevoFilterTo) return '';
+    return '<div class="pevo-select-section"><div class="pevo-select-title" style="color:#4A90D9">⚡ Charge globale — UA (RPE × durée)</div></div>'
+      + '<div class="pevo-empty">' + ((pts && pts.length) ? '1 séance notée' : 'Aucune séance notée') + ' sur la période — pas de courbe de charge.</div>';
+  }
 
   _pevoChartCtr++;
   var svg, kpiHtml, title;
+  var weeks = null;
   if(_pevoUaMode === 'semaine'){
     var wkMap = {};
     pts.forEach(function(p){
       var mon = _dateStr(_getMondayOf(new Date(p.date+'T12:00:00')));
       wkMap[mon] = (wkMap[mon]||0) + p.ua;
     });
-    var weeks = Object.keys(wkMap).sort().map(function(m){ return { date: m, ua: Math.round(wkMap[m]) }; });
-    if(weeks.length < 2) return '';
+    weeks = Object.keys(wkMap).sort().map(function(m){ return { date: m, ua: Math.round(wkMap[m]) }; });
+    /* Une seule semaine sur la période (unité Semaine) : « par semaine »
+       n'aurait qu'une barre — on lit par séance plutôt que de ne rien montrer. */
+    if(weeks.length < 2) weeks = null;
+  }
+  if(weeks){
     svg = _buildUaWeekChart(weeks, _pevoChartCtr);
     title = 'UA cumulées par semaine';
     kpiHtml = '<span class="pevo-kpi-neutral">Début : '+weeks[0].ua+' UA</span>'
@@ -5339,23 +5416,25 @@ function _renderPevoCharts(exoData, selectedKeys) {
     if(!selectedKeys.has(key)) return;
     _pevoChartCtr++;
     var grp = exoData[key];
-    var pts = _pevoFilterPts(grp.points);
-    if(!pts || pts.length < 2) return; // pas assez de points après filtrage
+    var _pp = _pevoPtsProg(grp.points), pts = _pp.aff, kp = _pp.per;
+    if(!pts || pts.length < 2){ chartsHtml += _pevoCarteVide(grp.label, kp.length); return; }
+    /* Les chiffres de tête portent sur la PÉRIODE ; la courbe, sur ce qu'on affiche. */
+    var kpOk = kp.length >= 2, kq = kpOk ? kp : pts;
     var vals  = pts.map(function(p){ return p.rm1; });
     var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
-    var meta  = pts.map(function(p){ return {bw:p.bw, reps:p.reps, kg:p.kg}; });
-    var first = pts[0].rm1, last = pts[pts.length-1].rm1;
+    var meta  = pts.map(function(p){ return {bw:p.bw, reps:p.reps, kg:p.kg, date:p.date}; });
+    var first = kq[0].rm1, last = kq[kq.length-1].rm1;
     var delta = last - first, sign = delta>=0?'+':'';
     var pct = first>0 ? (delta/first*100) : null;
     var pctStr = pct!==null?' ('+(Math.abs(pct)>999?(pct>0?'>':'<')+' 999%':(pct>=0?'+':'')+pct.toFixed(0)+'%')+')':'';
     var cls = delta===0?'neutral':(delta>0?'pos':'neg');
     // Labels KPI : afficher reps si PdC, kg si chargé
-    var fLabel = pts[0].bw   ? pts[0].reps+'reps PdC'                  : first.toFixed(1)+'kg';
-    var lLabel = pts[pts.length-1].bw ? pts[pts.length-1].reps+'reps PdC' : last.toFixed(1)+'kg';
+    var fLabel = kq[0].bw   ? kq[0].reps+'reps PdC'                  : first.toFixed(1)+'kg';
+    var lLabel = kq[kq.length-1].bw ? kq[kq.length-1].reps+'reps PdC' : last.toFixed(1)+'kg';
     var dLabel = sign+delta.toFixed(1)+'kg'+pctStr;
     // Label KPI "Actuel" vs "Prévu" selon si le dernier point est futur
     var todayStr = new Date().toISOString().slice(0,10);
-    var lastIsFuture = _pevoShowFuture && pts[pts.length-1].date && pts[pts.length-1].date > todayStr;
+    var lastIsFuture = _pevoShowFuture && kq[kq.length-1].date && kq[kq.length-1].date > todayStr;
     var lKpiLabel = lastIsFuture ? 'Prévu : ' : 'Actuel : ';
     // Indice du dernier point passé (pour ligne today sur SVG)
     var todayLastIdx = null;
@@ -5374,7 +5453,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       nrsPts = pts.map(function(p){ return (nrsMap[p.date] !== undefined && nrsMap[p.date] !== null) ? nrsMap[p.date] : null; });
       hasNrsData = nrsPts.filter(function(v){ return v !== null; }).length >= 2;
     }
-    var svg = _buildPevoChart(vals, dates, _pevoChartCtr, meta, nrsPts, todayLastIdx);
+    var svg = _buildPevoChart(vals, dates, _pevoChartCtr, meta, nrsPts, todayLastIdx, _pevoBande());
     if(!svg) return;
     // Pills toggle charge / douleur (si NRS disponible)
     var allBwMeta = meta.length && meta.every(function(m){ return m.bw; });
@@ -5392,10 +5471,12 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'<div class="pevo-card-header">'
       +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
       +'<div class="pevo-card-kpis">'
-      +'<span class="pevo-kpi-neutral">Début : '+fLabel+'</span>'
-      +'<span class="pevo-kpi-neutral">→</span>'
-      +'<span class="pevo-kpi-strong">'+lKpiLabel+lLabel+'</span>'
-      +'<span class="pevo-kpi '+cls+'">'+dLabel+'</span>'
+      +(kpOk
+        ? '<span class="pevo-kpi-neutral">Début : '+fLabel+'</span>'
+          +'<span class="pevo-kpi-neutral">→</span>'
+          +'<span class="pevo-kpi-strong">'+lKpiLabel+lLabel+'</span>'
+          +'<span class="pevo-kpi '+cls+'">'+dLabel+'</span>'
+        : _pevoKpiPeu(kp.length))
       +rmTag
       +'</div></div>'
       +pillToggleHtml
@@ -5415,8 +5496,11 @@ function _renderPevoCharts(exoData, selectedKeys) {
       if(!dureeSel.has(key)) return;
       _pevoChartCtr++;
       var grp = _pevoDureeData[key];
-      var pts = grp.points;
-      var first = pts[0].secs, last = pts[pts.length-1].secs;
+      /* Elle ne suivait AUCUNE période : `grp.points` était lu tel quel. */
+      var _ppD = _pevoPtsProg(grp.points), pts = _ppD.aff, kpD = _ppD.per;
+      if(!pts || pts.length < 2){ dureeChartsHtml += _pevoCarteVide(grp.label, kpD.length); return; }
+      var kpDOk = kpD.length >= 2, kqD = kpDOk ? kpD : pts;
+      var first = kqD[0].secs, last = kqD[kqD.length-1].secs;
       var delta = last - first, sign = delta>=0?'+':'';
       var cls = delta===0?'neutral':(delta>0?'pos':'neg');
       // Chercher les NRS pour cet exercice (clé sans suffixe __duree)
@@ -5428,7 +5512,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
         nrsPts = pts.map(function(p){ return (nrsMap[p.date] !== undefined && nrsMap[p.date] !== null) ? nrsMap[p.date] : null; });
         hasNrsData = nrsPts.filter(function(v){ return v !== null; }).length >= 2;
       }
-      var svg = _buildPevoDureeChart(pts, _pevoChartCtr, nrsPts);
+      var svg = _buildPevoDureeChart(pts, _pevoChartCtr, nrsPts, _pevoBande());
       if(!svg) return;
       // Pills toggle durée / douleur
       var dureeToggleHtml = '';
@@ -5443,10 +5527,12 @@ function _renderPevoCharts(exoData, selectedKeys) {
         +'<div class="pevo-card-header">'
         +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
         +'<div class="pevo-card-kpis">'
-        +'<span class="pevo-kpi-neutral">Début : '+_formatDuree(first)+'</span>'
-        +'<span class="pevo-kpi-neutral">→</span>'
-        +'<span class="pevo-kpi-strong">Actuel : '+_formatDuree(last)+'</span>'
-        +'<span class="pevo-kpi '+cls+'">'+(sign)+_formatDuree(Math.abs(delta))+'</span>'
+        +(kpDOk
+          ? '<span class="pevo-kpi-neutral">Début : '+_formatDuree(first)+'</span>'
+            +'<span class="pevo-kpi-neutral">→</span>'
+            +'<span class="pevo-kpi-strong">Actuel : '+_formatDuree(last)+'</span>'
+            +'<span class="pevo-kpi '+cls+'">'+(sign)+_formatDuree(Math.abs(delta))+'</span>'
+          : _pevoKpiPeu(kpD.length))
         +'</div></div>'
         +dureeToggleHtml
         +svg+'</div>';
@@ -5478,12 +5564,13 @@ function _renderPevoCharts(exoData, selectedKeys) {
       _pevoChartCtr++;
       var grp = _pevoCardioData[key];
       var iType = grp.intensiteType || null;
-      var pts = _pevoFilterPts(grp.points);
-      if(!pts || pts.length < 2) return;
+      var _ppC = _pevoPtsProg(grp.points), pts = _ppC.aff, kpC = _ppC.per;
+      if(!pts || pts.length < 2){ cardioChartsHtml += _pevoCarteVide(grp.label, kpC.length); return; }
+      var ptsKpi = kpC.length >= 2 ? kpC : pts;       // chiffres de tête : la période
 
       // KPI durée ou km
-      var dPts = pts.filter(function(p){ return p.duree !== null; });
-      var kPts = pts.filter(function(p){ return p.km !== null; });
+      var dPts = ptsKpi.filter(function(p){ return p.duree !== null; });
+      var kPts = ptsKpi.filter(function(p){ return p.km !== null; });
       var useKmKpi = dPts.length < 2 && kPts.length >= 2;
       var primaryKpiPts = useKmKpi ? kPts : dPts;
       var dFirst = primaryKpiPts.length ? (useKmKpi ? primaryKpiPts[0].km : primaryKpiPts[0].duree) : null;
@@ -5494,14 +5581,14 @@ function _renderPevoCharts(exoData, selectedKeys) {
       function fmtKpi(v) { return useKmKpi ? v.toFixed(1) + ' km' : _formatDureeMin(v); }
 
       // KPI intensité
-      var iPts = iType ? pts.filter(function(p){ return p.intensite !== null; }) : [];
+      var iPts = iType ? ptsKpi.filter(function(p){ return p.intensite !== null; }) : [];
       var iFirst = iPts.length >= 2 ? iPts[0].intensite : null;
       var iLast  = iPts.length >= 2 ? iPts[iPts.length - 1].intensite : null;
       var iDelta = (iFirst !== null && iLast !== null) ? iLast - iFirst : null;
       var iCls   = iDelta === null || iDelta === 0 ? 'neutral' : (iDelta > 0 ? 'pos' : 'neg');
       var hasIntKpi = iFirst !== null && iLast !== null;
 
-      var svg = _buildPevoCardioChart(pts, _pevoChartCtr, iType, useKmKpi);
+      var svg = _buildPevoCardioChart(pts, _pevoChartCtr, iType, useKmKpi, _pevoBande());
       if(!svg) return;
 
       // Libellé du type d'intensité
@@ -5530,6 +5617,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
           +'</div>';
       }
 
+      if(kpC.length < 2) kpisHtml = '<div class="pevo-card-kpis">' + _pevoKpiPeu(kpC.length) + '</div>';
       // Pills toggle (si intensité disponible)
       var toggleHtml = '';
       if(hasIntKpi) {
@@ -5579,13 +5667,17 @@ function _renderPevoCharts(exoData, selectedKeys) {
   // ── Section CAP — Douleur EVA ────────────────────────────────────────────
   var capPainSectionHtml = '';
   if (_pevoCapPainData) {
-    var filteredCapPts = _pevoFilterPts(_pevoCapPainData);
-    if (filteredCapPts && filteredCapPts.length >= 2) {
+    var _ppP = _pevoPtsProg(_pevoCapPainData), filteredCapPts = _ppP.aff, kpP = _ppP.per;
+    var kpPOk = kpP.length >= 2, kqP = kpPOk ? kpP : filteredCapPts;
+    if (!filteredCapPts || filteredCapPts.length < 2) {
+      capPainSectionHtml = '<div class="pevo-select-section"><div class="pevo-select-title" style="color:#0d9488">🏃 CAP — Douleur à l\'effort</div></div>'
+        + '<div class="pevo-charts pevo-charts--large">' + _pevoCarteVide('Douleur EVA (0–10)', kpP.length) + '</div>';
+    } else {
       _pevoChartCtr++;
       var nrsPts = filteredCapPts.map(function(p) { return { date: p.date, nrs: p.pain }; });
-      var svg = _buildPevoNrsChart(nrsPts, _pevoChartCtr);
-      var capFirst = filteredCapPts[0].pain;
-      var capLast  = filteredCapPts[filteredCapPts.length - 1].pain;
+      var svg = _buildPevoNrsChart(nrsPts, _pevoChartCtr, _pevoBande());
+      var capFirst = kqP[0].pain;
+      var capLast  = kqP[kqP.length - 1].pain;
       var capDelta = capLast - capFirst;
       var capCls   = capDelta === 0 ? 'neutral' : (capDelta < 0 ? 'pos' : 'neg'); // moins de douleur = positif
       capPainSectionHtml = '<div class="pevo-select-section">'
@@ -5595,10 +5687,12 @@ function _renderPevoCharts(exoData, selectedKeys) {
         + '<div class="pevo-card-header">'
         + '<span class="pevo-card-title">Douleur EVA (0–10)</span>'
         + '<div class="pevo-card-kpis">'
-        + '<span class="pevo-kpi-neutral">S1 : ' + capFirst + '/10</span>'
-        + '<span class="pevo-kpi-neutral">→</span>'
-        + '<span class="pevo-kpi-strong">Actuel : ' + capLast + '/10</span>'
-        + '<span class="pevo-kpi ' + capCls + '">' + (capDelta >= 0 ? '+' : '') + capDelta.toFixed(1) + '</span>'
+        + (kpPOk
+          ? '<span class="pevo-kpi-neutral">S1 : ' + capFirst + '/10</span>'
+            + '<span class="pevo-kpi-neutral">→</span>'
+            + '<span class="pevo-kpi-strong">Actuel : ' + capLast + '/10</span>'
+            + '<span class="pevo-kpi ' + capCls + '">' + (capDelta >= 0 ? '+' : '') + capDelta.toFixed(1) + '</span>'
+          : _pevoKpiPeu(kpP.length))
         + '</div></div>'
         + svg
         + '</div></div>';
@@ -5626,7 +5720,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
       volSectionHtml = _volHtml(_volumeParSport(_vn * 2), _vn);
     }
   } catch(ex){}
-  var parts = [volSectionHtml, uaSectionHtml, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
+  var _progTete = (rmSection || dureeSectionHtml || cardioSectionHtml || capPainSectionHtml) ? _pevoProgTete() : '';
+  var parts = [volSectionHtml, uaSectionHtml, _progTete, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
   body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
   _attachPevoEvents();
 }

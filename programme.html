@@ -2470,6 +2470,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .pevo-perso { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .pevo-perso label { font-size:var(--fs-sm); color:var(--text2); }
 .pevo-perso input { font-size:var(--fs-sm); padding:3px 6px; border:1px solid var(--border2); border-radius:6px; font-family:inherit; }
+/* Progression : l'historique entier, la période en bande — ou la période seule. */
+.pevo-prog-tete { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding-top:4px; }
+.pevo-prog-titre { font-size:var(--fs-sm); font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--navy); }
+.pevo-portee { display:inline-flex; border:1.5px solid var(--border2); border-radius:8px; overflow:hidden; }
+.pevo-portee-btn { padding:3px 10px; border:none; border-right:1px solid var(--border2); background:#fff; color:var(--text2); font-size:var(--fs-sm); font-weight:500; cursor:pointer; font-family:inherit; }
+.pevo-portee-btn:last-child { border-right:none; }
+.pevo-portee-btn:hover { color:var(--accent); }
+.pevo-portee-btn.active { background:var(--accent-ll); color:var(--accent); font-weight:700; }
+.pevo-card-vide { padding:14px 4px 6px; font-size:var(--fs-sm); color:var(--text2); line-height:1.5; }
+.pevo-card-vide .pevo-portee-btn { border:1.5px solid var(--border2); border-radius:20px; margin-left:4px; }
 .pevo-future-toggle.active { background:var(--warn-xl); color:var(--warn); border-color:var(--warn); font-weight:700; }
 .pevo-select-section { margin-bottom:18px; }
 .pevo-select-title { font-size:var(--fs-sm); font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--navy); margin-bottom:10px; }
@@ -3584,7 +3594,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260911e"></script>
+<script src="js/prog-data.js?v=20260911f"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
