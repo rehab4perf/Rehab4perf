@@ -25,9 +25,11 @@ var CHAINE = {
   'bilan.html':         [['index.html', 'bilan.html']],
   'js/prog-data.js':    [['programme.html', 'js/prog-data.js'], ['index.html', 'programme.html']],
   'js/prog-main.js':    [['programme.html', 'js/prog-main.js'], ['index.html', 'programme.html']],
-  /* Seul script partage entre le builder et l'espace athlete. */
+  /* Scripts partages entre le builder et l'espace athlete. */
   'js/protocoles-ref.js': [['programme.html', 'js/protocoles-ref.js'], ['index.html', 'programme.html'],
                            ['athlete.html', 'js/protocoles-ref.js']],
+  'js/volume-sport.js':   [['programme.html', 'js/volume-sport.js'], ['index.html', 'programme.html'],
+                           ['athlete.html', 'js/volume-sport.js']],
   'programme.html':     [['index.html', 'programme.html']],
   'outils.html':        [['index.html', 'outils.html']],
   'js/patients-data.js':[['patients.html', 'js/patients-data.js'], ['index.html', 'patients.html']],

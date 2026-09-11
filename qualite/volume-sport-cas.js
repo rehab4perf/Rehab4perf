@@ -37,6 +37,9 @@ var R = path.join(__dirname, '..');
 var bilan = fs.readFileSync(path.join(R, 'js', 'bilan.js'), 'utf8');
 var pmain = fs.readFileSync(path.join(R, 'js', 'prog-main.js'), 'utf8');
 var pdata = fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8');
+/* Sports, agrégation et rendu vivent dans le fichier partagé avec l'espace athlète
+   (qualite/athlete-volume-cas.js). */
+var vsrc  = fs.readFileSync(path.join(R, 'js', 'volume-sport.js'), 'utf8');
 var shell = fs.readFileSync(path.join(R, 'index.html'), 'utf8');
 var html  = fs.readFileSync(path.join(R, 'programme.html'), 'utf8');
 
@@ -58,7 +61,7 @@ function tranche(src, deb, fin) {
 /* ── La table des sports ──────────────────────────────────────────────────── */
 console.log('\nLa table des sports');
 
-var T = new Function(tranche(pdata, 'var R4P_SPORTS = [', 'var CARDIO_EFFORT_TYPES') +
+var T = new Function(tranche(vsrc, 'var R4P_SPORTS = [', "/* ── Période de l'Évolution") +
   '\nreturn {S:R4P_SPORTS, A:R4P_SPORT_AUTRE, f:r4pSportDeType};')();
 
 egal('cinq sports nommés, pas un de plus', 5, T.S.length);
@@ -91,7 +94,7 @@ console.log('\nL\'agrégation par semaine');
    moitie qui manquait — une seance de renforcement prescrite, faite, dont
    l'athlete a declare la duree, s'affichait « 0 min ». */
 function agrege(activites, patient, seances) {
-  var code = tranche(pmain, 'function _volLundi(', '/* ── Helpers sémantiques feedback');
+  var code = tranche(vsrc, 'function _volLundi(', '/* ── Helpers sémantiques feedback');
   return new Function('_stravaActivities', '_cloudCalEvents', '_progPatient',
                       'R4P_SPORTS', 'R4P_SPORT_AUTRE', 'r4pSportDeType',
                       '_stravaChargeEstimate', '_fbIsCharge', '_evIsCap', '_uaFoster',
@@ -243,7 +246,7 @@ egal('sans retour, l\'activité liée compte seule', 2700,
 console.log('\nLes trois vues');
 
 function rendre(volume) {
-  var code = tranche(pdata, "/* ── Volume d'entrainement par sport", "/* ── Sélecteur d'exercices");
+  var code = tranche(vsrc, "/* ── Volume d'entrainement par sport — trois vues", "/* ── Fin de volume-sport.js");
   return new Function('escH', 'V',
     code + '\nreturn _volHtml(V);')(
     function (x) { return String(x == null ? '' : x); }, volume);
@@ -321,9 +324,9 @@ ok('le programme le rend directement', /_volHtml\(_volumeParSport\(_vn \* 2\), _
    Elle suit désormais « 1 mois », « 3 mois »… et l'écart se mesure contre la
    période PRÉCÉDENTE de même longueur — comparer trois mois à la seule semaine
    d'avant n'aurait aucun sens. */
-var dF = pmain.indexOf('function _volFenetreSemaines(');
+var dF = vsrc.indexOf('function _volFenetreSemaines(');
 ok('la fenêtre se calcule depuis le filtre', dF > 0);
-var codeF = pmain.slice(dF, pmain.indexOf('function _volumeParSport(', dF));
+var codeF = vsrc.slice(dF, vsrc.indexOf('/* `src` — { activites, seances, ddn }', dF));
 function fenetre(jours, de, a) {
   return new Function('_pevoFilterDays', '_pevoFilterFrom', '_pevoFilterTo',
     codeF + '\nreturn { n:_volFenetreSemaines(), lbl:_volLibelleFenetre };')(
@@ -419,7 +422,7 @@ var hJ = rendre({ sports: res.sports, jourCourant: 4, semaines: [avant1, cette1]
 ok('l\'écart dit ce qu\'il compare', /vol-d [a-z]+" title="[^"]*jour égal/.test(hJ),
    (hJ.match(/<span class="vol-d[^>]*>/) || ['absent'])[0]);
 ok('plus aucun libellé ne dit « cette semaine »',
-   !/cette semaine|Cette semaine|12 dernières semaines/.test(pdata),
+   !/cette semaine|Cette semaine|12 dernières semaines/.test(pdata + vsrc),
    (pdata.match(/cette semaine|12 dernières semaines/gi) || []).join(' | '));
 ok('… en tête du panneau des charges',
    /var parts = \[volSectionHtml, uaSectionHtml/.test(pdata));

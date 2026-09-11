@@ -673,7 +673,8 @@ sections: [
     intro:'Un calendrier épuré de ses séances, et le détail de chaque exercice avec vidéo.',
     etapes:[
       { t:'Son calendrier', x:'Ses séances planifiées, vos messages patient, et les cycles en couleur.' },
-      { t:'Le détail d\'une séance', x:'Exercices avec vignette vidéo (clic = lecture), séries, répétitions, tempo, récupération, consignes.', img:true }
+      { t:'Le détail d\'une séance', x:'Exercices avec vignette vidéo (clic = lecture), séries, répétitions, tempo, récupération, consignes.', img:true },
+      { t:'Son volume d\'entraînement', x:'Sous ses prochaines séances, le même bloc que votre Évolution des charges : volume par sport, répartition de la charge (UA) et barres par sport, depuis Strava et ses retours de séance. Mêmes chiffres que les vôtres — c\'est le même calcul. Il choisit Semaine ou Mois et recule avec les flèches ; les courbes de progression par exercice restent de votre côté.' }
     ]},
   { id:'douleur-athlete', titre:'La saisie de douleur par exercice',
     intro:'Sous chaque exercice, une question posée clairement et un curseur de 0 à 10.',

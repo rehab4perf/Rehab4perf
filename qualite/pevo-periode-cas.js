@@ -25,7 +25,8 @@
 const fs = require('fs');
 const path = require('path');
 const R = path.join(__dirname, '..');
-const pdata = fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8');
+const pdata = fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.join(__dirname, '..', 'js', 'volume-sport.js'), 'utf8');   // période et volume : fichier partagé
 
 let ko = 0;
 function ok(nom, cond, detail) {
@@ -145,8 +146,8 @@ if (N) {
 /* ── Le volume, sur la période exacte ────────────────────────────────────── */
 console.log('\nLe volume suit la période exacte');
 function tranche(src, deb, fin) { const d = src.indexOf(deb), f = src.indexOf(fin, d + 1); return d < 0 || f < d ? '' : src.slice(d, f); }
-const codeVol = tranche(pdata, "/* ── Volume d'entrainement par sport", "/* ── Sélecteur d'exercices");
-const S = new Function(tranche(pdata, 'var R4P_SPORTS = [', 'var CARDIO_EFFORT_TYPES') + '\nreturn { S:R4P_SPORTS, A:R4P_SPORT_AUTRE };')();
+const codeVol = tranche(pdata, "/* ── Volume d'entrainement par sport — trois vues", "/* ── Fin de volume-sport.js");
+const S = new Function(tranche(pdata, 'var R4P_SPORTS = [', "/* ── Période de l'Évolution") + '\nreturn { S:R4P_SPORTS, A:R4P_SPORT_AUTRE };')();
 function semainesAvec(km) {                               // km : { 'AAAA-MM-JJ': km }
   const out = [];
   for (let d = new Date('2026-07-27T00:00:00'); d <= new Date('2026-09-07T00:00:00'); d.setDate(d.getDate() + 7)) {
@@ -187,7 +188,7 @@ ok('une seule séance s\'écrit au singulier', /1 séance sur la période/.test(
 
 /* ── Le branchement ──────────────────────────────────────────────────────── */
 console.log('\nLe branchement');
-ok('le panneau passe la période au volume', /_volHtml\(_volumeParSport\([^)]*\), *_pevoPer/.test(pdata) || /_volHtml\(_volumeParSport\([^)]*\), *per\b/.test(pdata));
+ok('le panneau passe la période au volume', /_volHtml\(_volumeParSport\(.+\), *_pevoPer\)/.test(pdata) || /_volHtml\(_volumeParSport\([^)]*\), *per\b/.test(pdata));
 
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }

@@ -29,7 +29,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const pdata = fs.readFileSync(path.join(__dirname, '..', 'js', 'prog-data.js'), 'utf8');
+const pdata = fs.readFileSync(path.join(__dirname, '..', 'js', 'prog-data.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.join(__dirname, '..', 'js', 'volume-sport.js'), 'utf8');   // période et volume : fichier partagé
 
 let ko = 0;
 function ok(nom, cond, detail) {
@@ -120,8 +121,8 @@ if (C) {
 
 /* Le volume : la référence est ramenée à la même durée. */
 function tranche(src, deb, fin) { const d = src.indexOf(deb), f = src.indexOf(fin, d + 1); return d < 0 || f < d ? '' : src.slice(d, f); }
-const codeVol = tranche(pdata, "/* ── Volume d'entrainement par sport", "/* ── Sélecteur d'exercices");
-const S = new Function(tranche(pdata, 'var R4P_SPORTS = [', 'var CARDIO_EFFORT_TYPES') + '\nreturn { S:R4P_SPORTS, A:R4P_SPORT_AUTRE };')();
+const codeVol = tranche(pdata, "/* ── Volume d'entrainement par sport — trois vues", "/* ── Fin de volume-sport.js");
+const S = new Function(tranche(pdata, 'var R4P_SPORTS = [', "/* ── Période de l'Évolution") + '\nreturn { S:R4P_SPORTS, A:R4P_SPORT_AUTRE };')();
 const pj = () => [0, 1, 2, 3, 4, 5, 6].map(() => ({ dist: 0, duree: 0, charge: 0, n: 0 }));
 const sem = (debut, km) => { const p = pj(); p[1] = { dist: km * 1000, duree: 1800, charge: 100, n: 1 };
   return { debut, sports: { course: { dist: km * 1000, duree: 1800, charge: 100, n: 1, parJour: p } } }; };

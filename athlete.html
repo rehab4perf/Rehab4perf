@@ -694,10 +694,75 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <!-- Bibliothèque intégrée des protocoles : repli de « Mon protocole » quand
        la ligne meta du praticien n'a pas le protocole actif. -->
   <script src="js/protocoles-ref.js?v=20260910g"></script>
+  <!-- Volume d'entraînement : le même calcul que le builder (qualite/athlete-volume-cas.js). -->
+  <script src="js/volume-sport.js?v=20260911i"></script>
 </head>
 <body>
 
 <style>
+/* ── Volume d'entraînement ───────────────────────────────────────────
+   Portée de programme.html, dans les jetons de cette page : `--surface2`
+   n'existe pas ici, l'état « plat » prend `--bg`. Les couleurs de sport
+   viennent des DONNÉES (R4P_SPORTS), posées en style inline — jamais
+   recopiées dans cette feuille. */
+.vol-bloc { margin-top:18px; }
+.vol-titre { font-size:var(--fs-2xs); font-weight:700; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--text3); margin:16px 2px 8px; }
+.vol-titre span { display:block; font-size:var(--fs-xs); font-weight:500; text-transform:none;
+  letter-spacing:0; color:var(--text2); margin-top:3px; }
+.vol-nav { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.vol-unites { display:inline-flex; gap:2px; background:var(--bg); border:1px solid var(--border);
+  border-radius:9px; padding:3px; }
+.vol-unite { font-family:inherit; font-size:var(--fs-sm); font-weight:600; color:var(--text2);
+  background:none; border:none; border-radius:7px; padding:0 14px; min-height:36px; cursor:pointer; }
+.vol-unite.on { background:var(--surface); color:var(--accent); box-shadow:0 0 0 1px var(--border); }
+.vol-fleches { display:flex; gap:6px; }
+.vol-fleche { width:40px; height:40px; font-family:inherit; font-size:var(--fs-lg); color:var(--text);
+  background:var(--surface); border:1px solid var(--border); border-radius:9px; cursor:pointer; }
+.vol-fleche:disabled { opacity:.35; cursor:default; }
+.vol-pt { display:inline-block; width:9px; height:9px; border-radius:2px; flex:none; vertical-align:-1px; }
+/* Le fond du conteneur est la SURFACE, pas le filet : une case restante en
+   dernière rangée se lirait comme une donnée manquante. */
+.vol-tuiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(136px, 1fr)); gap:0;
+  background:var(--surface); border:1px solid var(--border); border-radius:9px; overflow:hidden;
+  margin-bottom:13px; }
+.vol-tuile { background:var(--surface); padding:11px 13px; box-shadow:-1px 0 0 var(--border), 0 -1px 0 var(--border); }
+.vol-t-lbl { display:flex; align-items:center; gap:6px; font-size:var(--fs-2xs); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; color:var(--text3); margin-bottom:6px; }
+.vol-t-val { font-size:var(--fs-2xl); font-weight:700; letter-spacing:-.03em; line-height:1;
+  font-variant-numeric:tabular-nums; color:var(--text); }
+.vol-t-u { font-size:var(--fs-md); font-weight:500; color:var(--text2); margin-left:3px; }
+.vol-t-sub { font-size:var(--fs-xs); color:var(--text3); margin-top:5px; font-variant-numeric:tabular-nums; }
+.vol-d { font-weight:700; padding:1px 5px; border-radius:3px; }
+.vol-d.haut { background:var(--ok-l); color:var(--ok-d); }
+.vol-d.bas  { background:var(--warn-l); color:var(--warn-d); }
+.vol-d.plat { background:var(--bg); color:var(--text3); }
+/* Pourcentage écrit DANS chaque segment : la couleur ne porte jamais seule. */
+.vol-rep { display:flex; gap:2px; height:30px; margin-bottom:9px; }
+.vol-seg { border-radius:3px; display:flex; align-items:center; justify-content:center; min-width:3px; }
+.vol-seg span { font-size:var(--fs-2xs); font-weight:700; color:#fff; font-variant-numeric:tabular-nums; }
+.vol-leg { display:flex; flex-wrap:wrap; gap:6px 16px; margin-bottom:14px; font-size:var(--fs-sm); color:var(--text2); }
+.vol-leg-i { display:inline-flex; align-items:center; gap:6px; }
+.vol-leg-i b { color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+.vol-cadres { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0;
+  background:var(--surface); border:1px solid var(--border); border-radius:9px; overflow:hidden; }
+.vol-cadre { background:var(--surface); padding:11px 13px 8px; box-shadow:-1px 0 0 var(--border), 0 -1px 0 var(--border); }
+.vol-c-tete { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:7px; }
+.vol-c-nom { display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-sm); font-weight:700; color:var(--text); }
+.vol-c-val { font-size:var(--fs-lg); font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:var(--text); }
+.vol-spark { display:block; width:100%; height:40px; }
+.vol-tbl { margin-top:12px; }
+.vol-tbl summary { font-size:var(--fs-sm); font-weight:600; color:var(--accent); cursor:pointer; padding:6px 0; }
+.vol-tbl table { width:100%; border-collapse:collapse; font-size:var(--fs-sm); margin-top:6px; }
+.vol-tbl th { text-align:left; font-size:var(--fs-2xs); font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--text3); padding:4px 7px; border-bottom:1px solid var(--border); }
+.vol-tbl th.n, .vol-tbl td.n { text-align:right; font-variant-numeric:tabular-nums; }
+.vol-tbl td { padding:5px 7px; border-bottom:1px solid var(--border); color:var(--text2); }
+.vol-tbl tr:last-child td { border-bottom:none; }
+.vol-rien { font-size:var(--fs-md); color:var(--text2); line-height:1.55; padding:14px 15px;
+  background:var(--surface); border:1px solid var(--border); border-radius:9px; }
+.vol-rien span { font-size:var(--fs-sm); color:var(--text3); }
+
 /* ── Mes objectifs ───────────────────────────────────────────────────
    L'athlete declare ses echeances lui-meme, au lieu de les annoncer en
    seance pour que le praticien les ressaisisse. La pastille verte « pris en
@@ -1164,7 +1229,10 @@ function renderCalendar(){
   // Charge séances planifiées, cycles ET messages patient en parallèle (+ notes cliniques si mode kiné)
   var fetches = [
     fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
-        + '&select=id,date,programme_id,programmes(nom),athlete_feedback(rpe,duree_min)&order=date.asc', {
+        /* douleur, exo_data et le type de programme : ce que lit le volume
+           d'entraînement pour distinguer un retour de charge d'un retour de
+           douleur CAP. `donnees->>type` seul — pas le programme entier. */
+        + '&select=id,date,programme_id,programmes(nom,type:donnees->>type),athlete_feedback(rpe,duree_min,douleur,exo_data)&order=date.asc', {
       headers: _entetes()
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/patient_settings?patient_id=eq.' + _patientId + '&select=cycles', {
@@ -1174,7 +1242,8 @@ function renderCalendar(){
       headers: _entetes()
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/strava_activities?patient_id=eq.' + _patientId
-        + '&select=strava_id,date,type,nom,distance_m,duree_s,charge,donnees&order=date.asc', {
+        /* `seance_id` : une activité liée à une séance notée n'est pas comptée deux fois. */
+        + '&select=strava_id,date,type,nom,distance_m,duree_s,charge,donnees,seance_id&order=date.asc', {
       headers: _entetes()
     }).then(function(r){ return r.json(); }).catch(function(){ return []; })
   ];
@@ -1574,10 +1643,47 @@ function _renderCalGrid(){
   else if(_calView === 'day') html += _buildDayHtml();
   else                        html += _buildMonthHtml();
   html += _buildUpcomingHtml();
+  html += '<div id="volSection"></div>';
   html += '<div id="echSection"></div>';
   document.getElementById('mainContent').innerHTML = html;
+  /* Isolé : un défaut du volume ne doit jamais emporter le calendrier. */
+  try { _volAthRendre(); } catch(e){}
   _echCharger();
 }
+
+/* ── Volume d'entraînement ─────────────────────────────────────────
+   Le bloc de l'Évolution des charges du praticien, et lui seul — demande du
+   praticien. Mêmes fonctions (js/volume-sport.js), donc mêmes chiffres.
+   L'athlète choisit semaine ou mois et recule avec les flèches, jamais
+   au-delà d'aujourd'hui. Les barres ne s'ouvrent pas ici : elles pilotent le
+   panneau du praticien (qualite/athlete-volume-cas.js). */
+var _volAthUnite = 'semaine', _volAthDec = 0;
+function _volAthHtml(auj){
+  var per = _pevoPeriode(_volAthUnite, _volAthDec, auj);
+  if(!per) return '';
+  per.sousUnite = null;
+  var U = [['semaine','Semaine'], ['mois','Mois']];
+  var nav = '<div class="vol-nav"><div class="vol-unites" role="group" aria-label="Période">'
+    + U.map(function(u){
+        var on = u[0] === _volAthUnite;
+        return '<button type="button" class="vol-unite'+(on ? ' on' : '')+'" aria-pressed="'+on+'"'
+             + ' onclick="volAthUnite(\''+u[0]+'\')">'+u[1]+'</button>';
+      }).join('')
+    + '</div><div class="vol-fleches">'
+    + '<button type="button" class="vol-fleche" aria-label="Période précédente" onclick="volAthDecaler(-1)">‹</button>'
+    + '<button type="button" class="vol-fleche" aria-label="Période suivante" onclick="volAthDecaler(1)"'
+    + (_volAthDec >= 0 ? ' disabled' : '')+'>›</button></div></div>';
+  var data = _volumeParSport(_volNbSemaines(per, auj), { activites:_stravaActs, seances:_calEvents, ddn:null });
+  return _volHtml(data, per, { nav:nav,
+    rien:'Aucune activité Strava ni séance notée sur cette période.'
+       + '<br><span>Vos séances notées dans l\'application et vos activités Strava apparaîtront ici.</span>' });
+}
+function _volAthRendre(){
+  var box = document.getElementById('volSection');
+  if(box) box.innerHTML = _volAthHtml(_pevoAujourdhuiIso());
+}
+function volAthUnite(u){ _volAthUnite = u; _volAthDec = 0; _volAthRendre(); }
+function volAthDecaler(s){ _volAthDec = Math.min(0, _volAthDec + s); _volAthRendre(); }
 
 /* ── Mes objectifs ─────────────────────────────────────────────────
    TANT QUE LA MIGRATION `20260829_athlete_objectifs.sql` N'EST PAS

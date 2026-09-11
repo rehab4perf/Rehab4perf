@@ -25,7 +25,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const pdata = fs.readFileSync(path.join(__dirname, '..', 'js', 'prog-data.js'), 'utf8');
+const pdata = fs.readFileSync(path.join(__dirname, '..', 'js', 'prog-data.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.join(__dirname, '..', 'js', 'volume-sport.js'), 'utf8');   // période et volume : fichier partagé
 
 let ko = 0;
 function ok(nom, cond, detail) {

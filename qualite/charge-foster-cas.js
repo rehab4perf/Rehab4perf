@@ -32,7 +32,9 @@ function verifie(nom, attendu, obtenu){
   if (!ok) echecs++;
 }
 var R = path.join(__dirname, '..');
-var js   = fs.readFileSync(path.join(R, 'js', 'prog-main.js'), 'utf8');
+/* _uaFoster et _stravaChargeEstimate vivent dans js/volume-sport.js, _buildUaMap dans prog-main.js. */
+var js   = fs.readFileSync(path.join(R, 'js', 'prog-main.js'), 'utf8')
+         + '\n' + fs.readFileSync(path.join(R, 'js', 'volume-sport.js'), 'utf8');
 var html = fs.readFileSync(path.join(R, 'programme.html'), 'utf8');
 var aide = fs.readFileSync(path.join(R, 'js', 'aide-content.js'), 'utf8');
 

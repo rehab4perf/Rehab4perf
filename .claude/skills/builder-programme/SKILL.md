@@ -332,6 +332,28 @@ prorata des durées.
 L'unité et l'étendue sont retenues **par compte** (`_cleCompte`,
 `R4P_KEYS.PEVO_PREF`) ; une plage personnalisée ne se rouvre pas.
 
+**Le volume d'entraînement vit dans `js/volume-sport.js`**, chargé par
+`programme.html` (AVANT `prog-data.js`) et par `athlete.html`
+(`node qualite/athlete-volume-cas.js`). L'athlète voit ce bloc — et lui seul —
+dans son lien : la table des sports, les périodes (`_pevoJour` … `_pevoPeriode`),
+Foster (`_uaFoster`, `_stravaChargeEstimate`), l'agrégation
+(`_volumeParSport`), `_fbIsCharge` / `_evIsCap` et le rendu (`_volHtml`) y ont
+été **déplacés**, pas recopiés : deux calculs du même chiffre divergent, la
+règle anti-double-comptage d'abord. Trois conséquences :
+
+- rien dans ce fichier ne lit une globale de page sans `typeof` — l'athlète n'a
+  ni `_stravaActivities`, ni `_cloudCalEvents`, ni `_progPatient`, ni `_cycles`.
+  Il passe ses données par `_volumeParSport(n, { activites, seances, ddn })` ;
+- l'athlète récupère ce que le calcul lit : `seance_id` sur Strava (sinon une
+  séance notée compte deux fois), `douleur` et `exo_data` sur les retours,
+  et `donnees->>type` seul sur le programme — `_evIsCap` lit `programmes.type`
+  comme `programmes.donnees.type` ;
+- ses barres ne s'ouvrent pas (`sousUnite` nul) : `pevoOuvrirPeriode` pilote le
+  panneau du praticien, qui n'existe pas dans le lien.
+
+Les cas qui découpent ces fonctions lisent `prog-data.js` + `volume-sport.js`,
+et leurs tranches s'arrêtent à `/* ── Fin de volume-sport.js`.
+
 ## Empreinte de séance du builder
 
 ```bash
