@@ -333,6 +333,58 @@ var h1 = rendre(uneSem);
 ok('une semaine se rend, sans valeur absurde', h1.indexOf('vol-bloc') > 0 && !/NaN|Infinity|undefined/.test(h1),
    (h1.match(/.{40}(NaN|Infinity|undefined).{40}/) || [''])[0]);
 ok('… avec ses tuiles et ses cadres par sport', /vol-tuiles/.test(h1) && /vol-cadre"/.test(h1));
+
+/* ── L'écart se mesure À JOUR ÉGAL ─────────────────────────────────────────
+   Les périodes sont des semaines calendaires, du lundi au dimanche, et la
+   semaine en cours compte même inachevée. Un vendredi, « 1 semaine »
+   comparait donc cinq jours à sept : −34 %, −42 %, −72 % sur la capture du
+   praticien, le week-end — souvent le plus chargé — n'ayant pas encore eu
+   lieu. Décision du praticien : comparer à parts égales. La référence est
+   coupée au MÊME jour de la semaine que l'actuelle : lundi → vendredi contre
+   lundi → vendredi. Les barres restent en semaines calendaires. */
+console.log('\nL\'écart se mesure à jour égal');
+var jourAuj = (new Date().getDay() + 6) % 7;
+egal('l\'agrégation sait quel jour de la semaine on est', jourAuj, res.jourCourant);
+var cSem = res.semaines[3].sports.course;
+ok('… et range chaque activité par jour de la semaine',
+   cSem && cSem.parJour && cSem.parJour.length === 7 && cSem.parJour[0].dist === 12000 && cSem.parJour[2].dist === 8000,
+   cSem && cSem.parJour ? JSON.stringify(cSem.parJour.map(function (j) { return j.dist; })) : 'pas de parJour');
+
+/* Des semaines écrites à la main : lundi = 0 … dimanche = 6. */
+function cel(parJours) {
+  var pj = [0, 1, 2, 3, 4, 5, 6].map(function () { return { dist: 0, duree: 0, charge: 0, n: 0 }; });
+  var t = { dist: 0, duree: 0, charge: 0, n: 0, parJour: pj };
+  Object.keys(parJours).forEach(function (j) {
+    var km = parJours[j];
+    pj[j] = { dist: km * 1000, duree: km * 300, charge: km * 10, n: 1 };
+    t.dist += km * 1000; t.duree += km * 300; t.charge += km * 10; t.n += 1;
+  });
+  return t;
+}
+function ecart(V) {
+  var hh = rendre(V);
+  return ((hh.match(/vol-d [a-z]+"[^>]*>([^<]*)</) || [])[1] || 'absent').trim();
+}
+/* Semaine d'avant : 10 km le lundi, 20 km le samedi. Cette semaine : 10 km le lundi. */
+var avant1 = { debut: 'a', sports: { course: cel({ 0: 10, 5: 20 }) } };
+var cette1 = { debut: 'b', sports: { course: cel({ 0: 10 }) } };
+egal('un vendredi : lundi → vendredi contre lundi → vendredi (10 km contre 10 km)', '= 0 %',
+     ecart({ sports: res.sports, jourCourant: 4, semaines: [avant1, cette1] }));
+egal('le dimanche, la semaine est complète : 10 km contre 30 km', '▼ -67 %',
+     ecart({ sports: res.sports, jourCourant: 6, semaines: [avant1, cette1] }));
+egal('sans détail par jour, rien ne change (comparaison entière)', '▼ -67 %',
+     ecart({ sports: res.sports, semaines: [
+       { debut: 'a', sports: { course: { dist: 30000, duree: 9000, charge: 300, n: 2 } } },
+       { debut: 'b', sports: { course: { dist: 10000, duree: 3000, charge: 100, n: 1 } } }] }));
+/* Sur plusieurs semaines, seule la DERNIÈRE semaine de la référence est coupée :
+   les autres sont complètes des deux côtés. */
+egal('sur deux semaines : seule la dernière de la référence est coupée', '= 0 %',
+     ecart({ sports: res.sports, jourCourant: 4, semaines: [
+       { debut: 'a', sports: { course: cel({ 0: 10 }) } }, avant1,
+       { debut: 'c', sports: { course: cel({ 0: 10 }) } }, cette1] }));
+var hJ = rendre({ sports: res.sports, jourCourant: 4, semaines: [avant1, cette1] });
+ok('l\'écart dit ce qu\'il compare', /vol-d [a-z]+" title="[^"]*jour égal/.test(hJ),
+   (hJ.match(/<span class="vol-d[^>]*>/) || ['absent'])[0]);
 ok('plus aucun libellé ne dit « cette semaine »',
    !/cette semaine|Cette semaine|12 dernières semaines/.test(pdata),
    (pdata.match(/cette semaine|12 dernières semaines/gi) || []).join(' | '));

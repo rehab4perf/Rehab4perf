@@ -5563,10 +5563,37 @@ function _volHtml(_volDonnees, fenetre){
     });
     return t;
   }
+  /* L'écart se mesure À JOUR ÉGAL. Les périodes sont des semaines
+     calendaires, et la semaine en cours compte même inachevée : un vendredi,
+     « 1 semaine » comparait cinq jours à sept, et affichait une baisse qui
+     n'était que le week-end à venir. La référence est donc coupée au MÊME jour
+     de la semaine : seule sa DERNIÈRE semaine l'est, les autres sont complètes
+     des deux côtés. Sans détail par jour, ou le dimanche, rien n'est coupé
+     (qualite/volume-sport-cas.js). */
+  var jc = (typeof _volDonnees.jourCourant === 'number') ? _volDonnees.jourCourant : 6;
+  function cumulRef(liste, cle){
+    var t = cumul(liste.slice(0, -1), cle);
+    var dernier = liste[liste.length - 1];
+    if(!dernier) return t;
+    var c = dernier.sports[cle] || vide;
+    if(jc < 6 && c.parJour){
+      for(var j = 0; j <= jc; j++){
+        var p = c.parJour[j];
+        t.dist += p.dist; t.duree += p.duree; t.charge += p.charge; t.n += p.n;
+      }
+    } else {
+      t.dist += c.dist; t.duree += c.duree; t.charge += c.charge; t.n += c.n;
+    }
+    return t;
+  }
+  var _JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+  var titreEcart = jc < 6
+    ? 'Comparé à la période précédente, à jour égal : arrêtée elle aussi au ' + _JOURS[jc] + '.'
+    : 'Comparé à la période précédente de même longueur, à jour égal.';
   var der = { sports:{} }, av = { sports:{} };
   defs.forEach(function(sp){
     der.sports[sp.cle] = cumul(sems, sp.cle);
-    av.sports[sp.cle]  = cumul(avant, sp.cle);
+    av.sports[sp.cle]  = cumulRef(avant, sp.cle);
   });
 
   var chargeTot = 0;
@@ -5598,7 +5625,7 @@ function _volHtml(_volDonnees, fenetre){
       + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+escH(sp.nom)+'</div>'
       + '<div class="vol-t-val">'+_volFmt(vc, sp.unite)
       + (sp.unite === 'km' ? '<span class="vol-t-u">km</span>' : '')+'</div>'
-      + '<div class="vol-t-sub"><span class="vol-d '+cls+'">'
+      + '<div class="vol-t-sub"><span class="vol-d '+cls+'" title="'+escH(titreEcart)+'">'
       + (d === null ? '—' : (d > 0 ? '▲ +' : (d < 0 ? '▼ ' : '= ')) + d + ' %')
       + '</span> · '+c.n+' séance'+(c.n > 1 ? 's' : '')+'</div></div>';
   }).join('');

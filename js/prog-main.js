@@ -1884,9 +1884,16 @@ function _volumeParSport(nbSemaines){
     var k = index[_volIso(_volLundi(jour))];
     if(k === undefined) return;                          // hors fenetre
     var cel = semaines[k].sports[cle]
-           || (semaines[k].sports[cle] = { dist:0, duree:0, charge:0, n:0 });
+           || (semaines[k].sports[cle] = { dist:0, duree:0, charge:0, n:0,
+                parJour:[0,1,2,3,4,5,6].map(function(){ return { dist:0, duree:0, charge:0, n:0 }; }) });
     cel.dist += (dist || 0); cel.duree += (duree || 0);
     cel.charge += (charge || 0); cel.n += 1;
+    /* Le détail par jour de la semaine (lundi = 0) permet de comparer À JOUR
+       ÉGAL : la semaine en cours, inachevée, contre la même portion de la
+       précédente (voir _volHtml). */
+    var pj = cel.parJour[(jour.getDay() + 6) % 7];
+    pj.dist += (dist || 0); pj.duree += (duree || 0);
+    pj.charge += (charge || 0); pj.n += 1;
   }
 
   /* 1. Seances planifiees. Meme partage que `_buildUaMap` : un feedback de
@@ -1931,7 +1938,8 @@ function _volumeParSport(nbSemaines){
   /* Les DEFINITIONS partent avec les chiffres : le rendu ne tient pas sa propre
      copie des noms, unites et couleurs — deux tables finiraient par diverger,
      et c'est la couleur qui derive en premier. */
-  return { semaines:semaines, sports:R4P_SPORTS.concat([R4P_SPORT_AUTRE]) };
+  return { semaines:semaines, sports:R4P_SPORTS.concat([R4P_SPORT_AUTRE]),
+           jourCourant:(new Date().getDay() + 6) % 7 };           // lundi = 0
 }
 
 /* ── Helpers sémantiques feedback ──────────────────────────────────
