@@ -99,6 +99,32 @@ bouton restait en « Enregistrer la séance » et l'enregistrement faisait un
 PATCH : on modifiait la séance déjà chez le patient, sans le moindre signal.
 `openBuilderNew()` avait le même oubli.
 
+## Builder — un mot par chose, une ligne par information
+
+```bash
+node qualite/builder-clarte-cas.js
+```
+
+Inventaire fait avec le praticien (2026-09-11) :
+- **« Modèles »** pour les modèles, partout : onglets « Exercices | Modèles »,
+  panneau de l'agenda « Modèles ». Le bouton du haut nomme ce qu'il ouvre
+  (« Bibliothèque » dans le builder, « Modèles » sur l'agenda).
+- **Le titre dit ce qu'on fait** (« Séance du 15 septembre », « Nouvelle
+  séance », « Modèle : … ») ; **une ligne dit pour qui** : `.builder-mode-row`
+  réunit `#builderDateBar` (patient, ou mode modèle en ambre) et
+  `#builder-proto-banner` (protocole, sans répéter le patient). Le nom du
+  patient s'affichait jusqu'à six fois.
+- **Icônes dessinées** dans cette ligne et sur « Mettre à jour le modèle »
+  (`_PROG_SAVE_ICON`), plus d'emoji.
+- **« Feedback »** : `_resetBuilderState` et `openBuilderForDate` effacent
+  `_capBbSeanceId` / `_hsrBbSeanceId` — restés d'une séance CAP/HSR, ils
+  l'affichaient sur une séance neuve. Masqué sur un modèle.
+- **Séance vide** : « + Ajouter un bloc » et « Partir d'un modèle »
+  (`ouvrirModeles()` : panneau ouvert sur l'onglet Modèles).
+- Le panneau « Biblio 2 colonnes » (`templatesBuilderArea`, masqué en
+  permanence) a été **supprimé** : code mort, avec ses propres boutons, qui a
+  trompé l'inventaire.
+
 ## Un modèle ouvert reste l'objet du travail
 
 ```bash

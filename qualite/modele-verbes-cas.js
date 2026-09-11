@@ -161,7 +161,7 @@ ok('modification d\'un modèle : bandeau ambre, qui le nomme', b._cl['mode-model
 ok('… dit qu\'aucun patient n\'est concerné', /aucun patient n.est concerné/.test(b.innerHTML));
 ok('… et offre d\'en sortir', /quitterModele\(\)/.test(b.innerHTML) && /Quitter le modèle/.test(b.innerHTML));
 b = bandeau({ _progPatient: { prenom: 'Antoine', nom: 'Peronnaud' }, _builderDate: '2026-09-01' });
-ok('séance d\'un patient : son nom et la date, sans la couleur du modèle', /Séance d.Antoine Peronnaud/.test(b.innerHTML + b.textContent) && /1 septembre 2026/.test(b.innerHTML + b.textContent) && !b._cl['mode-modele'],
+ok('séance d\'un patient : son nom, sans la couleur du modèle (la date est dans le titre)', /Antoine Peronnaud/.test(b.innerHTML + b.textContent) && !b._cl['mode-modele'],
    (b.innerHTML || b.textContent).slice(0, 160));
 b = bandeau({ _builderMode: 'template' });
 ok('nouveau modèle : même bandeau ambre', b._cl['mode-modele'] && /Nouveau modèle/.test(b.innerHTML), b.innerHTML.slice(0, 120));
@@ -174,12 +174,11 @@ ok('bibliothèque : « Ajouter à la séance » et « Modifier le modèle », c�
 /* Le ⤓ de l'en-tête faisait la même chose que « + Ajouter à la séance » :
    un seul bouton par geste — celui qui dit ce qu'il fait. */
 ok('plus de ⤓ en doublon de « Ajouter à la séance »', !/picker-load-btn/.test(picker) && !/picker-load-btn/.test(html));
-ok('panneau Biblio : un crayon à côté de « Ajouter »', /builder-lib-edit[^>]*modifierModele\(/.test(pmain));
 ok('répertoire : « Modifier le modèle », plus « Ouvrir dans le builder »', /modifierModele\([^)]*\)">Modifier le modèle</.test(fn('_renderTmplCardTree')) && !/Ouvrir dans le builder/.test(fn('_renderTmplCardTree')));
 ok('« Utiliser pour un patient » existe dans l\'en-tête du builder', /id="builder-utiliser-btn"[^>]*onclick="utiliserModele\(\)"/.test(html));
 const rsb = fn('_refreshSaveBtn');
 ok('… affiché en mode modèle, masqué ailleurs', /utilBtn\.style\.display = enModele \? '' : 'none'/.test(rsb));
-['.builder-date-bar.mode-modele', '.picker-edit-all', '.builder-lib-edit', '.stmpl-card-tree-open'].forEach(s => ok(s + ' est défini', html.indexOf(s + ' {') > 0 || html.indexOf(s + ',') > 0));
+['.builder-date-bar.mode-modele', '.picker-edit-all', '.stmpl-card-tree-open'].forEach(s => ok(s + ' est défini', html.indexOf(s + ' {') > 0 || html.indexOf(s + ',') > 0));
 
 console.log('\nL\'aide suit');
 ok('elle ne décrit plus le changement de sens silencieux', !/n.apparaît que si le modèle est seul/.test(aide) && !/« Ouvrir dans le builder »/.test(aide));

@@ -2416,6 +2416,8 @@ function _updateFeedbackBtn(hasAthleteData) {
   var btn = document.getElementById('builder-feedback-btn');
   if (!btn) return;
   var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
+  /* Un modèle n'a pas d'athlète : pas de retour à consulter. */
+  if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) sid = null;
   btn.style.display = sid ? 'inline-flex' : 'none';
   if (hasAthleteData) btn.classList.add('has-retour');
   else btn.classList.remove('has-retour');
@@ -4733,7 +4735,7 @@ function doSaveTemplate(){
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify(patch)
       }).then(function(r){
-        if(r.ok){ closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Modèle « '+nom+' » mis à jour !'); }
+        if(r.ok){ closeSaveTemplate(); renderSidebarTemplates(); _showToast('Modèle « '+nom+' » mis à jour !'); }
         else { r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
       }).catch(function(){ alert('Erreur réseau.'); });
     } else {
@@ -4741,7 +4743,7 @@ function doSaveTemplate(){
       var t = _templates.find(function(x){ return String(x.id)===String(id); });
       if(t){ t.nom=nom; t.categorie=cat; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=''; t.phase_ordre=phaseOrdre;
              t.pathologie=patho; t.sport=sportTxt; _persistTemplates(); }
-      closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Modèle « '+nom+' » mis à jour !');
+      closeSaveTemplate(); renderSidebarTemplates(); _showToast('Modèle « '+nom+' » mis à jour !');
     }
     return;
   }
@@ -4766,7 +4768,7 @@ function doSaveTemplate(){
       if(r.ok){
         if(!isEtapeTmpl) _draftClear();
         closeSaveTemplate();
-        renderTemplatesInBuilder();
+        
         renderSidebarTemplates();
         _finirModeTemplate();
         _showToast('Modèle « ' + nom + ' » enregistré !');
@@ -4789,166 +4791,15 @@ function doSaveTemplate(){
     _persistTemplates();
     if(!isEtapeTmpl) _draftClear();
     closeSaveTemplate();
-    renderTemplatesInBuilder();
+    
     renderSidebarTemplates();
     _finirModeTemplate();
     _showToast('Modèle « ' + nom + ' » enregistré !');
   }
 }
 
-/* ── Bibliothèque 2 colonnes dans le bas du builder ── */
-var _selectedLibGroup  = null;
-var _libCatCollapsed   = (function(){
-  try { return JSON.parse(localStorage.getItem(R4P_KEYS.LIB_CAT_COLLAPSED)||'{}'); } catch(e){ return {}; }
-})();
-
-function _toggleLibCat(catKey){
-  _libCatCollapsed[catKey] = !_libCatCollapsed[catKey];
-  try { localStorage.setItem(R4P_KEYS.LIB_CAT_COLLAPSED, JSON.stringify(_libCatCollapsed)); } catch(e){}
-  _renderBuilderLibraryUI();
-}
-
-function renderBuilderLibrary(){
-  var area = document.getElementById('templatesBuilderArea');
-  if(!area || area.style.display === 'none') return;
-
-  if(_progToken && _progUid){
-    // Si aucune donnée en mémoire, charger d'abord
-    if(!_groups.length && !_sidebarProgs.length){
-      area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
-      Promise.all([
-        _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
-        _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&type=neq.__meta__&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
-      ]).then(function(res){
-        if(Array.isArray(res[0])) _groups=res[0];
-        if(Array.isArray(res[1])) _sidebarProgs=res[1];
-        _renderBuilderLibraryUI();
-      }).catch(function(){ _renderBuilderLibraryUI(); });
-      return;
-    }
-  } else {
-    _loadGroups(); _loadTemplates();
-    _sidebarProgs = _templates.map(function(t){
-      return {id:t.id, nom:t.nom, emoji:t.emoji, type:t.type, categorie:t.categorie||'',
-              group_id:t.group_id||null, phase_nom:t.phase_nom||'', phase_ordre:t.phase_ordre||0, donnees:t.donnees};
-    });
-  }
-  _renderBuilderLibraryUI();
-}
-
-function _renderBuilderLibraryUI(){
-  var area = document.getElementById('templatesBuilderArea');
-  if(!area) return;
-
-  var groups = _groups || [];
-  var progs  = _sidebarProgs || [];
-
-  // Templates sans protocole = groupe virtuel en fin de liste
-  var orphans = progs.filter(function(p){ return !p.group_id; });
-  var allGroups = groups.slice();
-  if(orphans.length) allGroups.push({id:'__orphan__', nom:'Sans protocole', categorie:'__orphan_cat__', _virtual:true});
-
-  if(!allGroups.length){
-    area.innerHTML = '<div style="padding:18px 14px;color:var(--muted);font-size:.77rem;font-style:italic;text-align:center;">'
-      +'Aucun protocole.<br><span style="font-size:.7rem;">Créez un protocole dans la barre latérale pour commencer.</span></div>';
-    return;
-  }
-
-  // Sélection automatique du premier groupe si besoin
-  if(!_selectedLibGroup || !allGroups.find(function(g){ return String(g.id)===String(_selectedLibGroup); })){
-    _selectedLibGroup = allGroups[0].id;
-  }
-
-  // ── Colonne gauche : grouper par catégorie ──────────────────────────────
-  var catOrder = TMPL_CATEGORIES.map(function(c){ return c.val; });
-  // Construire map catégorie → groupes
-  var catsMap = {};
-  allGroups.forEach(function(g){
-    var cat = g._virtual ? '__orphan_cat__' : (g.categorie||'');
-    if(!catsMap[cat]) catsMap[cat] = [];
-    catsMap[cat].push(g);
-  });
-  // Trier les catégories selon TMPL_CATEGORIES, inconnues après, orphelin en dernier
-  var allCatKeys = Object.keys(catsMap).sort(function(a,b){
-    if(a==='__orphan_cat__') return 1;
-    if(b==='__orphan_cat__') return -1;
-    var ia = catOrder.indexOf(a), ib = catOrder.indexOf(b);
-    if(ia===-1&&ib===-1) return a.localeCompare(b);
-    if(ia===-1) return 1; if(ib===-1) return -1;
-    return ia-ib;
-  });
-
-  var leftHtml = '';
-  allCatKeys.forEach(function(catKey){
-    var catGroups = catsMap[catKey];
-    var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; })
-                || { icon:'📁', color:'#F3F4F6', textColor:'var(--text-dk)' };
-    var catLabel = catKey==='__orphan_cat__' ? 'Sans protocole' : (catKey||'Sans catégorie');
-    var isCollapsed = !!_libCatCollapsed[catKey]; // ouvert par défaut
-
-    leftHtml += '<div class="blib-cat-hdr" onclick="_toggleLibCat(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'30;">';
-    leftHtml += '<span class="blib-cat-icon">'+catInfo.icon+'</span>';
-    leftHtml += '<span class="blib-cat-label" style="color:var(--text-dk);">'+escH(catLabel)+'</span>';
-    leftHtml += '<span class="blib-cat-cnt">'+catGroups.length+'</span>';
-    leftHtml += '<span class="blib-cat-arrow">'+(isCollapsed?'▶':'▼')+'</span>';
-    leftHtml += '</div>';
-
-    if(!isCollapsed){
-      catGroups.forEach(function(g){
-        var gid = String(g.id);
-        var isActive = String(_selectedLibGroup)===gid;
-        var count = gid==='__orphan__' ? orphans.length
-                  : progs.filter(function(p){ return String(p.group_id)===gid; }).length;
-        leftHtml += '<div class="builder-lib-group'+(isActive?' active':'')+'" onclick="_selectLibGroup(\''+escJS(gid)+'\')" title="'+escH(g.nom||'')+'">'
-          +'<span class="builder-lib-gname">'+escH(g.nom||'Sans nom')+'</span>'
-          +'<span class="builder-lib-gcnt">'+count+'</span>'
-          +'</div>';
-      });
-    }
-  });
-
-  // ── Colonne droite : séances du protocole sélectionné ──────────────────
-  var phases = (String(_selectedLibGroup)==='__orphan__' ? orphans
-    : progs.filter(function(p){ return String(p.group_id)===String(_selectedLibGroup); }))
-    .slice().sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
-
-  var rightHtml;
-  if(!phases.length){
-    rightHtml = '<div style="padding:18px 10px;color:var(--muted);font-size:.74rem;font-style:italic;text-align:center;">Aucune séance dans ce protocole.</div>';
-  } else {
-    rightHtml = phases.map(function(p){
-      var pid = escH(String(p.id));
-      var nbExos = 0;
-      try{ nbExos=(JSON.parse(p.donnees||'{}').blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0); }catch(e){}
-      var meta = [];
-      if(p.phase_nom) meta.push(escH(p.phase_nom));
-      if(p.type)      meta.push(escH(p.type));
-      if(nbExos)      meta.push(nbExos+' exo'+(nbExos>1?'s':''));
-      return '<div class="builder-lib-session">'
-        +'<span style="font-size:1.05rem;flex-shrink:0;">'+(p.emoji||'💪')+'</span>'
-        +'<div style="flex:1;min-width:0;">'
-        +'<div class="builder-lib-sname">'+escH(p.nom||'Sans nom')+'</div>'
-        +(meta.length?'<div class="builder-lib-smeta">'+meta.join(' · ')+'</div>':'')
-        +'</div>'
-        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter à la séance en cours — le modèle n\'est pas modifié">Ajouter</button>'
-        +'<button class="builder-lib-edit" onclick="modifierModele(\''+pid+'\')" title="Modifier le modèle lui-même">✎</button>'
-        +'</div>';
-    }).join('');
-  }
-
-  area.innerHTML = '<div class="builder-lib-left">'+leftHtml+'</div>'
-                 +'<div class="builder-lib-right">'+rightHtml+'</div>';
-}
-
-function _selectLibGroup(gid){
-  _selectedLibGroup = gid;
-  _renderBuilderLibraryUI();
-}
-
-/* ── Aliases rétrocompatibilité ── */
-function renderTemplatesInBuilder(){ renderBuilderLibrary(); }
-function renderLibraryTemplates()  { renderBuilderLibrary(); }
-function switchTmplTab()           { renderBuilderLibrary(); }
+function renderLibraryTemplates()  { }
+function switchTmplTab()           { }
 
 /* ══════════════════════════════════════════════════════════
    SIDEBAR PICKER — onglet Templates dans le builder
@@ -5426,7 +5277,7 @@ function doPublishTemplate(){
       closePublishModal();
       _showToast('Modèle publié dans la bibliothèque partagée');
       // Rafraîchir la bibliothèque
-      renderBuilderLibrary();
+      
     } else {
       r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
     }
@@ -5672,7 +5523,7 @@ function _refreshSaveBtn(){
   if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){
     var _mRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
     var _mNom = _mRef ? (_mRef.nom || 'Modèle') : 'Modèle';
-    btn.innerHTML = '🔄 Mettre à jour « ' + (_mNom.length > 22 ? _mNom.substring(0,21)+'…' : _mNom) + ' »';
+    btn.innerHTML = _PROG_SAVE_ICON + 'Mettre à jour « ' + (_mNom.length > 22 ? _mNom.substring(0,21)+'…' : _mNom) + ' »';
     btn.title = 'Remplace le contenu de ce modèle par la séance en cours';
     btn.style.background = '';
     if(planBtn) planBtn.style.display = 'none';
@@ -5708,7 +5559,7 @@ function _refreshSaveBtn(){
       var _tRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
       var _tName = _tRef ? (_tRef.nom||'Modèle') : 'Template';
       var _tLabel = _tName.length > 20 ? _tName.substring(0,19)+'…' : _tName;
-      updBtn.textContent = '🔄 ' + _tLabel;
+      updBtn.innerHTML = _PROG_SAVE_ICON + escH(_tLabel);   // même icône que l'enregistrement (qualite/builder-clarte-cas.js)
       updBtn.title = 'Mettre à jour « ' + _tName + ' »';
       updBtn.style.display = '';
     } else {
@@ -5867,14 +5718,14 @@ function deleteTemplate(id){
       _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
         method: 'DELETE', headers: _sbHeaders()
       }).then(function(r){
-        if(r.ok){ renderTemplatesInBuilder(); renderSidebarTemplates(); }
+        if(r.ok){ renderSidebarTemplates(); }
         else { alert('Erreur suppression.'); }
       }).catch(function(){ alert('Erreur réseau.'); });
     } else {
       _loadTemplates();
       _templates = _templates.filter(function(t){ return t.id !== id; });
       _persistTemplates();
-      renderTemplatesInBuilder();
+      
       renderSidebarTemplates();
     }
   });
@@ -7502,6 +7353,13 @@ function quitterModele(){
 /* « Utiliser pour un patient » : le contenu du modèle devient une séance du
    patient sélectionné. Le lien au modèle tombe, le modèle n'est pas touché ;
    on enregistre ou planifie ensuite, comme toute séance. */
+/* « Partir d’un modèle » (séance vide) : ouvre le panneau latéral sur l’onglet
+   Modèles — le geste que le praticien veut favoriser (qualite/builder-clarte-cas.js). */
+function ouvrirModeles(){
+  var sb = document.querySelector('.sidebar');
+  if(sb){ if(window.innerWidth <= 700) sb.classList.add('mob-lib-open'); else sb.classList.remove('collapsed'); }
+  _switchSidebarTab('picker');
+}
 function utiliserModele(){
   if(!_progPatient){ alert('Sélectionnez d\'abord le patient pour qui utiliser ce modèle.'); return; }
   _builderFromTemplate = null;
@@ -7708,7 +7566,7 @@ function _enterBuilderMode(){
   _updateSidebarToggleBtn(true);
   // On DEMARRE sur l'onglet exercices — on n'y renvoie pas en cours de route.
   if(!_dejaOuvert) _switchSidebarTab('lib');
-  renderTemplatesInBuilder();
+  
   // Proposer de restaurer le brouillon si le builder est vide
   setTimeout(_draftRestore, 120);
   // Bandeau protocole contextuel
@@ -7791,7 +7649,7 @@ function _builderLoadProtoContext(){
 
 function _builderRenderProtoBannerDone(banner, proto, patName){
   banner.innerHTML =
-    '<span>' + (patName ? '<strong>' + patName + '</strong> · ' : '') +
+    '<span>' +
     proto.name + ' — <span class="bpb-phase">🏁 Protocole terminé</span></span>' +
     '<span class="bpb-done-badge">Toutes les phases validées ✓</span>';
   banner.className = 'bpb-done';
@@ -7806,7 +7664,7 @@ function _builderRenderProtoBanner(banner, pp, proto, phase, patName){
     : 'onclick="_builderLinkToPhase(\'' + proto.id + '\',\'' + phase.id + '\',\'' + pp.id + '\',\'' + phase.name.replace(/'/g,'') + '\',\'' + proto.name + '\')"';
 
   banner.innerHTML =
-    '<span>' + (patName ? '<strong>' + patName + '</strong> · ' : '') +
+    '<span>' +
     proto.name + ' — <span class="bpb-phase">' + phase.name + '</span></span>' +
     '<button class="bpb-link-btn" ' + btnClick + '>' + btnLabel + '</button>';
 
@@ -7866,6 +7724,11 @@ function _exitBuilderMode(){
 
 function openBuilderForDate(dateStr){
   _builderDate = dateStr;
+  /* Une séance NEUVE n'a pas de retour : l'identifiant d'une séance CAP ou HSR
+     ouverte plus tôt affichait « Feedback » sur une séance qui n'existe pas
+     encore (qualite/builder-clarte-cas.js). */
+  _capBbSeanceId = null; _hsrBbSeanceId = null;
+  _updateFeedbackBtn(false);
   _builderFromTemplate = null;
   _applyBuilderReadOnly(false);
   // Pas de protocole actif quand on ouvre depuis le calendrier
@@ -7878,6 +7741,11 @@ function openBuilderForDate(dateStr){
 
 function _resetBuilderState(){
   blocs = []; etapes = [];
+  /* Une séance NEUVE n'a pas de retour : l'identifiant d'une séance CAP ou HSR
+     ouverte plus tôt affichait « Feedback » sur une séance qui n'existe pas
+     encore (qualite/builder-clarte-cas.js). */
+  _capBbSeanceId = null; _hsrBbSeanceId = null;
+  _updateFeedbackBtn(false);
   _notes = '';
   activeBloc = null;
   _currentProgId = null;
@@ -7999,10 +7867,10 @@ function _updateSidebarToggleBtn(isBuilder){
   var btn = document.getElementById('topbarBiblioBtn');
   if(!btn) return;
   if(isBuilder){
-    btn.title = 'Bibliothèque d\'exercices';
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><circle cx="2" cy="4" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="20" r="2"/><path d="m8 5h15c.553 0 1-.447 1-1s-.447-1-1-1h-15c-.553 0-1 .447-1 1s.447 1 1 1z"/><path d="m23 11h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/><path d="m23 19h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/></svg><span class="btn-label"> Biblio</span>';
+    btn.title = 'Bibliothèque : exercices et modèles';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><circle cx="2" cy="4" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="20" r="2"/><path d="m8 5h15c.553 0 1-.447 1-1s-.447-1-1-1h-15c-.553 0-1 .447-1 1s.447 1 1 1z"/><path d="m23 11h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/><path d="m23 19h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/></svg><span class="btn-label"> Bibliothèque</span>';
   } else {
-    btn.title = 'Bibliothèque';
+    btn.title = 'Modèles';
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg><span class="btn-label"> Modèles</span>';
   }
 }
@@ -8033,9 +7901,17 @@ function _updateBuilderTitle(){
     _majBandeauMode();
     return;
   }
-  var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
-  if(titleEl) titleEl.textContent = patNom || 'Nouvelle séance';
-  if(dateBar) _majBandeauMode();
+  /* Le titre dit CE QU'ON FAIT ; la ligne sous l'en-tête dit pour qui
+     (qualite/builder-clarte-cas.js) — le nom du patient s'affichait jusqu'à
+     six fois. */
+  var titre = 'Nouvelle séance';
+  if(_builderDate){
+    var _p = _builderDate.split('-');
+    var _M = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    titre = 'Séance du ' + parseInt(_p[2]) + ' ' + _M[parseInt(_p[1])-1];
+  }
+  if(titleEl) titleEl.textContent = titre;
+  _majBandeauMode();
 }
 
 /* ── Le bandeau de mode (qualite/modele-verbes-cas.js) ──────────────
@@ -8046,33 +7922,31 @@ function _updateBuilderTitle(){
 function _majBandeauMode(){
   var bar = document.getElementById('builderDateBar');
   if(!bar) return;
+  /* Icônes dessinées, comme l'en-tête — plus de 📅 ni de ✎ (qualite/builder-clarte-cas.js). */
+  var ico = function(d){ return '<svg class="bdb-ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
+  var CRAYON  = ico('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>');
+  var PATIENT = ico('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>');
   var enModele = _builderMode === 'template' || !!(_builderFromTemplate && !_currentSeanceId && !_currentProgId);
   bar.classList.toggle('mode-modele', enModele);
   if(_builderMode === 'template'){
-    bar.innerHTML = '✎ <b>' + escH(_activeGroupNom ? 'Nouvelle phase — ' + _activeGroupNom : 'Nouveau modèle')
-                  + '</b> — aucun patient n\'est concerné';
+    bar.innerHTML = CRAYON + '<span><b>' + escH(_activeGroupNom ? 'Nouvelle phase — ' + _activeGroupNom : 'Nouveau modèle')
+                  + '</b> — aucun patient n\'est concerné</span>';
     bar.style.display = '';
     return;
   }
   if(enModele){
     var ref = (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); });
-    bar.innerHTML = '✎ <b>Modification du modèle « ' + escH(ref ? (ref.nom || 'Modèle') : 'Modèle') + ' »</b>'
-                  + ' — aucun patient n\'est concerné'
+    bar.innerHTML = CRAYON + '<span><b>Modification du modèle « ' + escH(ref ? (ref.nom || 'Modèle') : 'Modèle') + ' »</b>'
+                  + ' — aucun patient n\'est concerné</span>'
                   + '<button type="button" class="bdb-quitter" onclick="quitterModele()">Quitter le modèle</button>';
     bar.style.display = '';
     return;
   }
+  /* Séance d'un patient : son nom, une fois. La date est dans le titre ; le
+     protocole vient se ranger à côté, sur la même ligne (#builder-proto-banner). */
   var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
-  var date = '';
-  if(_builderDate){
-    var p = _builderDate.split('-');
-    var M = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-    date = parseInt(p[2]) + ' ' + M[parseInt(p[1])-1] + ' ' + p[0];
-  }
-  if(!patNom && !date){ bar.innerHTML = ''; bar.style.display = 'none'; return; }
-  /* « d'Antoine », « de Guillaume » : l'élision devant une voyelle. */
-  var de = /^[aeiouyhàâéèêëîïôöûü]/i.test(patNom) ? 'd’' : 'de ';
-  bar.innerHTML = '📅 ' + (patNom ? 'Séance ' + de + escH(patNom) + (date ? ' · ' + date : '') : 'Séance du ' + date);
+  if(!patNom){ bar.innerHTML = ''; bar.style.display = 'none'; return; }
+  bar.innerHTML = PATIENT + '<b>' + escH(patNom) + '</b>';
   bar.style.display = '';
 }
 

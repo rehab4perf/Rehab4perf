@@ -19,7 +19,6 @@ var R4P_KEYS = {
   LIBRARY              : 'r4p-library',
   EXPANDED_GROUPS      : 'r4p-expanded-groups',
   COLLAPSED_CATS       : 'r4p-collapsed-cats',
-  LIB_CAT_COLLAPSED    : 'r4p-lib-cat-collapsed',
   J0_PREFIX            : 'r4p-j0-',
   PEVO_SEL_PREFIX      : 'r4p-pevo-sel-',
   PEVO_PREF: 'r4p-pevo-pref',   // unité et étendue de l'Évolution, par compte (_cleCompte)
@@ -2651,8 +2650,12 @@ function renderSession(){
   if(clearBtn) clearBtn.style.display = blocs.length ? '' : 'none';
   _normalizeEtapes();
   if(!blocs.length && !etapes.length){
-    area.innerHTML = '<div class="empty-state" id="emptyState"><div class="icon">📋</div><p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p></div>'
-      + _renderAddRow();
+    area.innerHTML = '<div class="empty-state" id="emptyState">'
+      + '<p>Séance vide : ajoutez un bloc et piochez vos exercices, ou partez d’un modèle.</p>'
+      + '<div class="empty-actions">'
+      + '<button class="btn btn-outline" onclick="ouvrirMenuAjout(event,-1)">+ Ajouter un bloc</button>'
+      + '<button class="btn btn-primary" onclick="ouvrirModeles()">Partir d’un modèle</button>'
+      + '</div></div>';
     updateTargetBlocSelect();
     return;
   }
@@ -3833,16 +3836,16 @@ function _togglePublic(type, id, makePublic){
             if(String(p.group_id)===String(id)) p.is_public = makePublic;
           });
           renderSidebarTemplates();
-          renderBuilderLibrary();
+          
           _showToast(makePublic ? '🌐 Rendu public (protocole + phases) !' : '🔒 Rendu privé !');
         }).catch(function(){
           renderSidebarTemplates();
-          renderBuilderLibrary();
+          
           _showToast(makePublic ? '🌐 Groupe public — erreur mise à jour phases.' : '🔒 Rendu privé !');
         });
       } else {
         renderSidebarTemplates();
-        renderBuilderLibrary();
+        
         _showToast(makePublic ? '🌐 Rendu public !' : '🔒 Rendu privé !');
       }
     } else {
