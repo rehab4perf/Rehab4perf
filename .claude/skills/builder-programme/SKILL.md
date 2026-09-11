@@ -286,6 +286,52 @@ repart de zéro. Les deux chemins d'ouverture l'appellent — `openProgModal`
 étaient chargés une seule fois au démarrage, sous une clé sans id : ils
 passent par lui aussi.
 
+## Évolution des charges — une période, deux lectures
+
+```bash
+node qualite/pevo-periode-cas.js      # unité + décalage, périodes calendaires
+node qualite/pevo-progression-cas.js  # charge suit la période, progression en bande
+node qualite/pevo-etape2-cas.js       # export, préférence, clavier, « Tout », barres
+node qualite/pevo-cycle-cas.js        # unité Cycle, écarts entre séances du même mode
+```
+
+**La période est une UNITÉ et un DÉCALAGE** (`_pevoUnite`, `_pevoDecalage`),
+jamais une fenêtre glissante : Semaine, Mois, Trimestre, Année sont
+CALENDAIRES (septembre commence le 1er), « Cycle » suit les cycles du patient,
+« Tout » va de la première activité connue à aujourd'hui, « Personnalisé »
+prend deux dates. On ne va jamais au-delà d'aujourd'hui. `_pevoPeriode` rend
+tout ce qu'il faut savoir : bornes, libellé, référence, phrase de comparaison,
+sous-barres, et `sousUnite` (la période qu'ouvre un clic sur une barre).
+
+**L'écart se mesure contre la période précédente de même unité**, coupée au
+même avancement si la période est en cours — un vendredi, 5 jours contre 7
+affichaient une baisse qui n'était que le week-end à venir. Pour « Cycle »,
+deux cycles n'ont pas la même durée : la référence est **ramenée à la même
+durée** (`echelle`). « Tout » n'a rien à comparer : « — », jamais un chiffre.
+
+**Deux lectures d'une même période.** La CHARGE (volume, répartition, UA) est
+une quantité : elle suit la période. La PROGRESSION (charge estimée,
+durées, cardio, douleur CAP) est une trajectoire : ses courbes gardent tout
+l'historique, la période y est une bande (`_pevoBande`), les chiffres de tête
+portent sur la période ; « Période seule » zoome. **Aucun graphique ne
+disparaît en silence** : chacun exigeait deux points DANS la période, et
+depuis l'ouverture sur « Mois » les courbes s'évaporaient — la carte dit
+désormais « 1 séance sur la période ».
+
+**Poids du corps et charge ajoutée ne se soustraient pas.** `_1rm` compte le
+poids du corps pour 0,1 kg : « 12 reps PdC → 13,3 kg » donnait « > 999 % ».
+« PdC = 1 kg » a été envisagé et écarté (+824 %, et une valeur inventée).
+`_pevoKpiCharge` compare la dernière série de séances du même mode — des
+répétitions au poids du corps, des kg en charge — et date la bascule.
+
+**Le sport vient de Strava, la charge du retour** (`_volumeParSport`) : une
+séance du programme n'a pas de sport ; quand une activité Strava lui est liée,
+elle donne le sport, les km et la durée, et la charge RPE se partage au
+prorata des durées.
+
+L'unité et l'étendue sont retenues **par compte** (`_cleCompte`,
+`R4P_KEYS.PEVO_PREF`) ; une plage personnalisée ne se rouvre pas.
+
 ## Empreinte de séance du builder
 
 ```bash

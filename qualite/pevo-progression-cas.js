@@ -36,7 +36,8 @@ const fn = nom => { const d = pdata.indexOf('\nfunction ' + nom + '('); return d
 const AUJ = '2026-09-11';
 const PERIODE = ['_pevoJour', '_pevoIso', '_pevoPlus', '_pevoLundi', '_pevoFinMois', '_pevoFmtCourt', '_pevoBuckets',
                  '_pevoPeriode', '_pevoPeriodePerso', '_pevoPeriodeCourante', '_pevoAppliquerPeriode', '_renderPevoFilterBar', '_pevoFilterPts'];
-const BANDE = ['_pevoBandeIdx', '_pevoBandeSvg', '_pevoBande', '_pevoProgTete', '_pevoPtsProg', '_pevoKpiPeu', '_pevoCarteVide'];
+/* `_pevoKpiCharge` (étape 3) : les chiffres de tête ne comparent que des séances du même mode. */
+const BANDE = ['_pevoBandeIdx', '_pevoBandeSvg', '_pevoBande', '_pevoProgTete', '_pevoPtsProg', '_pevoKpiPeu', '_pevoCarteVide', '_pevoKpiCharge'];
 
 /* ── La bande : quels points tombent dans la période ─────────────────────── */
 console.log('\nLa bande de période');

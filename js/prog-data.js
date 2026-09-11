@@ -5036,7 +5036,67 @@ function _pevoBuckets(debut, fin, mode){
   }
   return out;
 }
+/* ── Unité « Cycle » ──────────────────────────────────────────────────────
+   En rééducation, c'est souvent la vraie unité de lecture : la charge et la
+   progression d'une phase, comparées à la phase précédente.
+   - un cycle À DURÉE va de son début à sa fin (ou début + durée) ;
+   - un cycle À CRITÈRES va de son début à la validation de son dernier
+     critère (`checkedAt`), ou jusqu'à aujourd'hui s'il n'est pas validé ;
+   - sans date de début, ou pas encore commencé : ce n'est pas une période.
+   Deux cycles n'ayant pas la même durée, la référence est RAMENÉE À LA MÊME
+   DURÉE (`echelle`), et la phrase le dit (qualite/pevo-cycle-cas.js). */
+function _pevoPeriodesCycles(cycles, auj){
+  var out = [];
+  (cycles || []).forEach(function(c){
+    if(!c || !c.startDate || c.startDate > auj) return;
+    var fin;
+    if(c.mode === 'criteres'){
+      var phases = (Array.isArray(c.phases) && c.phases.length) ? c.phases
+                 : ((Array.isArray(c.criteria) && c.criteria.length) ? [{ criteria:c.criteria, checks:c.checks || {} }] : []);
+      var dernier = null, valide = phases.length > 0;
+      phases.forEach(function(ph){
+        (ph.criteria || []).forEach(function(_, i){
+          var ck = ph.checks && ph.checks[i];
+          if(!ck || !ck.checked){ valide = false; return; }
+          var d = String(ck.checkedAt || '').slice(0, 10);
+          if(d && (!dernier || d > dernier)) dernier = d;
+        });
+      });
+      fin = (valide && dernier) ? dernier : auj;
+      if(fin < c.startDate) fin = c.startDate;
+    } else {
+      fin = c.endDate || (c.duree ? _pevoPlus(c.startDate, c.duree * 7 - 1) : '');
+      if(!fin) return;
+    }
+    out.push({ nom:c.nom || 'Cycle', debut:c.startDate, fin:fin });
+  });
+  out.sort(function(a, b){ return a.debut < b.debut ? -1 : (a.debut > b.debut ? 1 : 0); });
+  return out;
+}
+function _pevoPeriodeCycle(decalage, auj){
+  var liste = _pevoPeriodesCycles(typeof _cycles !== 'undefined' ? _cycles : [], auj);
+  if(!liste.length || (decalage || 0) > 0) return null;
+  /* Période 0 : le cycle en cours — le plus récemment commencé si plusieurs
+     se chevauchent (critères et durée vont en parallèle) —, sinon le dernier. */
+  var i0 = liste.length - 1;
+  for(var i = liste.length - 1; i >= 0; i--){ if(liste[i].debut <= auj && liste[i].fin >= auj){ i0 = i; break; } }
+  var k = i0 + (decalage || 0);
+  if(k < 0 || k >= liste.length) return null;
+  var c = liste[k], r = k > 0 ? liste[k - 1] : null;
+  var jours = function(a, b){ return Math.round((_pevoJour(b) - _pevoJour(a)) / 86400000) + 1; };
+  var enCours = c.debut <= auj && c.fin >= auj;
+  var per = { unite:'cycle', debut:c.debut, fin:c.fin, enCours:enCours,
+              libelle:'Cycle « ' + c.nom + ' » · ' + _pevoFmtCourt(c.debut, true) + ' → ' + _pevoFmtCourt(c.fin, true) + (enCours ? ' · en cours' : ''),
+              refDebut: r ? r.debut : null, refFin: r ? r.fin : null, sousUnite:'semaine',
+              buckets:_pevoBuckets(c.debut, c.fin, 'semaine') };
+  if(r){
+    per.echelle = jours(c.debut, (enCours && c.fin > auj) ? auj : c.fin) / jours(r.debut, r.fin);
+    per.compare = 'Comparé à « ' + r.nom + ' » (' + _pevoFmtCourt(r.debut, true) + ' → ' + _pevoFmtCourt(r.fin, true) + '), ramené à la même durée.';
+  } else per.compare = 'Premier cycle : rien à comparer.';
+  return per;
+}
 function _pevoPeriode(unite, decalage, auj){
+  if(unite === 'cycle') return _pevoPeriodeCycle(decalage, auj);
   var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   var MC = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
   var JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
@@ -5132,7 +5192,7 @@ function _pevoSauverPref(){
 function _pevoChargerPref(){
   var cle = _pevoPrefCle(), pref = null;
   if(cle){ try { pref = JSON.parse(localStorage.getItem(cle) || 'null'); } catch(e){ pref = null; } }
-  var UNITES = ['semaine','mois','trimestre','annee','tout'];
+  var UNITES = ['semaine','mois','trimestre','annee','cycle','tout'];
   _pevoUnite = (pref && UNITES.indexOf(pref.unite) >= 0) ? pref.unite : 'mois';
   _pevoProgPortee = (pref && pref.portee === 'periode') ? 'periode' : 'tout';
   _pevoDecalage = 0;
@@ -5194,6 +5254,7 @@ function pevoDecaler(pas){
   if(_pevoUnite === 'tout' || _pevoUnite === 'perso') return;
   var n = _pevoDecalage + pas;
   if(n > 0) return;                                // jamais au-delà d'aujourd'hui
+  if(_pevoUnite === 'cycle' && !_pevoPeriodeCycle(n, _pevoAujourdhuiIso())) return;   // pas avant le premier cycle
   _pevoDecalage = n;
   _pevoAppliquerPeriode();
   _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
@@ -5205,6 +5266,10 @@ function pevoRevenirAujourdhui(){
 }
 function _renderPevoFilterBar(){
   var U = [['semaine','Semaine'],['mois','Mois'],['trimestre','Trimestre'],['annee','Année'],['tout','Tout'],['perso','Personnalisé']];
+  /* « Cycle » n'est proposé que si le patient a des cycles datés et commencés. */
+  if(typeof _pevoPeriodesCycles === 'function'
+     && _pevoPeriodesCycles(typeof _cycles !== 'undefined' ? _cycles : [], _pevoAujourdhuiIso()).length)
+    U.splice(4, 0, ['cycle','Cycle']);
   var p = _pevoPeriodeCourante();
   var h = '<div class="pevo-filter-bar">';
   h += '<div class="pevo-unites" role="group" aria-label="Unité de période">'
@@ -5213,7 +5278,8 @@ function _renderPevoFilterBar(){
       }).join('') + '</div>';
   if(p && _pevoUnite !== 'perso'){
     h += '<div class="pevo-nav">'
-      +  '<button class="pevo-fleche" onclick="pevoDecaler(-1)" aria-label="Période précédente">‹</button>'
+      +  '<button class="pevo-fleche" onclick="pevoDecaler(-1)" aria-label="Période précédente"'
+      +  ((_pevoUnite === 'cycle' && typeof _pevoPeriodeCycle === 'function' && !_pevoPeriodeCycle(_pevoDecalage - 1, _pevoAujourdhuiIso())) ? ' disabled' : '')+'>‹</button>'
       +  '<span class="pevo-periode-lbl">'+escH(p.libelle)+'</span>'
       +  '<button class="pevo-fleche" onclick="pevoDecaler(1)" aria-label="Période suivante"'+(_pevoDecalage >= 0 ? ' disabled' : '')+'>›</button>'
       +  '</div>';
@@ -5297,6 +5363,35 @@ function _pevoProgTete(){
 function _pevoPtsProg(points){
   var tous = points || [], per = _pevoFilterPts(tous) || [];
   return { aff: _pevoProgPortee === 'tout' ? tous : per, per: per };
+}
+/* Chiffres de tête d'une courbe de charge : on ne compare que la dernière série
+   de séances du MÊME mode. Poids du corps (0,1 kg pour le 1RM) et charge
+   ajoutée ne se soustraient pas — « 12 reps PdC → 13,3 kg, +13,2 kg
+   (> 999 %) ». Des répétitions entre séances au poids du corps, des kg entre
+   séances chargées ; la bascule se dit, datée (qualite/pevo-cycle-cas.js). */
+function _pevoKpiCharge(kq){
+  var n = kq.length, der = kq[n - 1], j = n - 1;
+  while(j > 0 && !!kq[j - 1].bw === !!der.bw) j--;
+  var deb = kq[j];
+  var jj = function(iso){ return iso ? String(iso).slice(8, 10) + '/' + String(iso).slice(5, 7) : ''; };
+  var r = { note: j > 0 ? (der.bw ? 'retour au poids du corps le ' : 'passage en charge le ') + jj(deb.date) : '',
+            cls:'neutral', dLabel:'' };
+  if(der.bw){
+    r.fLabel = deb.reps + ' reps PdC'; r.lLabel = der.reps + ' reps PdC';
+    if(deb !== der){
+      var dr = (der.reps || 0) - (deb.reps || 0);
+      r.dLabel = (dr >= 0 ? '+' : '') + dr + ' reps'; r.cls = dr === 0 ? 'neutral' : (dr > 0 ? 'pos' : 'neg');
+    }
+  } else {
+    r.fLabel = deb.rm1.toFixed(1) + 'kg'; r.lLabel = der.rm1.toFixed(1) + 'kg';
+    if(deb !== der){
+      var dk = der.rm1 - deb.rm1, pct = deb.rm1 > 0 ? dk / deb.rm1 * 100 : null;
+      r.dLabel = (dk >= 0 ? '+' : '') + dk.toFixed(1) + 'kg'
+        + (pct !== null ? ' (' + (Math.abs(pct) > 999 ? (pct > 0 ? '>' : '<') + ' 999%' : (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%') + ')' : '');
+      r.cls = dk === 0 ? 'neutral' : (dk > 0 ? 'pos' : 'neg');
+    }
+  }
+  return r;
 }
 function _pevoKpiPeu(n){
   return '<span class="pevo-kpi-neutral">' + (n ? n + ' séance sur la période' : 'Aucune séance sur la période') + '</span>';
@@ -5503,15 +5598,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
     var vals  = pts.map(function(p){ return p.rm1; });
     var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
     var meta  = pts.map(function(p){ return {bw:p.bw, reps:p.reps, kg:p.kg, date:p.date}; });
-    var first = kq[0].rm1, last = kq[kq.length-1].rm1;
-    var delta = last - first, sign = delta>=0?'+':'';
-    var pct = first>0 ? (delta/first*100) : null;
-    var pctStr = pct!==null?' ('+(Math.abs(pct)>999?(pct>0?'>':'<')+' 999%':(pct>=0?'+':'')+pct.toFixed(0)+'%')+')':'';
-    var cls = delta===0?'neutral':(delta>0?'pos':'neg');
-    // Labels KPI : afficher reps si PdC, kg si chargé
-    var fLabel = kq[0].bw   ? kq[0].reps+'reps PdC'                  : first.toFixed(1)+'kg';
-    var lLabel = kq[kq.length-1].bw ? kq[kq.length-1].reps+'reps PdC' : last.toFixed(1)+'kg';
-    var dLabel = sign+delta.toFixed(1)+'kg'+pctStr;
+    // Séances du même mode seulement : poids du corps et charge ne se soustraient pas.
+    var _k = _pevoKpiCharge(kq), fLabel = _k.fLabel, lLabel = _k.lLabel, dLabel = _k.dLabel, cls = _k.cls;
     // Label KPI "Actuel" vs "Prévu" selon si le dernier point est futur
     var todayStr = new Date().toISOString().slice(0,10);
     var lastIsFuture = _pevoShowFuture && kq[kq.length-1].date && kq[kq.length-1].date > todayStr;
@@ -5552,10 +5640,10 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
       +'<div class="pevo-card-kpis">'
       +(kpOk
-        ? '<span class="pevo-kpi-neutral">Début : '+fLabel+'</span>'
-          +'<span class="pevo-kpi-neutral">→</span>'
+        ? (dLabel ? '<span class="pevo-kpi-neutral">Début : '+fLabel+'</span><span class="pevo-kpi-neutral">→</span>' : '')
           +'<span class="pevo-kpi-strong">'+lKpiLabel+lLabel+'</span>'
-          +'<span class="pevo-kpi '+cls+'">'+dLabel+'</span>'
+          +(dLabel ? '<span class="pevo-kpi '+cls+'">'+dLabel+'</span>' : '')
+          +(_k.note ? '<span class="pevo-kpi-neutral">· '+escH(_k.note)+'</span>' : '')
         : _pevoKpiPeu(kp.length))
       +rmTag
       +'</div></div>'
@@ -5943,6 +6031,10 @@ function _volHtml(_volDonnees, fenetre){
                              : cumulRef(avant, sp.cle);
   });
   if(per && per.compare) titreEcart = per.compare;
+  /* Cycles : deux périodes de durées différentes — la référence est ramenée à la même durée. */
+  if(per && per.echelle) defs.forEach(function(sp){
+    var a = av.sports[sp.cle]; a.dist *= per.echelle; a.duree *= per.echelle; a.charge *= per.echelle;
+  });
 
   var chargeTot = 0;
   defs.forEach(function(sp){ chargeTot += der.sports[sp.cle].charge; });
