@@ -573,3 +573,28 @@ d'épaule.
 seul mot intercalé le casse — « rupture PARTIELLE du tendon d'Achille »,
 « instabilité ANTÉRIEURE d'épaule ». Écrire ces alias en listes
 (`['rupture', 'achille']`) plutôt qu'en phrases.
+
+## Valeur héritée — la marque suit l'état du champ
+
+```bash
+node qualite/heritage-effacer-cas.js
+```
+
+Signalé sur iPad (bilan de suivi de Guillaume) : on tape une valeur dans un
+champ hérité, on l'efface — « 21.8 » revient, mais **sans** le gris italique.
+`_blShowInheritedHints` retirait la marque à la PREMIÈRE frappe et détachait
+son écouteur, en laissant l'ancienne valeur dans le placeholder : revidé, le
+champ la montrait comme une saisie, alors que rien ne sera enregistré.
+
+La règle : **vide, l'ancienne valeur marquée ; rempli, aucune marque — à chaque
+frappe**. Même chose pour un menu revenu à son option vide et une case
+redécochée, et pour les tests personnalisés (`oninput` de `_ctAttrsVal`,
+`_ctOmbreObs`). Un nombre en cours de frappe (« 21. ») vaut `''` dans un champ
+numérique : `validity.badInput` le dit non vide.
+
+Conséquence à ne pas perdre : les écouteurs **restent attachés**, donc le
+nettoyage en tête de `_blShowInheritedHints` doit les **détacher**. Leur liste
+vit sur la fonction (`_blShowInheritedHints._suivis`), pas dans une requête sur
+la classe : un champ TAPÉ n'a plus la classe, la requête ne le retrouverait
+pas — et il gardait l'ancien placeholder après un changement de patient
+(défaut latent, refermé au passage).

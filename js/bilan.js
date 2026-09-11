@@ -3572,18 +3572,36 @@ function _editBilanConfirm(){
    pour les select, l'option reste de valeur "" ; pour input/textarea, un placeholder
    n'est jamais une valeur de champ. Retirée dès qu'une vraie valeur est saisie/choisie. */
 function _blShowInheritedHints(mergedData){
-  document.querySelectorAll('.bl-inherited-ghost').forEach(function(el){
+  /* La marque SUIT l'état du champ, à chaque frappe : vide, l'ancienne valeur
+     marquée ; rempli, aucune marque (qualite/heritage-effacer-cas.js). Elle
+     partait à la première frappe, écouteur détaché, placeholder laissé : une
+     saisie effacée faisait revenir « 21.8 » sans marque, lu comme une mesure
+     du jour (iPad, suivi de Guillaume).
+     Les écouteurs restent donc attachés, et ce nettoyage doit les DÉTACHER —
+     un champ tapé puis vidé ressusciterait sinon l'ombre de l'ancien patient.
+     Leur liste vit sur la fonction : un champ TAPÉ n'a plus la classe, la
+     requête ne le retrouverait pas, et il garderait l'ancien placeholder. */
+  var suivis = _blShowInheritedHints._suivis || [], aNettoyer = [];
+  _blShowInheritedHints._suivis = [];
+  suivis.forEach(function(s){ s.el.removeEventListener(s.evt, s.fn); aNettoyer.push(s.el); });
+  document.querySelectorAll('.bl-inherited-ghost').forEach(function(el){ if(aNettoyer.indexOf(el) < 0) aNettoyer.push(el); });
+  aNettoyer.forEach(function(el){
     el.classList.remove('bl-inherited-ghost');
     if(el.tagName === 'SELECT'){
       var opt0 = el.options[0];
       if(opt0 && opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
     } else if(el.type === 'checkbox' || el.type === 'radio'){
       el.removeAttribute('title');
-    } else {
-      el.placeholder = el.dataset.blOrigPlaceholder || '';
+    } else if(el.dataset.blOrigPlaceholder !== undefined){
+      el.placeholder = el.dataset.blOrigPlaceholder;
+      el.removeAttribute('title');
       delete el.dataset.blOrigPlaceholder;
     }
   });
+  var suivre = function(el, evt, fn){
+    el.addEventListener(evt, fn);
+    _blShowInheritedHints._suivis.push({ el:el, evt:evt, fn:fn });
+  };
   /* Les tests personnalisés n'ont pas d'id : la boucle ci-dessous ne peut pas
      les atteindre. Ils reçoivent l'héritage à part, et le perdent avec lui. */
   try{ if(window._ctPoserHeritage) window._ctPoserHeritage(mergedData || null); }catch(ex){}
@@ -3605,10 +3623,11 @@ function _blShowInheritedHints(mergedData){
       opt0.textContent = val;
       opt0.selected = true;
       el.classList.add('bl-inherited-ghost');
-      el.addEventListener('change', function _rmGhost(){
-        if(opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
-        el.classList.remove('bl-inherited-ghost');
-        el.removeEventListener('change', _rmGhost);
+      /* Revenir à l'option vide rend l'ancienne valeur, marquée. */
+      suivre(el, 'change', function(){
+        var vide = el.value === '';
+        opt0.textContent = vide ? String(val) : opt0.dataset.blOrigText;
+        el.classList[vide ? 'add' : 'remove']('bl-inherited-ghost');
       });
     } else if(el.type === 'checkbox' || el.type === 'radio'){
       /* Une case ne peut pas porter de placeholder : sa marque heritee est un
@@ -3621,21 +3640,27 @@ function _blShowInheritedHints(mergedData){
          Marquer les cases decochees baliserait donc les 45 cellules des grilles
          a chaque suivi, sans rien dire. Meme raisonnement que `_crDejaEvalue`. */
       if(val === false || String(val) === 'false' || String(val) === '0') return;
-      el.title = 'Case VIDE. L\'anneau indique qu\'elle \u00e9tait coch\u00e9e au bilan pr\u00e9c\u00e9dent. Elle ne sera pas enregistr\u00e9e tant que vous ne l\'aurez pas coch\u00e9e.';
+      var titreCase = 'Case VIDE. L\'anneau indique qu\'elle \u00e9tait coch\u00e9e au bilan pr\u00e9c\u00e9dent. Elle ne sera pas enregistr\u00e9e tant que vous ne l\'aurez pas coch\u00e9e.';
+      el.title = titreCase;
       el.classList.add('bl-inherited-ghost');
-      el.addEventListener('change', function _rmGhost(){
-        el.classList.remove('bl-inherited-ghost');
-        el.removeAttribute('title');
-        el.removeEventListener('change', _rmGhost);
+      /* Red\u00e9cocher rend l'anneau : elle \u00e9tait coch\u00e9e au bilan pr\u00e9c\u00e9dent. */
+      suivre(el, 'change', function(){
+        if(el.checked){ el.classList.remove('bl-inherited-ghost'); el.removeAttribute('title'); }
+        else { el.classList.add('bl-inherited-ghost'); el.title = titreCase; }
       });
     } else if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'){
       el.dataset.blOrigPlaceholder = el.placeholder || '';
       el.placeholder = String(val);
-      el.title = 'Champ VIDE. Texte affiché = dernière valeur connue, reprise d\'un bilan antérieur. Elle ne sera pas enregistrée tant que vous ne l\'aurez pas saisie.';
+      var titreChamp = 'Champ VIDE. Texte affiché = dernière valeur connue, reprise d\'un bilan antérieur. Elle ne sera pas enregistrée tant que vous ne l\'aurez pas saisie.';
+      el.title = titreChamp;
       el.classList.add('bl-inherited-ghost');
-      el.addEventListener('input', function _rmGhost(){
-        el.classList.remove('bl-inherited-ghost');
-        el.removeEventListener('input', _rmGhost);
+      /* Effacer sa saisie rend l'ancienne valeur, MARQUÉE. Un nombre en cours
+         de frappe (« 21. ») vaut '' dans un champ numérique : `badInput` le dit
+         non vide, sinon le fond gris clignoterait pendant qu'on tape. */
+      suivre(el, 'input', function(){
+        var vide = el.value === '' && !(el.validity && el.validity.badInput);
+        if(vide){ el.classList.add('bl-inherited-ghost'); el.title = titreChamp; }
+        else { el.classList.remove('bl-inherited-ghost'); el.removeAttribute('title'); }
       });
     }
   });
@@ -12627,7 +12652,7 @@ window.addEventListener('load', function(){
   /* Attributs d'un champ chiffré : ombre héritée, ou tiret d'invite. */
   function _ctAttrsVal(pk, t, field){
     var o = _ctOmbre(pk, t, field);
-    return o ? { cls:' bl-inherited-ghost', ph:_esc(o), titre:' title="'+_esc(_CT_TITRE_HERITE)+'"', rm:"this.classList.remove('bl-inherited-ghost');" }
+    return o ? { cls:' bl-inherited-ghost', ph:_esc(o), titre:' title="'+_esc(_CT_TITRE_HERITE)+'"', rm:"this.classList.toggle('bl-inherited-ghost', this.value==='' && !(this.validity&&this.validity.badInput));" }
              : { cls:'', ph:'—', titre:'', rm:'' };
   }
   /* Appelé par `_blShowInheritedHints` — le suivi comme « Modifier » passent
@@ -12682,16 +12707,16 @@ window.addEventListener('load', function(){
     return obs;
   }
 
-  /* Même marque sur une observation : placeholder, classe, retirée à la frappe. */
+  /* Même marque sur une observation : placeholder, classe — qui suit l'état du
+     champ, comme ailleurs : effacer sa saisie rend l'ancienne valeur, marquée. */
   function _ctOmbreObs(ta, pk, t, field){
     var o = _ctOmbre(pk, t, field);
     if(!o) return;
     ta.placeholder = o;
     ta.title = _CT_TITRE_HERITE;
     ta.classList.add('bl-inherited-ghost');
-    ta.addEventListener('input', function _rmOmbre(){
-      this.classList.remove('bl-inherited-ghost');
-      this.removeEventListener('input', _rmOmbre);
+    ta.addEventListener('input', function(){
+      this.classList.toggle('bl-inherited-ghost', this.value === '');
     });
   }
 

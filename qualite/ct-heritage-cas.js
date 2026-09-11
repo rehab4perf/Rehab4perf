@@ -127,7 +127,16 @@ ok('Chaise (performance) : « 95 »', c.placeholder === '95' && /bl-inherited-gh
 c = parCle(jm || { innerHTML: '' }, 'valA');
 ok('un test jamais mesuré garde son tiret, sans marque', c.placeholder === '—' && !/bl-inherited-ghost/.test(c.classe || ''), JSON.stringify(c));
 c = parCle(sj || { innerHTML: '' }, 'valA');
-ok('la première frappe retire la marque', /classList\.remove\('bl-inherited-ghost'\)/.test(c.oninput || ''), c.oninput);
+/* La marque SUIT l'état du champ : une frappe la retire, effacer la rend
+   (qualite/heritage-effacer-cas.js). On exécute le VRAI `oninput`. */
+const joueFrappe = v => {
+  let ombre = true;
+  const moi = { value: v, validity: {}, classList: { toggle: (k, f) => { ombre = !!f; }, remove: () => { ombre = false; }, add: () => { ombre = true; } } };
+  try { new Function('_ctUpdate', c.oninput || '').call(moi, () => {}); } catch (e) { return 'ERREUR ' + e.message; }
+  return ombre;
+};
+ok('une frappe retire la marque', joueFrappe('30') === false, c.oninput);
+ok('… et effacer sa saisie la rend (plus d\'ancienne valeur sans marque)', joueFrappe('') === true, c.oninput);
 
 /* Les observations : des textarea créés à la main, lus sur l'objet. */
 const zones = b.conteneur.children.filter(c => !/ct-row|ct-sub-hdr/.test(c.className || ''));
@@ -136,7 +145,7 @@ zones.forEach(z => z.children.forEach(k => { if (k.tagName === 'TEXTAREA') tas.p
 const obsSJ = tas.find(t => t.placeholder === 'réception raide');
 ok('l\'observation héritée s\'affiche en gris dans sa zone', !!obsSJ && obsSJ.classList.contains('bl-inherited-ghost'), tas.map(t => t.placeholder).join(' | '));
 ok('… jamais en valeur', !!obsSJ && obsSJ.value === '');
-ok('… et part à la première frappe', !!obsSJ && (obsSJ._ecoute.input || []).length >= 2);
+ok('… et suit la frappe (un écouteur de saisie la bascule)', !!obsSJ && (obsSJ._ecoute.input || []).length >= 2);
 
 console.log('\nElle survit aux re-rendus — et ne ressuscite jamais sur un autre patient');
 b.window._ctAdd('genou', 'comparison');
