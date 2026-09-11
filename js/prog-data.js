@@ -5067,7 +5067,7 @@ function _pevoPeriode(unite, decalage, auj){
     ? 'Comparé ' + aRef + (feminin ? ' entière.' : ' entier.')
     : unite === 'semaine'
       ? 'Comparé ' + aRef + ', arrêtée elle aussi au ' + JOURS[(t.getDay() + 6) % 7] + '.'
-      : 'Comparé ' + aRef + ', arrêté au même avancement (' + _pevoFmtCourt(refDebut, true) + ' → ' + _pevoFmtCourt(refFin, true) + ').';
+      : 'Comparé ' + aRef + ', arrêté' + (feminin ? 'e' : '') + ' au même avancement (' + _pevoFmtCourt(refDebut, true) + ' → ' + _pevoFmtCourt(refFin, true) + ').';
   return { unite:unite, debut:debut, fin:fin, enCours:enCours, libelle:libelle,
            refDebut:refDebut, refFin:refFin, compare:compare, buckets:_pevoBuckets(debut, fin, mode) };
 }
@@ -5797,8 +5797,11 @@ function _volHtml(_volDonnees, fenetre){
   }).join('');
   tuiles += '<div class="vol-tuile"><div class="vol-t-lbl">Charge totale</div>'
     + '<div class="vol-t-val">'+Math.round(chargeTot)+'<span class="vol-t-u">UA</span></div>'
-    + '<div class="vol-t-sub">'+actifs.reduce(function(a,sp){ return a + (der.sports[sp.cle]||vide).n; }, 0)
-    + ' séances sur la période</div></div>';
+    + '<div class="vol-t-sub">'+(function(){
+        var nb = actifs.reduce(function(a,sp){ return a + (der.sports[sp.cle]||vide).n; }, 0);
+        return nb + ' séance' + (nb > 1 ? 's' : '');       // « 1 séances » s'affichait
+      })()
+    + ' sur la période</div></div>';
 
   /* ── Vue 2 : la repartition, en CHARGE ────────────────────────────
      Pas en kilometres : une heure de natation et dix kilometres de course ne

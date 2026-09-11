@@ -84,6 +84,8 @@ egal('… une barre par semaine', 14, (p.buckets || []).length);
 p = per('annee', 0);
 ok('2026, comparée à 2025 au même jour', p.debut === '2026-01-01' && p.refDebut === '2025-01-01' && p.refFin === '2025-09-11', p.refDebut + '→' + p.refFin);
 egal('… une barre par mois', 12, (p.buckets || []).length);
+ok('… et la phrase s\'accorde : l\'année est « arrêtée »', /l'année 2025, arrêtée au même avancement/.test(p.compare || ''), p.compare);
+ok('le trimestre, lui, est « arrêté »', /au T2 2026, arrêté au même avancement/.test(per('trimestre', 0).compare || ''), per('trimestre', 0).compare);
 p = per('annee', -1);
 ok('2025, comparée à 2024 entière', p.libelle === '2025' && p.refDebut === '2024-01-01' && p.refFin === '2024-12-31', p.libelle + ' ' + p.refDebut + '→' + p.refFin);
 
@@ -172,6 +174,12 @@ egal('… contre 1 → 11 août : 10 km — le 20 août n\'y est pas', '▲ +50 
 ok('… le titre nomme la période', /Septembre 2026/.test(h), (h.match(/<div class="vol-titre">.*?<\/div>/) || ['absent'])[0]);
 ok('… l\'écart dit à quoi il se compare', /title="[^"]*août[^"]*"/.test(h));
 egal('… une barre par semaine du mois', 5, ((h.match(/<svg class="vol-spark"[\s\S]*?<\/svg>/) || [''])[0].match(/<rect/g) || []).length);
+ok('… « 2 séances sur la période »', /2 séances sur la période/.test(h));
+/* La semaine du 7 au 13 sept. ne porte qu'une sortie (le 10) : singulier. */
+let h1 = '';
+try { h1 = new Function('escH', 'V', 'PER', codeVol + '\nreturn _volHtml(V, PER);')(s => String(s == null ? '' : s), V, per('semaine', 0)); } catch (e) {}
+ok('une seule séance s\'écrit au singulier', /1 séance sur la période/.test(h1) && !/1 séances/.test(h1),
+   (h1.match(/\d+ séances? sur la période/) || ['absent'])[0]);
 
 /* ── Le branchement ──────────────────────────────────────────────────────── */
 console.log('\nLe branchement');
