@@ -1127,6 +1127,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .bdb-ico { flex:none; }
 /* Séance vide : deux départs (qualite/builder-clarte-cas.js). */
 .empty-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+/* La ligne ambre : le texte prend la place, le crayon reste à côté de lui. */
+.builder-date-bar.mode-modele > span { flex:1 1 200px; min-width:0; }
+/* Téléphone (qualite/builder-clarte-cas.js, mesuré à 390 px) : la ligne patient
+   et le protocole s'empilent proprement — le « · » restait seul en tête de la
+   seconde ligne ; la dernière tuile du bilan de charge, seule sur sa rangée,
+   en prend toute la largeur au lieu de laisser un trou. */
+@media (max-width:520px) {
+  .bc-kpis { grid-template-columns:1fr 1fr; }
+  .bc-kpi:last-child:nth-child(odd) { grid-column:1 / -1; }
+}
 
 /* Main header (conservé dans le builder) */
 .main-header {
@@ -2300,6 +2310,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 /* Mobile */
 @media (max-width:700px) {
+  /* Ligne patient + protocole empilées, sans « · » orphelin (qualite/builder-clarte-cas.js). */
+  .builder-mode-row .builder-date-bar { flex:1 1 100%; }
+  #builder-proto-banner { padding:0 14px 8px; }
+  #builder-proto-banner::before { content:none; }
   :root { --sidebar-w:100%; }
   .app { flex-direction:column; }
   .sidebar { width:100%; max-width:100%; max-height:52vh; border-right:none; border-bottom:1px solid var(--border); }
@@ -3156,7 +3170,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <button class="builder-update-btn" id="prog-update-btn" onclick="_doUpdateTemplate()" style="display:none" title="Mettre à jour">🔄<span class="btn-label"> Mettre à jour</span></button>
       <button class="builder-hdr-btn builder-feedback-btn" id="builder-feedback-btn" onclick="_openFeedbackModal()"><svg width="14" height="14" viewBox="0 0 60 60" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;flex-shrink:0"><path d="M10,25.465h13c0.553,0,1-0.448,1-1s-0.447-1-1-1H10c-0.553,0-1,0.448-1,1S9.447,25.465,10,25.465z"/><path d="M36,29.465H10c-0.553,0-1,0.448-1,1s0.447,1,1,1h26c0.553,0,1-0.448,1-1S36.553,29.465,36,29.465z"/><path d="M36,35.465H10c-0.553,0-1,0.448-1,1s0.447,1,1,1h26c0.553,0,1-0.448,1-1S36.553,35.465,36,35.465z"/><path d="M54.072,2.535L19.93,2.465c-3.27,0-5.93,2.66-5.93,5.93v5.124l-8.07,0.017c-3.27,0-5.93,2.66-5.93,5.93v21.141c0,3.27,2.66,5.929,5.93,5.929H12v10c0,0.413,0.254,0.784,0.64,0.933c0.117,0.045,0.239,0.067,0.36,0.067c0.276,0,0.547-0.115,0.74-0.327l9.704-10.675l16.626-0.068c3.27,0,5.93-2.66,5.93-5.929v-0.113l5.26,5.786c0.193,0.212,0.464,0.327,0.74,0.327c0.121,0,0.243-0.022,0.36-0.067c0.386-0.149,0.64-0.52,0.64-0.933v-10h1.07c3.27,0,5.93-2.66,5.93-5.929V8.465C60,5.196,57.341,2.536,54.072,2.535z M44,40.536c0,2.167-1.763,3.929-3.934,3.929l-17.07,0.07c-0.28,0.001-0.548,0.12-0.736,0.327L14,53.949v-8.414c0-0.552-0.447-1-1-1H5.93c-2.167,0-3.93-1.763-3.93-3.929V19.465c0-2.167,1.763-3.93,3.932-3.93l9.068-0.019c0,0,0,0,0,0c0.001,0,0.001,0,0.002,0l25.068-0.052c2.167,0,3.93,1.763,3.93,3.93v18.441V40.536z M58,29.606c0,2.167-1.763,3.929-3.93,3.929H52c-0.553,0-1,0.448-1,1v8.414l-5-5.5V19.395c0-3.27-2.66-5.93-5.932-5.93L16,13.514v-5.12c0-2.167,1.763-3.93,3.928-3.93l34.141,0.07c0.001,0,0.001,0,0.002,0c2.167,0,3.93,1.763,3.93,3.93V29.606z"/></svg><span class="btn-label"> Feedback</span></button>
       <button class="builder-hdr-btn builder-plan-btn" id="builder-plan-btn" onclick="openPlanModal()"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M452,311.145V75c0-24.813-20.187-45-45-45h-15V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-60V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-92V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15H90V15c0-8.284-6.716-15-15-15S60,6.716,60,15v15H45C20.187,30,0,50.187,0,75v331c0,24.813,20.187,45,45,45h266.946c16.795,36.01,53.085,61,95.054,61c57.897,0,105-47.551,105-106C512,364.198,487.443,328.027,452,311.145z M30,75c0-8.271,6.729-15,15-15h15v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h92v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h15c8.271,0,15,6.729,15,15v46H30V75z M303.056,421H45c-8.271,0-15-6.729-15-15V151h392v151.076c-4.901-0.704-9.907-1.076-15-1.076c-57.897,0-105,47.103-105,105C302,411.092,302.365,416.098,303.056,421z M407,482c-41.355,0-75-34.093-75-76c0-41.355,33.645-75,75-75c41.355,0,75,33.645,75,75C482,447.907,448.355,482,407,482z"/><path d="M437,391h-15v-15c0-8.284-6.716-15-15-15s-15,6.716-15,15v30c0,8.284,6.716,15,15,15h30c8.284,0,15-6.716,15-15S445.284,391,437,391z"/><path d="M105,181H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,181,105,181z"/><path d="M196,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,181,196,181z"/><path d="M287,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,181,287,181z"/><path d="M377,181h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,181,377,181z"/><path d="M105,241H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,241,105,241z"/><path d="M196,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,241,196,241z"/><path d="M287,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,241,287,241z"/><path d="M377,241h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,241,377,241z"/><path d="M105,301H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,301,105,301z"/><path d="M196,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,301,196,301z"/><path d="M287,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,301,287,301z"/><path d="M105,361H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,361,105,361z"/><path d="M196,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,361,196,361z"/><path d="M287,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,361,287,361z"/></svg><span class="btn-label">Planifier</span></button>
-      <button class="builder-hdr-btn builder-utiliser-btn" id="builder-utiliser-btn" onclick="utiliserModele()" style="display:none" title="Copie ce modèle dans une séance du patient sélectionné — le modèle n'est pas modifié">Utiliser pour un patient</button>
+      <button class="builder-hdr-btn builder-utiliser-btn" id="builder-utiliser-btn" onclick="utiliserModele()" style="display:none" title="Utiliser pour un patient : copie ce modèle dans une séance du patient sélectionné — le modèle n'est pas modifié" aria-label="Utiliser pour un patient"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M1 21c0-4 3.6-6 8-6s8 2 8 6"/><path d="M19 8v6M16 11h6"/></svg><span class="btn-label"> Utiliser pour un patient</span></button>
 
       <button class="builder-hdr-btn" onclick="openProgHistory()" title="Programmes du patient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:4px"><circle cx="2" cy="4" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="20" r="2"/><path d="m8 5h15c.553 0 1-.447 1-1s-.447-1-1-1h-15c-.553 0-1 .447-1 1s.447 1 1 1z"/><path d="m23 11h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/><path d="m23 19h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/></svg><span class="btn-label">Programmes</span></button>
     </div>
@@ -4817,6 +4831,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260911q"></script>
+<script src="js/prog-main.js?v=20260911s"></script>
 </body>
 </html>

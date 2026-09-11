@@ -114,6 +114,16 @@ ok('« Partir d\'un modèle » ouvre le panneau et l\'onglet Modèles', /_switch
 ok('l\'état initial de la page dit la même chose', /Partir d.un modèle/.test(html.slice(html.indexOf('id="sessionArea"'), html.indexOf('id="sessionArea"') + 900)));
 
 /* ── L'aide ──────────────────────────────────────────────────────────────── */
+/* ── Téléphone ───────────────────────────────────────────────────────────────
+   Mesuré à 390 px : en mode modèle, « Mettre à jour « … » » et « Utiliser pour
+   un patient » gardaient leur libellé entier — l'en-tête débordait de 130 px
+   et poussait la fermeture hors de l'écran. */
+console.log('\nSur téléphone');
+ok('« Utiliser pour un patient » se replie en icône, comme ses voisins', /id="builder-utiliser-btn"[^>]*>\s*<svg[\s\S]{0,400}<span class="btn-label"> Utiliser pour un patient<\/span><\/button>/.test(html));
+ok('« Mettre à jour » replie le nom du modèle', /'Mettre à jour<span class="btn-label"> « '/.test(fn('_refreshSaveBtn')));
+ok('la ligne patient et le protocole s\'empilent sans « · » orphelin', /@media \(max-width:700px\) \{\n[\s\S]{0,300}#builder-proto-banner::before \{ content:none; \}/.test(html));
+ok('la dernière tuile du bilan, seule sur sa rangée, prend la largeur', /\.bc-kpi:last-child:nth-child\(odd\) \{ grid-column:1 \/ -1; \}/.test(html));
+
 console.log('\nL\'aide suit');
 ok('elle parle du panneau « Modèles », plus de « Séances & modèles »', !/Séances & modèles/.test(aide));
 ok('elle décrit la ligne du patient, plus « Séance d\'Antoine · 1 septembre »', !/Séance d\\'Antoine · 1 septembre/.test(aide) && /Partir d(\\'|’)un modèle/.test(aide));

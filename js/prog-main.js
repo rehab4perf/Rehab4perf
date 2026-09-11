@@ -5523,7 +5523,7 @@ function _refreshSaveBtn(){
   if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){
     var _mRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
     var _mNom = _mRef ? (_mRef.nom || 'Modèle') : 'Modèle';
-    btn.innerHTML = _PROG_SAVE_ICON + 'Mettre à jour « ' + (_mNom.length > 22 ? _mNom.substring(0,21)+'…' : _mNom) + ' »';
+    btn.innerHTML = _PROG_SAVE_ICON + 'Mettre à jour<span class="btn-label"> « ' + escH(_mNom.length > 22 ? _mNom.substring(0,21)+'…' : _mNom) + ' »</span>';
     btn.title = 'Remplace le contenu de ce modèle par la séance en cours';
     btn.style.background = '';
     if(planBtn) planBtn.style.display = 'none';
