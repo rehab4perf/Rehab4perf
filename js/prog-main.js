@@ -1915,12 +1915,32 @@ function _volumeParSport(nbSemaines){
       return;
     }
     if(typeof _fbIsCharge === 'function' && _fbIsCharge(fb)){
+      var ua = (typeof _uaFoster === 'function' ? _uaFoster(fb.rpe, fb.duree_min) : 0) || 0;
+      /* Le SPORT vient de Strava, la CHARGE du retour. Une séance du programme
+         n'a pas de sport : sans activité liée, on ne peut que la ranger en
+         renforcement. Mais quand Strava en a enregistré, c'est lui qui sait :
+         une sortie course prescrite, faite et notée perdait ses kilomètres et
+         gonflait le renforcement. La charge du retour (RPE × durée déclarée) se
+         partage entre les activités liées au prorata de leur durée — le total
+         reste celui de l'ACWR (qualite/volume-sport-cas.js). */
+      if(list.length){
+        var poids = list.map(function(a){ return Math.max(0, a.duree_s || 0); });
+        var tot = poids.reduce(function(s, p){ return s + p; }, 0);
+        list.forEach(function(a, i){
+          var sp = r4pSportDeType(a.type);
+          var part = tot > 0 ? poids[i] / tot : 1 / list.length;
+          /* Renforcement : Strava n'y compte presque pas de temps « en
+             mouvement », `duree_s` y vaut souvent zéro — la durée DÉCLARÉE prime. */
+          var duree = sp.cle === 'renfo' ? (fb.duree_min || 0) * 60 * part : a.duree_s;
+          poser(a.date || ev.date, sp.cle, a.distance_m, duree, ua * part);
+        });
+        return;
+      }
       /* La duree DECLAREE par l'athlete, en minutes. C'est la seule qu'on ait
          pour une seance de renforcement : Strava n'y compte quasiment pas de
          temps « en mouvement », et `duree_s` y vaut souvent zero. */
-      poser(ev.date, 'renfo', 0, (fb.duree_min || 0) * 60,
-            (typeof _uaFoster === 'function' ? _uaFoster(fb.rpe, fb.duree_min) : 0) || 0);
-      return;                                            // les liees sont absorbees
+      poser(ev.date, 'renfo', 0, (fb.duree_min || 0) * 60, ua);
+      return;
     }
     list.forEach(function(a){
       var sp = r4pSportDeType(a.type);

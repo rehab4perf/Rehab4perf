@@ -5542,7 +5542,7 @@ function _volCadre(corps, fen){
   return '<div class="vol-bloc no-print">'
     + '<div class="vol-titre">Volume d\'entraînement <span>'
     + (typeof _volLibelleFenetre === 'function' ? _volLibelleFenetre(fen || 12) : '')
-    + ' · Strava</span></div>'
+    + ' · Strava et retours de séance</span></div>'
     + corps + '</div>';
 }
 
@@ -5605,7 +5605,7 @@ function _volHtml(_volDonnees, fenetre){
      le patient n'etait pas relie a Strava, ou s'il n'avait simplement pas
      couru. Le bloc reste et dit laquelle des trois. */
   if(!actifs.length){
-    return _volCadre('<div class="vol-rien">Aucune activité Strava sur la période choisie.'
+    return _volCadre('<div class="vol-rien">Aucune activité Strava ni retour de séance sur la période choisie.'
       + '<br><span>Si le patient s\'entraîne, vérifiez que son compte Strava est bien relié '
       + 'dans l\'onglet Programme.</span></div>', n);
   }

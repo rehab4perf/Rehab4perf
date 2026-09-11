@@ -198,6 +198,37 @@ var libre = agrege(
 egal('une activité libre compte à part', 10000, libre.semaines[3].sports.course.dist);
 egal('… sans effacer la séance prescrite', 45 * 60, libre.semaines[3].sports.renfo.duree);
 
+/* ── Le SPORT vient de Strava, la CHARGE du retour ─────────────────────────
+   Une séance du programme n'a pas de sport : `_fbIsCharge` ne regarde que le
+   RPE et la durée. Toute séance avec retour allait donc en « Renforcement »
+   et y ABSORBAIT ses activités Strava liées — une sortie course prescrite,
+   faite, notée RPE 7, perdait ses kilomètres et gonflait le renforcement.
+   Décision du praticien : quand une activité Strava est liée, le sport, les
+   kilomètres et la durée viennent d'elle ; la charge reste celle du retour
+   (RPE × durée déclarée), partagée entre les activités liées au prorata de
+   leur durée. Le total ne change pas : c'est toujours celui de l'ACWR. */
+console.log('\nLe sport vient de Strava, la charge du retour');
+var courseLiee = agrege(
+  [{ date: lundiPlus(1), type: 'Run', distance_m: 10000, duree_s: 3000, charge: 200, seance_id: 's1' }],
+  { id: 'p1' }, [SEANCE]);
+var cL = courseLiee.semaines[3].sports;
+egal('une course liée à une séance avec retour reste de la COURSE', 10000, cL.course && cL.course.dist);
+egal('… avec la durée de Strava', 3000, cL.course && cL.course.duree);
+egal('… et la charge du retour (7 × 45), pas celle de Strava', 315, cL.course && Math.round(cL.course.charge));
+egal('… comptée pour une séance', 1, cL.course && cL.course.n);
+ok('… sans gonfler le renforcement', !cL.renfo, JSON.stringify(cL.renfo));
+var mixte = agrege(
+  [{ date: lundiPlus(1), type: 'Ride', distance_m: 30000, duree_s: 1800, charge: 90, seance_id: 's1' },
+   { date: lundiPlus(1), type: 'Run',  distance_m:  2000, duree_s:  600, charge: 40, seance_id: 's1' }],
+  { id: 'p1' }, [SEANCE]);
+var cM = mixte.semaines[3].sports;
+egal('deux activités liées se partagent la charge au prorata de leur durée (vélo)', 236, cM.velo && Math.round(cM.velo.charge));
+egal('… (course)', 79, cM.course && Math.round(cM.course.charge));
+egal('… et le total reste celui du retour', 315, Math.round((cM.velo ? cM.velo.charge : 0) + (cM.course ? cM.course.charge : 0)));
+var hT = rendre(courseLiee);
+ok('le titre ne dit plus « Strava » seul', /Strava et retours de séance/.test(hT) && !/· Strava<\/span>/.test(hT),
+   (hT.match(/<div class="vol-titre">.*?<\/div>/) || ['absent'])[0]);
+
 /* Une seance liee SANS feedback de charge : ce sont les activites Strava qui
    parlent, pas une duree qu'on n'a pas. */
 var lieeSansFb = agrege(
