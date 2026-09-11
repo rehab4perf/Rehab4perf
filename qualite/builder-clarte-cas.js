@@ -53,6 +53,7 @@ console.log('\n« Bibliothèque » ne veut plus dire trois choses');
 ok('les onglets du builder : « Exercices | Modèles »', />Exercices<\/button>/.test(html) && /id="sb-tab-btn-picker"[^>]*>Modèles<\/button>/.test(html),
    (html.match(/id="sb-tab-btn-picker"[^>]*>[^<]*/) || ['absent'])[0]);
 ok('le panneau de l\'agenda s\'appelle « Modèles »', /class="stmpl-title">Modèles</.test(html));
+ok('la recherche de l\'onglet Modèles cherche des modèles (et les exercices qu\'ils contiennent)', /id="pickerSearch"[^>]*placeholder="Rechercher un modèle ou un exercice…"/.test(html));
 const toggle = fn('_updateSidebarToggleBtn');
 ok('le bouton du haut nomme ce qu\'il ouvre : « Bibliothèque » dans le builder, « Modèles » sur l\'agenda',
    /btn-label"> Bibliothèque</.test(toggle) && /btn-label"> Modèles</.test(toggle) && !/> Biblio</.test(toggle + html));
