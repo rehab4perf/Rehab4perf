@@ -33,9 +33,9 @@ const src = n => fnDe(pdata)(n) || fnDe(pmain)(n);
 const ECART = 34;
 
 const ctx = vm.createContext({ escH: s => String(s) });
-const code = ['_pevoBandeIdx', '_pevoBandeSvg', '_formatDuree', '_formatDureeMin', '_formatCardioIntensity', '_pevoDatesX',
+const code = ['_pevoBandeIdx', '_pevoBandeSvg', '_formatDuree', '_formatDureeMin', '_formatCardioIntensity', '_pevoDatesX', '_pevoValEtiq', '_pevoDouleurEtiq',
   '_buildPevoChart', '_buildPevoDureeChart', '_buildPevoCardioChart', '_buildPevoNrsChart'].map(src).join('\n');
-const constante = (pdata.match(/\nvar PEVO_DATE_ECART = [^;]+;/) || [''])[0];
+const constante = ['PEVO_DATE_ECART', 'PEVO_HALO'].map(v => (pdata.match(new RegExp('\\nvar ' + v + ' = [^;]+;')) || [''])[0]).join('\n') + '\n';   // dates, liseré des valeurs
 try { vm.runInContext(constante + code, ctx); } catch (e) { ok('les constructeurs se chargent', false, e.message); }
 ['_formatDuree', '_formatDureeMin', '_formatCardioIntensity'].forEach(n => { if (typeof ctx[n] !== 'function') ctx[n] = v => String(v); });
 

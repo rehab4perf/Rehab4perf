@@ -60,9 +60,9 @@ function banc(etat) {
   const code = 'var _pevoUnite = ' + JSON.stringify(etat.unite || 'mois') + ', _pevoDecalage = 0, _pevoFilterDays = null,'
     + ' _pevoFilterFrom = "", _pevoFilterTo = "", _pevoShowFuture = false, _pevoProgPortee = ' + JSON.stringify(etat.portee || 'tout') + ';\n'
     + 'var _pevoChartCtr = 0, _pevoUaMode = "seance";\n'
-    + (pdata.match(/\nvar PEVO_DATE_ECART = [^;]+;/) || [''])[0] + '\n'   // les dates sous les courbes (qualite/pevo-dates-cas.js)
+    + ['PEVO_DATE_ECART', 'PEVO_HALO'].map(v => (pdata.match(new RegExp('\\nvar ' + v + ' = [^;]+;')) || [''])[0]).join('\n') + '\n'   // les dates sous les courbes (qualite/pevo-dates-cas.js)
     + 'function _pevoAujourdhuiIso(){ return "' + AUJ + '"; }\n'
-    + PERIODE.concat(BANDE, ['_pevoUneSeule', '_pevoDatesX', '_buildPevoChart', '_renderPevoCharts']).map(fn).join('\n')
+    + PERIODE.concat(BANDE, ['_pevoUneSeule', '_pevoDatesX', '_pevoValEtiq', '_pevoDouleurEtiq', '_buildPevoChart', '_renderPevoCharts']).map(fn).join('\n')
     + '\nreturn function(ex, sel){ _renderPevoCharts(ex, sel); return document.getElementById("pevoBody").innerHTML; };';
   return new Function('document', '_pevoDureeData', '_pevoCardioData', '_pevoCapPainData', '_pevoNrsData', '_progPatient',
     '_pevoSelecteurHtml', '_pevoZoneIndex', '_attachPevoEvents', '_buildUaTrendSection', '_volFenetreSemaines', '_volHtml',

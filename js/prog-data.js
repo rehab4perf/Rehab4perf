@@ -4538,6 +4538,23 @@ function _pevoDatesX(items, y){
   }).join('');
 }
 
+/* Valeur ecrite sur une courbe de progression : la premiere s'ancre a gauche,
+   la derniere a droite — centrees, elles debordaient du cadre ou mordaient
+   l'echelle de droite (« 10reps 1PdC », pistol squat de Zied, 13/09). Un
+   liseré blanc la detache de ce qu'elle croise (qualite/pevo-etiquettes-cas.js). */
+var PEVO_HALO = ' paint-order="stroke" stroke="#fff" stroke-width="3" stroke-linejoin="round"';
+function _pevoValEtiq(x, y, texte, place, style){
+  var ancre = place === 'premier' ? 'start' : place === 'dernier' ? 'end' : 'middle';
+  return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="'+ancre+'"'+PEVO_HALO+' '+style+'>'+texte+'</text>';
+}
+/* La derniere douleur d'une courbe double se pose A COTE de son point, vers
+   l'interieur : au-dessus, c'est la que passe l'autre courbe (« 0/10 » sur la
+   charge). */
+function _pevoDouleurEtiq(x, y, texte, droite, style){
+  var aDroite = x < droite - 40;
+  return '<text x="'+(x + (aDroite ? 7 : -7)).toFixed(1)+'" y="'+(y + 3).toFixed(1)+'" text-anchor="'+(aDroite ? 'start' : 'end')+'"'+PEVO_HALO+' '+style+'>'+texte+'</text>';
+}
+
 function _buildPevoDureeChart(pts, chartId, nrsPts, bande) {
   if(!pts || pts.length < 2) return '';
   nrsPts = nrsPts || null;
@@ -4600,10 +4617,10 @@ function _buildPevoDureeChart(pts, chartId, nrsPts, bande) {
     if(isLast){
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+C+'" opacity="0.18"/>';
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+C+'"/>';
-      html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--navy)">'+lbl+'</text>';
+      html+=_pevoValEtiq(p.x, p.y-12, lbl, 'dernier', 'font-size="10" font-weight="700" fill="var(--navy)"');
     } else {
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+C+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
-      if(isFirst) html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+lbl+'</text>';
+      if(isFirst) html+=_pevoValEtiq(p.x, p.y-9, lbl, 'premier', 'font-size="9" fill="#9D9B96"');
     }
   });
   html+='</g>';
@@ -4622,7 +4639,7 @@ function _buildPevoDureeChart(pts, chartId, nrsPts, bande) {
         if(isLast){
           html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="'+CNRS+'" opacity="0.18"/>';
           html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+CNRS+'"/>';
-          html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-10).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+CNRS+'">'+p.nrs+'/10</text>';
+          html+=_pevoDouleurEtiq(p.x, p.y, p.nrs+'/10', VW-PAD.right, 'font-size="9" font-weight="700" fill="'+CNRS+'"');
         } else if(isFirst){
           html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="#fff" stroke="'+CNRS+'" stroke-width="1.5"/>';
         }
@@ -4737,10 +4754,10 @@ function _buildPevoCardioChart(pts, chartId, intensiteType, useKm, bande) {
     if(isLast) {
       html += '<circle data-line="duree" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+CG+'" opacity="0.18"/>';
       html += '<circle data-line="duree" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+CG+'"/>';
-      html += '<text data-line="duree" x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--navy)">'+lbl+'</text>';
+      html += _pevoValEtiq(p.x, p.y-12, lbl, 'dernier', 'data-line="duree" font-size="10" font-weight="700" fill="var(--navy)"');
     } else {
       html += '<circle data-line="duree" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+CG+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
-      if(isFirst) html += '<text data-line="duree" x="'+p.x.toFixed(1)+'" y="'+(p.y-10).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+lbl+'</text>';
+      if(isFirst) html += _pevoValEtiq(p.x, p.y-10, lbl, 'premier', 'data-line="duree" font-size="9" fill="#9D9B96"');
     }
   });
 
@@ -4805,10 +4822,10 @@ function _buildPevoNrsChart(pts, chartId, bande) {
     if(isLast){
       html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+C+'" opacity="0.15"/>';
       html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+C+'"/>';
-      html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--navy)">'+p.nrs+'/10</text>';
+      html += _pevoValEtiq(p.x, p.y-12, p.nrs+'/10', 'dernier', 'font-size="10" font-weight="700" fill="var(--navy)"');
     } else {
       html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+C+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
-      if(isFirst) html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+p.nrs+'/10</text>';
+      if(isFirst) html += _pevoValEtiq(p.x, p.y-9, p.nrs+'/10', 'premier', 'font-size="9" fill="#9D9B96"');
     }
   });
   return '<svg viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
@@ -4888,10 +4905,10 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts, todayLastIdx, bande
     if(isLast){
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="'+pc+'" opacity="0.15"/>';
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+pc+'"/>';
-      html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--navy)">'+val+'</text>';
+      html+=_pevoValEtiq(p.x, p.y-12, val, 'dernier', 'font-size="10" font-weight="700" fill="var(--navy)"');
     } else {
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?4:3.5)+'" fill="#fff" stroke="'+pc+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
-      if(isFirst) html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+val+'</text>';
+      if(isFirst) html+=_pevoValEtiq(p.x, p.y-9, val, 'premier', 'font-size="9" fill="#9D9B96"');
       html+='<circle class="pevo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="tt'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+val+'" data-l2="'+p.date+'" style="cursor:pointer"/>';
     }
   });
@@ -4912,8 +4929,7 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts, todayLastIdx, bande
         var isLast=ni===nrsVp.length-1, isFirst=ni===0;
         if(isLast){
           html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+CNRS+'"/>';
-          var lblY = p.y < VH/2 ? p.y+14 : p.y-10;
-          html+='<text x="'+p.x.toFixed(1)+'" y="'+lblY.toFixed(1)+'" text-anchor="middle" font-size="8" font-weight="700" fill="'+CNRS+'">'+p.v+'/10</text>';
+          html+=_pevoDouleurEtiq(p.x, p.y, p.v+'/10', VW-PAD.right, 'font-size="8" font-weight="700" fill="'+CNRS+'"');
         } else {
           html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3:2.5)+'" fill="#fff" stroke="'+CNRS+'" stroke-width="1.5"/>';
         }
