@@ -40,6 +40,7 @@ node qualite/cr-coupures-cas.js
 node qualite/modele-ouvert-cas.js
 node qualite/rls-cas.js
 node qualite/cache-compte-cas.js
+node qualite/newsletter-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le
@@ -165,6 +166,22 @@ node qualite/cache-compte-cas.js
 - [ ] Menu "···" sur un patient → Sélectionner / Modifier / Supprimer fonctionnent
 - [ ] Modifier infos patient → changement visible immédiatement
 - [ ] Supprimer patient → confirmation, patient retiré de la liste
+
+---
+
+## 🟣 NEWSLETTER — Tests obligatoires si la carte (`patients.html`) ou le bloc (`athlete.html`) est modifié
+
+- [ ] Compte praticien NON inscrit (`newsletter_praticiens`) → aucune carte
+      « Newsletter » sur la fiche
+- [ ] Compte inscrit → « Activer pour cet athlète » → statut « en attente de
+      l'accord », sans avoir cliqué « Enregistrer la fiche »
+- [ ] Une saisie de fiche en cours, NON enregistrée, survit à la bascule
+- [ ] Lien athlète de ce patient → bloc « Ma newsletter » sous « Mes objectifs »
+- [ ] « Oui, je la veux » → format et sujets apparaissent → Enregistrer →
+      « Préférences enregistrées » ; recharger → tout est resté
+- [ ] Côté fiche → « l'athlète a accepté le … » avec format et sujets
+- [ ] Même lien en `?mode=kine` → lecture seule, aucun bouton
+- [ ] Désactiver côté fiche → le bloc disparaît de l'espace athlète
 
 ---
 

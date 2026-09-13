@@ -325,6 +325,35 @@ défaut, Strava reçoit un 401 et chaque activité est perdue. Vérifié en lign
 2026-09-10 : les deux tournent sans vérification (le webhook rend le 403 de
 notre code sur un mauvais `verify_token`, le callback redirige).
 
+## Newsletter « Le Vestiaire » — deux clés, et chacun la sienne
+
+```bash
+node qualite/newsletter-cas.js
+```
+
+Chaque dimanche, une tâche planifiée **hors du dépôt** (sur la machine du
+praticien : `~/.claude/scheduled-tasks/le-vestiaire/`) rédige un numéro par
+athlète. Elle lit ses données par la fonction `newsletter-export`, sous un
+secret envoyé dans `x-newsletter-secret` — la base n'en garde que l'empreinte
+SHA-256 dans `newsletter_praticiens`, qui désigne aussi le praticien.
+Déployée `--no-verify-jwt` : elle n'a pas de session, elle a ce secret.
+
+`athlete_newsletter` porte deux clés : `active` au **praticien** (il propose),
+`consentement` à l'**athlète** (il accepte, depuis son espace). La RLS dit qui
+touche une ligne ; les **droits par colonne** disent quoi — sans eux, la clé
+publique pouvait allumer `active`. Conséquences à ne pas défaire :
+
+- **jamais d'upsert** sur cette table : la fusion de PostgREST réécrit aussi
+  `patient_id`, qu'aucun rôle ne peut mettre à jour. D'abord lire, puis
+  `insert` ou `update` ;
+- l'athlète ne crée jamais la ligne — elle naît quand le praticien active ;
+- les horodatages (`consenti_at`…) sont posés par un déclencheur, jamais par
+  le client ;
+- l'export ne sort que prénom, sport, niveau, tranche d'âge, sexe, échéances
+  et volume Strava **agrégé** — ni nom, ni date de naissance, ni bilan, ni
+  l'uuid du patient (secret du lien athlète), remplacé par une référence
+  dérivée.
+
 ## Barre du haut — le nom du patient est la variable d'ajustement
 
 ```bash

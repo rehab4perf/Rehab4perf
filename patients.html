@@ -170,6 +170,22 @@ table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3
 .jour[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .jours-count { font-size: .7rem; color: var(--text3); margin-top: 5px; }
 
+/* Newsletter : enregistrée au clic, hors de « Enregistrer la fiche ». */
+.nl-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.nl-toggle {
+  font-family: inherit; font-size: .82rem; font-weight: 600; cursor: pointer;
+  padding: 8px 16px; border-radius: 7px; white-space: nowrap;
+  border: 1.5px solid var(--accent); background: var(--accent); color: #fff;
+}
+.nl-toggle:hover { background: var(--accent2); border-color: var(--accent2); }
+.nl-toggle.off { background: var(--surface); color: var(--text2); border-color: var(--border); }
+.nl-toggle.off:hover { border-color: var(--text3); color: var(--text); }
+.nl-toggle:disabled { opacity: .55; cursor: default; }
+.nl-statut { font-size: .8rem; color: var(--text2); flex: 1; min-width: 200px; }
+.nl-statut.ok { color: #2D6A4F; }
+.nl-statut.err { color: var(--orange); }
+.nl-prefs { font-size: .78rem; color: var(--text3); margin-top: 10px; }
+
 /* Filtres de période : une seule rangée, au-dessus des indicateurs */
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; }
 .fchip {
@@ -474,6 +490,8 @@ function renderFiche(){
      + '<span class="fi-meta">' + (age !== null ? age + ' ans · ' : '')
      + (p.sexe === 'F' ? 'Femme' : p.sexe === 'H' ? 'Homme' : '—')
      + (p.sport ? ' · ' + esc(p.sport) : '') + '</span></div>';
+
+  h += '<div id="nl-carte">' + nlCarteHtml(p) + '</div>';
 
   h += '<div class="card"><div class="card-h"><span>Anthropométrie</span></div><div class="card-sub">Le bilan garde sa propre valeur datée — la fiche ne l\'écrase jamais</div><div class="fi-grid">'
      + ficheField(p, 'poids',  'poids',  'Poids (kg)',  { number: true, step: '0.1', unit: ' kg' })
@@ -883,6 +901,81 @@ function saveFiche(){
   });
 }
 
+/* ── Newsletter « Le Vestiaire » ─────────────────────────────────────
+   Réservée aux praticiens inscrits (`newsletter_praticiens`, 20260913) :
+   ailleurs, la carte n'existe pas. Tant que la migration n'est pas
+   appliquée, les lectures échouent et la carte reste masquée.
+   Le praticien PROPOSE (`active`) ; l'athlète ACCEPTE dans son espace
+   (`consentement`) — la base interdit à chacun d'écrire la clé de l'autre.
+   La bascule s'enregistre au clic : passer par « Enregistrer la fiche »
+   l'aurait liée à une écriture qui réécrit `fiche` en entier. */
+var _nlInscrit = false, _nlLignes = {};
+var NL_SUJETS_LIB = { recuperation: 'récupération', renforcement: 'renforcement',
+  prevention: 'prévention', preparation: 'préparation de course',
+  sommeil: 'sommeil', nutrition: 'nutrition' };
+
+function nlCharger(){
+  return Promise.all([
+    sb.from('newsletter_praticiens').select('praticien_id').maybeSingle(),
+    sb.from('athlete_newsletter').select('*')
+  ]).then(function(res){
+    _nlInscrit = !res[0].error && !!res[0].data && !res[1].error;
+    _nlLignes = {};
+    if (_nlInscrit) (res[1].data || []).forEach(function(l){ _nlLignes[String(l.patient_id)] = l; });
+  }).catch(function(){ _nlInscrit = false; });
+}
+
+function nlStatut(l){
+  if (!l || !l.active) return { c: '', t: (l && l.consentement)
+    ? 'Désactivée. L\'athlète avait accepté : il la recevra de nouveau si vous la réactivez.'
+    : 'Désactivée. L\'athlète ne voit rien dans son espace.' };
+  if (!l.consentement) return { c: '', t: 'Activée — en attente de l\'accord de l\'athlète, dans son espace (bloc « Ma newsletter »).' };
+  return { c: 'ok', t: 'Activée — l\'athlète a accepté' + (l.consenti_at ? ' le ' + fmtDate(String(l.consenti_at).slice(0, 10)) : '')
+    + '. Il reçoit un numéro chaque dimanche.' };
+}
+
+function nlCarteHtml(p){
+  if (!_nlInscrit) return '';
+  var l = _nlLignes[String(p.id)], on = !!(l && l.active), st = nlStatut(l), prefs = [];
+  if (l && l.consentement && l.format) prefs.push('Format : ' + esc(l.format));
+  if (l && l.consentement && l.sujets && l.sujets.length)
+    prefs.push('Sujets préférés : ' + esc(l.sujets.map(function(s){ return NL_SUJETS_LIB[s] || s; }).join(', ')));
+  return '<div class="card"><div class="card-h"><span>Newsletter « Le Vestiaire »</span></div>'
+    + '<div class="card-sub">Un numéro personnalisé chaque dimanche : récupération, renforcement et un article sur son sport, calé sur ses objectifs. Enregistré dès le clic.</div>'
+    + '<div class="nl-row"><button type="button" class="nl-toggle' + (on ? ' off' : '') + '" id="nl-toggle" onclick="nlBasculer()">'
+    + (on ? 'Désactiver' : 'Activer pour cet athlète') + '</button>'
+    + '<span class="nl-statut ' + st.c + '" id="nl-statut">' + esc(st.t) + '</span></div>'
+    + (prefs.length ? '<div class="nl-prefs">' + prefs.join(' · ') + '</div>' : '')
+    + '</div>';
+}
+
+function nlBasculer(){
+  var p = (_raw.patients || []).find(function(x){ return String(x.id) === String(_currentPatientId); });
+  if (!p) return;
+  var l = _nlLignes[String(p.id)], cible = !(l && l.active);
+  var btn = document.getElementById('nl-toggle'), st = document.getElementById('nl-statut');
+  btn.disabled = true; st.className = 'nl-statut'; st.textContent = 'Enregistrement…';
+  /* Jamais d'upsert : la fusion de PostgREST réécrit aussi `patient_id`, que
+     les droits par colonne n'ouvrent pas en mise à jour. */
+  var req = l ? sb.from('athlete_newsletter').update({ active: cible }).eq('patient_id', p.id)
+              : sb.from('athlete_newsletter').insert({ patient_id: p.id, active: cible });
+  req.select().single().then(function(res){
+    if (res.error) {
+      btn.disabled = false; st.className = 'nl-statut err';
+      st.textContent = 'Échec : ' + res.error.message;
+      return;
+    }
+    _nlLignes[String(p.id)] = res.data;
+    /* Seule la carte est redessinée : renderFiche() effacerait une saisie
+       de fiche en cours, non enregistrée. */
+    var carte = document.getElementById('nl-carte');
+    if (carte) carte.innerHTML = nlCarteHtml(p);
+  }).catch(function(err){
+    btn.disabled = false; st.className = 'nl-statut err';
+    st.textContent = 'Erreur réseau : ' + ((err && err.message) || err);
+  });
+}
+
 /* Le topnav diffuse la sélection courante : on s'y synchronise plutôt que de
    tenir un état parallèle, pour que la ligne surlignée soit toujours juste. */
 window.addEventListener('message', function(e){
@@ -903,7 +996,8 @@ sb.auth.getUser().then(function(r){
   var jobs = [
     sb.from('patients').select('*').eq('praticien_id', uid),
     sb.from('seances_planifiees').select('patient_id,date').eq('praticien_id', uid),
-    hasBilanPlan ? fetchBilans(uid) : Promise.resolve([])
+    hasBilanPlan ? fetchBilans(uid) : Promise.resolve([]),
+    nlCharger()   // ne rejette jamais : sans newsletter, la carte se tait
   ];
 
   Promise.all(jobs).then(function(res){

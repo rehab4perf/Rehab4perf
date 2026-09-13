@@ -835,6 +835,28 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   border-radius:7px; padding:8px 6px; cursor:pointer; }
 .ech-bascule button[aria-pressed="true"] { color:#fff; background:var(--accent);
   border-color:var(--accent); }
+
+/* ── Ma newsletter ───────────────────────────────────────────────────
+   Carte pleine, pas en pointilles : ce n'est pas un formulaire d'ajout,
+   c'est un reglage qu'on retrouve tel qu'on l'a laisse. */
+.nl { background:var(--surface); border:1px solid var(--border);
+  border-radius:9px; padding:13px; }
+.nl-txt { font-size:var(--fs-md); color:var(--text); line-height:1.55; margin:0 0 11px; }
+.nl label, .nl-lbl { display:block; font-size:var(--fs-2xs); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; color:var(--text3); margin:0 0 3px; }
+.nl input { width:100%; box-sizing:border-box; font-family:inherit;
+  font-size:var(--fs-md); color:var(--text); border:1px solid var(--border);
+  border-radius:7px; padding:9px 10px; background:var(--surface); outline:none; }
+.nl input:focus { border-color:var(--accent); }
+.nl-sujets { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.nl-sujet { font-family:inherit; font-size:var(--fs-xs); font-weight:600;
+  color:var(--text2); background:var(--bg); border:1px solid var(--border);
+  border-radius:20px; padding:7px 12px; cursor:pointer; }
+.nl-sujet[aria-pressed="true"] { color:#fff; background:var(--accent);
+  border-color:var(--accent); }
+.nl-etat { font-size:var(--fs-sm); font-weight:600; color:var(--ok-d); margin:9px 0 0; }
+.nl-etat.err { color:var(--alerte-d); }
+.nl-aide { font-size:var(--fs-xs); color:var(--text3); line-height:1.5; margin:0; }
 </style>
 <div class="app-header">
   <div class="header-left">
@@ -1684,10 +1706,12 @@ function _renderCalGrid(){
   html += _buildUpcomingHtml();
   html += '<div id="volSection"></div>';
   html += '<div id="echSection"></div>';
+  html += '<div id="nlSection"></div>';
   document.getElementById('mainContent').innerHTML = html;
   /* Isolé : un défaut du volume ne doit jamais emporter le calendrier. */
   try { _volAthRendre(); } catch(e){}
   _echCharger();
+  _nlCharger();
 }
 
 /* ── Volume d'entraînement ─────────────────────────────────────────
@@ -1899,6 +1923,114 @@ function _echSupprimer(id){
       method:'DELETE', headers:_entetes({ 'Prefer':'return=minimal' })
     }).then(function(){ _echCharger(); }).catch(function(){});
   });
+}
+
+/* ── Ma newsletter ─────────────────────────────────────────────────
+   « Le Vestiaire », rédigée chaque dimanche pour le praticien : une partie
+   commune et un article sur le sport de l'athlète, calé sur les échéances
+   ci-dessus. Deux clés (20260913) : le praticien PROPOSE (`active`),
+   l'athlète ACCEPTE (`consentement`). Tant que rien n'est proposé — ou que
+   la table n'existe pas — la section reste entièrement masquée.
+   L'athlète ne crée jamais la ligne, il la met à jour ; la base ne lui
+   laisse écrire que ses trois colonnes (qualite/newsletter-cas.js). */
+var NL_SUJETS = [['recuperation','Récupération'], ['renforcement','Renforcement'],
+  ['prevention','Prévention des blessures'], ['preparation','Préparation de course'],
+  ['sommeil','Sommeil'], ['nutrition','Nutrition']];
+var _nl = null;                          // la ligne, ou null : rien à montrer
+var _nlSaisie = null;                    // format et sujets en cours, survivent au re-rendu
+var _nlEtat = { t:'', err:false };       // message sous le formulaire
+
+function _nlCharger(){
+  if(!_patientId) return;
+  fetch(SUPA_URL + '/rest/v1/athlete_newsletter?patient_id=eq.' + _patientId + '&select=*',
+        { headers:_entetes() })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){ _nl = (Array.isArray(d) && d[0]) ? d[0] : null; _nlSaisie = null; _nlRendre(); })
+    .catch(function(){});
+}
+/* Rendu pur : l'état entre, le HTML sort. En mode kiné, lecture seule —
+   le praticien ne donne pas l'accord à la place de l'athlète. */
+function _nlHtml(nl, saisie, kine, etat){
+  if(!nl || !nl.active) return '';
+  var h = '<div class="ech-sec"><div class="ech-t">Ma newsletter du dimanche</div><div class="nl">'
+    + '<p class="nl-txt">Chaque dimanche, votre kiné vous envoie <b>«&nbsp;Le Vestiaire&nbsp;»</b>&nbsp;: '
+    + 'récupération, renforcement, et un article sur votre sport, adapté à vos objectifs.</p>';
+  if(kine){
+    return h + '<p class="nl-aide">Vue praticien — '
+      + (nl.consentement
+          ? 'l\'athlète a accepté' + (nl.consenti_at ? ' le ' + _echDateLisibleAth(String(nl.consenti_at).slice(0,10)) : '') + '.'
+          : 'l\'athlète n\'a pas encore accepté.')
+      + ' Seul l\'athlète peut donner ou retirer son accord.</p></div></div>';
+  }
+  var oui = !!nl.consentement;
+  h += '<div class="ech-bascule" role="group" aria-label="Recevoir la newsletter">'
+    +  '<button type="button" aria-pressed="'+oui+'" onclick="_nlConsentir(true)">Oui, je la veux</button>'
+    +  '<button type="button" aria-pressed="'+(!oui)+'" onclick="_nlConsentir(false)">Non merci</button></div>';
+  if(oui){
+    var s = saisie || { format:nl.format || '', sujets:(nl.sujets || []).slice() };
+    h += '<div class="ech-champ"><label for="nlFormat">Votre format ou discipline (facultatif)</label>'
+      +  '<input type="text" id="nlFormat" maxlength="80" value="'+escH(s.format)+'"'
+      +  ' placeholder="Triathlon 70.3, trail 40 km, football en club…" oninput="_nlSaisir()"></div>'
+      +  '<div class="nl-lbl">Ce qui vous intéresse le plus (facultatif)</div><div class="nl-sujets">'
+      +  NL_SUJETS.map(function(x){
+           var on = s.sujets.indexOf(x[0]) >= 0;
+           return '<button type="button" class="nl-sujet" aria-pressed="'+on+'"'
+                + ' onclick="_nlSujet(\''+x[0]+'\')">'+x[1]+'</button>';
+         }).join('')
+      +  '</div><button class="ech-btn" id="nlBtn" onclick="_nlEnregistrer()">Enregistrer</button>';
+  }
+  if(etat && etat.t) h += '<p class="nl-etat'+(etat.err ? ' err' : '')+'">'+escH(etat.t)+'</p>';
+  h += '<p class="ech-aide">Vos objectifs ci-dessus servent à caler l\'article sur votre saison. '
+    +  'Seuls votre prénom, votre sport, votre niveau, vos objectifs et le volume de vos activités '
+    +  'sont utilisés — jamais vos bilans. Vous pouvez arrêter à tout moment, ici.</p>';
+  return h + '</div></div>';
+}
+/* Le corps d'une écriture de l'athlète : ses trois colonnes, jamais `active`
+   — la base la refuserait de toute façon (droits par colonne). */
+function _nlCorps(modif){
+  var c = {};
+  ['consentement','format','sujets'].forEach(function(k){ if(k in modif) c[k] = modif[k]; });
+  return c;
+}
+function _nlRendre(){
+  var box = document.getElementById('nlSection');
+  if(box) box.innerHTML = _nlHtml(_nl, _nlSaisie, _kineMode, _nlEtat);
+}
+function _nlSaisir(){
+  var f = document.getElementById('nlFormat');
+  _nlSaisie = _nlSaisie || { format:'', sujets:((_nl && _nl.sujets) || []).slice() };
+  if(f) _nlSaisie.format = f.value;
+}
+function _nlSujet(k){
+  _nlSaisir();
+  var i = _nlSaisie.sujets.indexOf(k);
+  if(i >= 0) _nlSaisie.sujets.splice(i, 1); else _nlSaisie.sujets.push(k);
+  var ordre = NL_SUJETS.map(function(x){ return x[0]; });
+  _nlSaisie.sujets.sort(function(a,b){ return ordre.indexOf(a) - ordre.indexOf(b); });
+  _nlEtat = { t:'', err:false }; _nlRendre();
+}
+function _nlEcrire(modif, message){
+  if(!_nl || _kineMode) return;
+  fetch(SUPA_URL + '/rest/v1/athlete_newsletter?patient_id=eq.' + _patientId, {
+    method:'PATCH', headers:_entetes({ 'Prefer':'return=representation' }),
+    body: JSON.stringify(_nlCorps(modif))
+  }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      /* Un PATCH qui rend [] n'a rien écrit : le dire, ne pas le croire fait. */
+      if(!Array.isArray(d) || !d.length){ _nlEtat = { t:'Impossible d\'enregistrer. Réessayez.', err:true }; _nlRendre(); return; }
+      _nl = d[0]; _nlSaisie = null; _nlEtat = { t:message, err:false }; _nlRendre();
+    })
+    .catch(function(){ _nlEtat = { t:'Erreur réseau. Réessayez.', err:true }; _nlRendre(); });
+}
+function _nlConsentir(v){
+  if(!_nl || !!_nl.consentement === v) return;
+  _nlEcrire({ consentement:v }, v ? 'C\'est noté : vous la recevrez chaque dimanche.'
+                                  : 'C\'est noté : vous ne la recevrez plus.');
+}
+function _nlEnregistrer(){
+  _nlSaisir();
+  var fmt = (_nlSaisie.format || '').trim();
+  _nlEcrire({ format:fmt || null, sujets:_nlSaisie.sujets }, 'Préférences enregistrées.');
 }
 
 /* ── Vue MOIS ── */

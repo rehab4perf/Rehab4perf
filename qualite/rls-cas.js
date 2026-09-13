@@ -53,14 +53,18 @@ function ok(nom, cond, detail) {
    rattachent par jointure. */
 var TABLES_PATIENT = ['programmes', 'seances_planifiees', 'patient_settings',
   'patient_protocols', 'protocol_criteria_checks', 'patient_messages',
-  'clinical_notes', 'strava_activities', 'athlete_feedback', 'athlete_objectifs'];
+  'clinical_notes', 'strava_activities', 'athlete_feedback', 'athlete_objectifs',
+  'athlete_newsletter'];
 /* Bibliothèque : ses lignes publiques sont faites pour être partagées. */
 var TABLES_BIBLIO = ['templates', 'template_groups'];
 /* Ce que l'athlète écrit réellement depuis athlete.html. Tout le reste lui est
    fermé en écriture. */
 var ECRITURES_ATHLETE = {
   athlete_feedback: ['INSERT', 'UPDATE'],            // upsert merge-duplicates
-  athlete_objectifs: ['INSERT', 'UPDATE', 'DELETE']
+  athlete_objectifs: ['INSERT', 'UPDATE', 'DELETE'],
+  /* La ligne naît chez le praticien ; l'athlète ne fait que consentir et
+     choisir — ses colonnes seulement (qualite/newsletter-cas.js). */
+  athlete_newsletter: ['UPDATE']
 };
 /* Jamais par un lien, quel qu'il soit. */
 var JAMAIS_ANONYME = ['clinical_notes', 'template_groups'];
@@ -420,7 +424,8 @@ else {
     if (P) {
       console.log('\nEn base — en-tête du patient ' + P.slice(0, 8) + '… : lui seul');
       for (var t2 of ['programmes', 'seances_planifiees', 'patient_settings', 'patient_protocols',
-                      'patient_messages', 'strava_activities', 'athlete_objectifs']) {
+                      'patient_messages', 'strava_activities', 'athlete_objectifs',
+                      'athlete_newsletter']) {
         var tous = await compte(t2, { 'x-r4p-patient': P });
         var siens = await compte(t2, { 'x-r4p-patient': P }, '&patient_id=eq.' + P);
         ok(t2 + ' : ' + tous + ' visible(s), toutes à ce patient', tous === siens, siens + ' à lui');
@@ -445,6 +450,7 @@ else {
         patient_settings: '&patient_id=in.(' + liste + ')',
         strava_activities: '&patient_id=in.(' + liste + ')',
         athlete_objectifs: '&patient_id=in.(' + liste + ')',
+        athlete_newsletter: '&patient_id=in.(' + liste + ')',
         templates: '&or=(praticien_id.eq.' + uid + ',and(is_public.is.true,nom.not.in.(__r4p_favs_meta__,__r4p_protocols_meta__)))',
         template_groups: '&or=(praticien_id.eq.' + uid + ',is_public.is.true)'
       };
