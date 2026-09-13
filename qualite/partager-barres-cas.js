@@ -53,7 +53,20 @@ ok('le menu ··· ne porte plus « Partager le calendrier »', !/shareCalLink\(
 ok('un clic sur l\'icône du bouton n\'est pas un clic extérieur', (pmain.match(/e\.target\.closest && e\.target\.closest\('#share-cal-btn'\)/g) || []).length === 2
    && !/e\.target\.id !== 'share-cal-btn'/.test(pmain));
 ok('… et le menu se referme à chaque fois (l\'écouteur ne se retire plus)', !/removeEventListener\('click', _closeMenu\)/.test(pmain));
-ok('l\'aide dit où est le bouton', !/Menu ⋯ → « Partager le calendrier »/.test(aide) && /Bouton « Partager »/.test(aide));
+/* Mesuré à 1024 px : avec « Partager » en toutes lettres, l'en-tête de l'agenda
+   manquait de ~75 px et passait sur deux lignes (83 px) — les barres se
+   désalignaient de nouveau. Sous 1100 px, Partager et Sélectionner passent en
+   icône, comme le builder le fait déjà à cette largeur ; « + Séance » garde
+   son libellé. */
+ok('sous 1100 px, Partager et Sélectionner passent en icône dans l\'agenda',
+   /@media \(max-width:1100px\) \{[^}]*\.cal-central-header #share-cal-btn \.btn-label, \.cal-central-header #calSelToggleBtn \.btn-label[^}]*\{ display:none; \}/.test(html));
+ok('… le libellé de Sélectionner est masquable, dans la page', /id="calSelToggleBtn"[^>]*title="[^"]+"[^>]*>☑<span class="btn-label"> Sélectionner<\/span><\/button>/.test(html));
+ok('… et le reste quand le mode sélection le réécrit (aucun textContent)',
+   /* le Journal a son propre « ☑ Sélectionner » (journalSelBtn) : pas concerné */
+   !/btn\.textContent = '☑ Sélectionner';\s*btn\.style\.color/.test(pmain) && !/btn\.textContent = '✕ Quitter'/.test(pmain)
+   && (pmain.match(/btn\.innerHTML = '☑<span class="btn-label"> Sélectionner<\/span>'/g) || []).length === 2
+   && /btn\.innerHTML = '✕<span class="btn-label"> Quitter<\/span>'/.test(pmain));
+ok('l\'aide dit où est le bouton',!/Menu ⋯ → « Partager le calendrier »/.test(aide) && /Bouton « Partager »/.test(aide));
 
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }

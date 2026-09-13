@@ -121,7 +121,9 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
   .sb-tabs { min-height:var(--barre-h); }
   .cal-central-header, .builder-header { min-height:var(--barre-h); box-sizing:border-box; }
 }
-@media (max-width:1100px) { .builder-header .topbar-right .btn-label { display:none; } }
+/* Sous 1100 px les boutons secondaires passent en icone : a 1024 l'en-tete de
+   l'agenda passait sinon sur deux lignes (qualite/partager-barres-cas.js). */
+@media (max-width:1100px) { .builder-header .topbar-right .btn-label, .cal-central-header #share-cal-btn .btn-label, .cal-central-header #calSelToggleBtn .btn-label { display:none; } }
 .cal-central-header .topbar-btn { background:var(--surface); border-color:var(--border); color:var(--text); padding:4px 10px; }
 .cal-central-header .topbar-btn:hover { background:var(--bg); }
 .cal-central-header .topbar-btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
@@ -3242,7 +3244,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <button class="cal-view-btn" data-view="week" onclick="setCalView('week')">Semaine</button>
       </div>
       <button class="btn btn-outline" onclick="calToday()" style="font-size:.74rem;padding:4px 10px;">Aujourd'hui</button>
-      <button id="calSelToggleBtn" class="cal-nav-btn" onclick="_toggleCalSelMode()" style="font-size:.74rem;padding:4px 10px;">☑ Sélectionner</button>
+      <button id="calSelToggleBtn" class="cal-nav-btn" onclick="_toggleCalSelMode()" title="Sélectionner des séances" style="font-size:.74rem;padding:4px 10px;">☑<span class="btn-label"> Sélectionner</span></button>
     </div>
     <div class="cal-central-body">
       <!-- Bande d'echeances : entre l'en-tete et la grille, donc visible quel
@@ -4928,6 +4930,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913y"></script>
+<script src="js/prog-main.js?v=20260913z"></script>
 </body>
 </html>

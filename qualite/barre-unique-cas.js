@@ -92,7 +92,8 @@ console.log('\nÀ l\'étroit (iPad)');
 ok('l\'en-tête de l\'agenda passe à la ligne au lieu de déborder, le groupe à droite',
    /div\.cal-central-header \{ flex-wrap:wrap; row-gap:6px; \}/.test(html) && /\.cal-central-header \.topbar-right \{ margin-left:auto;/.test(html));
 ok('dans le builder, sous 1100 px, « Bibliothèque » et ··· se replient en icône',
-   /@media \(max-width:1100px\) \{ \.builder-header \.topbar-right \.btn-label \{ display:none; \} \}/.test(html));
+   /* la règle couvre aussi Partager et Sélectionner de l'agenda (partager-barres-cas) */
+   /@media \(max-width:1100px\) \{ \.builder-header \.topbar-right \.btn-label(, [^{]*)? \{ display:none; \} \}/.test(html));
 
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }

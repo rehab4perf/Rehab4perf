@@ -14050,11 +14050,11 @@ function _toggleCalSelMode() {
   var btn = document.getElementById('calSelToggleBtn');
   if (btn) {
     if (_calSelMode) {
-      btn.textContent = '✕ Quitter';
+      btn.innerHTML = '✕<span class="btn-label"> Quitter</span>';
       btn.style.color = '#ef4444';
       btn.style.borderColor = '#ef4444';
     } else {
-      btn.textContent = '☑ Sélectionner';
+      btn.innerHTML = '☑<span class="btn-label"> Sélectionner</span>';
       btn.style.color = '';
       btn.style.borderColor = '';
     }
@@ -14160,7 +14160,7 @@ function _calSelDeleteAll() {
       _calSelSeances = new Set();
       _calSelNotes   = new Set();
       var btn = document.getElementById('calSelToggleBtn');
-      if (btn) { btn.textContent = '☑ Sélectionner'; btn.style.color = ''; btn.style.borderColor = ''; }
+      if (btn) { btn.innerHTML = '☑<span class="btn-label"> Sélectionner</span>'; btn.style.color = ''; btn.style.borderColor = ''; }
       _renderCalSelBar();
       renderCalendar();
       _showToast(msg);
