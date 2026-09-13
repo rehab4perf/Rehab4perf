@@ -33,7 +33,7 @@ const fn = nom => { const d = pdata.indexOf('\nfunction ' + nom + '('); return d
 const AUJ = '2026-09-11';
 const BASE = ['_pevoJour', '_pevoIso', '_pevoPlus', '_pevoLundi', '_pevoFinMois', '_pevoFmtCourt', '_pevoBuckets',
               '_pevoPeriode', '_pevoPeriodePerso', '_pevoPeriodeTout', '_pevoPremiereDate', '_pevoPeriodeCourante',
-              '_pevoAppliquerPeriode', '_pevoLibelleExport', '_pevoPrefCle', '_pevoSauverPref', '_pevoChargerPref',
+              '_pevoAppliquerPeriode', '_pevoPrefCle', '_pevoSauverPref', '_pevoChargerPref',
               'setPevoUnite', 'setPevoPortee', 'pevoDecaler', 'pevoRevenirAujourdhui', 'pevoOuvrirPeriode',
               '_pevoClavier', '_pevoSensGlisse'];
 
@@ -48,7 +48,7 @@ function banc(opts) {
     + BASE.map(fn).join('\n')
     + '\nreturn { etat:function(){ return { u:_pevoUnite, d:_pevoDecalage, p:_pevoProgPortee, de:_pevoFilterFrom, a:_pevoFilterTo }; },'
     + ' unite:setPevoUnite, portee:setPevoPortee, dec:pevoDecaler, auj:pevoRevenirAujourdhui, ouvrir:pevoOuvrirPeriode,'
-    + ' charger:_pevoChargerPref, appliquer:_pevoAppliquerPeriode, export:_pevoLibelleExport, clavier:_pevoClavier,'
+    + ' charger:_pevoChargerPref, appliquer:_pevoAppliquerPeriode, clavier:_pevoClavier,'
     + ' glisse:_pevoSensGlisse, tout:_pevoPeriodeTout, premiere:_pevoPremiereDate, courante:_pevoPeriodeCourante };';
   const api = new Function('R4P_KEYS', 'localStorage', '_cleCompte', '_renderPevoCharts', '_pevoGetSel', '_progPatient', '_pevoData',
     '_stravaActivities', '_cloudCalEvents', 'document', code)(
@@ -60,19 +60,17 @@ function banc(opts) {
   return { api, stock, appels };
 }
 
-/* ── 1. L'export nomme la période ────────────────────────────────────────── */
-console.log('\n1. L\'export nomme la période');
+/* ── 1. L'export de l'onglet a été retiré ────────────────────────────────────
+   Décision du praticien (2026-09-13) : l'export HTML/PDF ne reprenait que les
+   courbes d'exercices — ni volume, ni charge UA — et doublait deux canaux
+   meilleurs : le lien athlète, toujours à jour, et le Générateur de CR, qui
+   reçoit ces courbes (et, à cocher, la charge d'entraînement). */
+console.log('\n1. L\'export de l\'onglet a été retiré');
 let b = null;
 try { b = banc(); b.api.appliquer(); } catch (e) { ok('les fonctions existent', false, e.message); }
-if (b) {
-  ok('le mois en cours, et ce que montrent les courbes', /Septembre 2026/.test(b.api.export()) && /toute la rééducation/.test(b.api.export()), b.api.export());
-  b.api.portee('periode');
-  ok('… « période seule » se dit aussi', /période seule/.test(b.api.export()), b.api.export());
-  b.api.unite('tout');
-  ok('« Tout » se dit « tout l\'historique »', /tout l'historique/i.test(b.api.export()), b.api.export());
-}
-ok('l\'export s\'en sert, dans son titre et sous le patient',
-   (() => { const e = fn('_buildPevoExportHTML'); return (e.match(/_pevoLibelleExport\(\)/g) || []).length >= 1 && /<title>[^']*'\s*\+\s*_pevoPer|_pevoLibelleExport/.test(e); })());
+const progHtml = fs.readFileSync(path.join(__dirname, '..', 'programme.html'), 'utf8');
+ok('plus de bouton HTML ni PDF dans l\'Évolution', !/exportPevoHTML|printPevoHTML|pevo-export-btn/.test(progHtml));
+ok('ni les fonctions qui les servaient', !/function (exportPevoHTML|printPevoHTML|_buildPevoExportHTML|_pevoLibelleExport)\(/.test(pdata));
 
 /* ── 2. L'unité et l'étendue sont retenues, par compte ───────────────────── */
 console.log('\n2. Retenues d\'une ouverture à l\'autre');

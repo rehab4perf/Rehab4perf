@@ -4989,14 +4989,6 @@ function _pevoPremiereDate(){
   ((typeof _cloudCalEvents !== 'undefined' && _cloudCalEvents) || []).forEach(function(e){ voir(e && e.date); });
   return min;
 }
-/* Ce que dit l'export : la période, et ce que montrent les courbes. Il n'en
-   disait rien — un document qui peut partir chez un médecin. */
-function _pevoLibelleExport(){
-  var p = _pevoPeriodeCourante();
-  if(!p) return 'Période : tout l\'historique';
-  return 'Période : ' + p.libelle
-    + (_pevoProgPortee === 'tout' ? ' · courbes sur toute la rééducation, période en bande' : ' · courbes sur la période seule');
-}
 /* L'unité et l'étendue sont retenues PAR COMPTE ; on rouvre toujours sur la
    période en cours. Une plage personnalisée ne se rouvre pas : ses dates
    sont celles d'hier. */
@@ -5970,98 +5962,6 @@ function _pevoSelectAllCardio(state) {
   _renderPevoCharts(_pevoData, _pevoGetSel(patId));
 }
 
-function _buildPevoExportHTML(){
-  if(!_pevoData || !_progPatient) return null;
-  // Récupérer le grid des charts (hors pills de sélection)
-  var grid = document.getElementById('pevoChartsGrid');
-  if(!grid){ return null; }
-  var clone = grid.cloneNode(true);
-  // Retirer les hit areas tooltip (interactif uniquement)
-  clone.querySelectorAll('.pevo-hit').forEach(function(el){ el.remove(); });
-  var contentHTML = clone.outerHTML;
-
-  // Infos patient et praticien
-  var patNom = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
-  var initials = (((_progPatient.prenom||'')[0]||'')+((_progPatient.nom||'')[0]||'')).toUpperCase()||'?';
-  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  var prof = getProfile();
-  var praticienNom = ((prof.prenom||'')+' '+(prof.nom||'')).trim() || 'Praticien';
-  var cabinet = prof.cabinet || '';
-  var am = prof.am || '';
-  var tel = prof.tel || '';
-  var email = prof.email || '';
-  var metaSub = [am?'N° AM : '+am:'', tel, email].filter(Boolean).join(' · ');
-  var metaParts = [];
-  if(praticienNom) metaParts.push('<strong>'+(praticienNom+(cabinet?' — '+cabinet:''))+'</strong>');
-  if(metaSub) metaParts.push(metaSub);
-  var praticienMetaHTML = metaParts.join('<br>');
-
-
-  var css = ':root{--accent:#2B5FA6;--accent-l:#EEF3FB;--navy:#1A3A5C;--text:#1A1917;--muted:#6B6860;--border:#E8E6E1;--surface:#fff;--bg:#F0F4F8}'
-    +'*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +'html{font-size:14px}body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F4F8;color:#1A1917}'
-    +'.page-wrap{max-width:860px;margin:0 auto;padding:0 0 48px}'
-    +'.doc-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:var(--navy)}'
-    +'.doc-logo{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}'
-    +'.doc-logo .r{font-family:\'Cormorant Garamond\',serif;font-style:italic;font-weight:600;font-size:20px;color:#fff;letter-spacing:-.01em}'
-    +'.doc-logo .e{font-family:\'Cormorant Garamond\',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#fff;margin:0 .05em 0 .01em;line-height:0}'
-    +'.doc-logo .p{font-family:\'Poppins\',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.025em;margin-left:.02em}'
-    +'.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.8}'
-    +'.doc-meta strong{font-size:.82rem;color:#fff;display:block}'
-    +'.patient-card{background:#fff;padding:20px 24px;border-bottom:1px solid #DDE3EC;display:flex;align-items:center;gap:18px}'
-    +'.patient-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--navy));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;flex-shrink:0}'
-    +'.patient-name{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:3px}'
-    +'.summary-bar{background:#EEF3FB;padding:10px 24px;border-bottom:1px solid #D3D9F0;font-size:.82rem;color:var(--navy)}'
-    +'.doc-body{padding:20px 24px 0}'
-    +'.pevo-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}'
-    +'@media(max-width:600px){.pevo-charts{grid-template-columns:1fr}}'
-    +'.pevo-card{background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:14px 16px 10px}'
-    +'.pevo-card-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px}'
-    +'.pevo-card-title{font-size:.82rem;font-weight:700;color:#1A1917}'
-    +'.pevo-card-kpis{display:flex;align-items:center;gap:6px;flex-wrap:wrap}'
-    +'.pevo-kpi-neutral{font-size:.72rem;color:#6B6860}'
-    +'.pevo-kpi-strong{font-size:.72rem;font-weight:700;color:var(--navy)}'
-    +'.pevo-kpi{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:10px}'
-    +'.pos{background:#E8F5EE;color:#2D6A4F}.neg{background:#FDECEA;color:#C0392B}.neutral{background:#F1F0ED;color:#6B6860}'
-    +'@media print{.print-btn-wrap{display:none!important}.doc-header{background:var(--navy)!important}.pevo-card{break-inside:avoid}}';
-
-  var html = '<!DOCTYPE html><html lang="fr"><head>'
-    +'<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
-    +'<link rel="stylesheet" href="/fonts/fonts.css">'
-    +'<title>Évolution des charges — '+patNom+' — '+escH(_pevoLibelleExport().replace(/^Période : /, ''))+'</title>'
-    +'<style>'+css+'</style></head><body><div class="page-wrap">'
-    +'<div class="doc-header"><div class="doc-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="w"><span class="r">rehab<sup class="e">4</sup></span><span class="p">perf</span></span></div>'
-    +'<div class="doc-meta">'+praticienMetaHTML+'</div></div>'
-    +'<div class="patient-card"><div class="patient-avatar">'+initials+'</div>'
-    +'<div><div class="patient-name">'+patNom+'</div></div></div>'
-    +'<div class="summary-bar">📊 Évolution des charges prescrites · '+escH(_pevoLibelleExport())+' · Export généré le '+date+'</div>'
-    +'<div class="doc-body"><br>'+contentHTML+'</div>'
-    +'</div></body></html>';
-
-  return { html: html, patient: patNom, date: date };
-}
-
-function exportPevoHTML(){
-  var r = _buildPevoExportHTML();
-  if(!r){ alert('Aucun graphique à exporter. Sélectionnez au moins un exercice.'); return; }
-  var blob = new Blob([r.html], {type:'text/html;charset=utf-8'});
-  var blobUrl = URL.createObjectURL(blob);
-  var filename = 'Evolution_charges'+(r.patient?'_'+r.patient.replace(/\s+/g,'_'):'')+'.html';
-  var a = document.createElement('a');
-  a.href = blobUrl; a.download = filename; a.style.display='none';
-  document.body.appendChild(a); a.click();
-  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 300);
-}
-
-function printPevoHTML(){
-  var r = _buildPevoExportHTML();
-  if(!r){ alert('Aucun graphique à imprimer. Sélectionnez au moins un exercice.'); return; }
-  var printHtml = r.html.replace('</body>',
-    '<script>window.onload=function(){window.focus();setTimeout(function(){window.print();},400);}<\/script></body>');
-  var win = window.open('','_blank');
-  if(!win){ alert('Autorisez les pop-ups pour imprimer.'); return; }
-  win.document.open(); win.document.write(printHtml); win.document.close();
-}
 
 function openChargesEvo() {
   if(!_progPatient){ alert('Sélectionnez un patient d\'abord.'); return; }

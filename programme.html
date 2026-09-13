@@ -2508,8 +2508,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .pevo-header { background:var(--navy); color:#fff; padding:13px 18px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .pevo-header h2 { flex:1; font-size:.92rem; font-weight:700; margin:0; }
 .pevo-close { background:none; border:none; color:rgba(255,255,255,.7); font-size:1.3rem; cursor:pointer; padding:0 4px; }
-.pevo-export-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; border-radius:6px; padding:4px 10px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; white-space:nowrap; font-family:inherit; transition:background .15s; }
-.pevo-export-btn:hover { background:rgba(255,255,255,.28); }
 .pevo-body { flex:1; overflow-y:auto; padding:18px 20px 24px; }
 .pevo-empty { text-align:center; color:var(--text3); font-style:italic; padding:32px 20px; }
 .pevo-filter-bar { display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
@@ -3261,8 +3259,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <div class="pevo-header">
       <h2>📈 Évolution des charges</h2>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-        <button class="pevo-export-btn" id="pevoExportHtmlBtn" onclick="exportPevoHTML()" title="Exporter en HTML (à envoyer au patient)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>HTML</button>
-        <button class="pevo-export-btn" id="pevoPrintBtn" onclick="printPevoHTML()" title="Imprimer / Exporter PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>PDF</button>
         <button class="pevo-close" onclick="closeChargesEvo()">✕</button>
       </div>
     </div>
@@ -3668,7 +3664,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
 <script src="js/volume-sport.js?v=20260911v"></script>
-<script src="js/prog-data.js?v=20260911u"></script>
+<script src="js/prog-data.js?v=20260913a"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
