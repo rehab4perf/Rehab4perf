@@ -88,6 +88,11 @@ try { court = ctx._crChargeHtml({ '2026-09-10': 325 }, VOL, '2026-09-13'); } cat
 ok('historique trop court : « ACWR : données insuffisantes », sans double tiret',
    /données insuffisantes/.test(court) && !/ACWR —<\/b> —/.test(court) && /ACWR<\/b> : données insuffisantes/.test(court),
    (court.match(/crc-acwr">[\s\S]{0,140}/) || ['absent'])[0]);
+/* Vu sur le PDF du praticien : tableau étalé sur toute la largeur, colonnes
+   très espacées. Colonnes de chiffres à largeur fixe, comme les tableaux de
+   mesures du courrier (_crMesTab, 86 px). */
+ok('le tableau se resserre : largeur au contenu, chiffres sur 86 px',
+   /\.crc-t\{width:auto/.test(style) && /\.crc-t \.n\{[^}]*width:86px/.test(style), (style.match(/\.crc-t[^}]*\}/g) || []).join(' '));
 let vide = 'x';
 try { vide = ctx._crChargeHtml({}, { sports: VOL.sports, semaines: [] }, '2026-09-13'); } catch (e) { vide = 'ERREUR ' + e.message; }
 ok('sans aucune charge : rien (le générateur le dit)', vide === '', vide.slice(0, 80));
@@ -101,6 +106,10 @@ ok('… et « rien » ne se dit que si ni courbe ni charge', /!contentHTML && !c
 /* ── Le générateur ───────────────────────────────────────────────────────── */
 console.log('\nLe générateur');
 ok('une case « Inclure la charge d\'entraînement »', /id="cr-charge-panel"[\s\S]{0,700}id="cr-charge-toggle"[^>]*onchange="crOnChargeToggle\(\)"/.test(outils));
+/* Le PDF n'a pas de marge latérale (@page … 0) : seul #cr-body en porte une.
+   Les sections de graphiques touchaient le bord de la feuille. */
+ok('dans le PDF, les sections de graphiques prennent la marge du texte (28 px)',
+   /'#cr-body\{line-height:1\.6;padding:0 28px\}'/.test(outils) && /'#cr-page > \.cr-evo-section\{margin-left:28px;margin-right:28px\}'/.test(outils));
 ok('la section entre dans la lettre, après les courbes', /_crGetPevoSectionHtml\(\)\s*\n\s*\+ _crGetChargeSectionHtml\(\)/.test(outils));
 const refr = fnDe(outils)('_crRefreshGraphiques') || (outils.match(/function _crRefreshGraphiques\(\) \{[\s\S]*?\n  \}/) || [''])[0];
 ok('… et dans l\'aperçu', /_crGetChargeSectionHtml\(\)/.test(refr), refr.slice(0, 160));
