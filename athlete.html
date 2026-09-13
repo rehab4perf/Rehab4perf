@@ -17,7 +17,7 @@
 (function(){
   try {
     var p = new URLSearchParams(window.location.search);
-    var hasToken = !!(p.get('patient') || p.get('prog'));
+    var hasToken = !!(p.get('patient') || p.get('prog') || p.get('j'));
     var link = document.createElement('link');
     link.rel = 'manifest';
     if(hasToken){
@@ -930,6 +930,7 @@ var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 function _entetes(extra){
   var h = { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' };
   if(_patientId) h['x-r4p-patient'] = _patientId;
+  if(_jeton)     h['x-r4p-jeton'] = _jeton;
   if(_progId)    h['x-r4p-prog']    = _progId;
   return Object.assign(h, extra || {});
 }
@@ -1062,6 +1063,7 @@ window.addEventListener('resize', function(){
 
 var _mode = ''; // 'prog' ou 'cal'
 var _patientId = '';
+var _jeton = '';      // ?j= : le jeton du lien, révocable (qualite/lien-jeton-cas.js)
 var _progId = '';
 var _seanceId  = '';   // seances_planifiees.id passé via ?seance= (lien séance unique)
 var _kineMode = false; // true si ?mode=kine dans l'URL
@@ -1155,11 +1157,42 @@ function fmtCible(c){
   return t;
 }
 
+/* Le lien désigne-t-il bien un patient ? (qualite/lien-jeton-cas.js)
+   Un lien ?j= ne porte que le jeton : la base dit quel patient il ouvre, et
+   les requêtes du calendrier filtrent sur lui. Un lien REMPLACÉ — jeton
+   révoqué, ou ancien ?patient= d'un patient passé au jeton — rend null : on
+   le dit, plutôt qu'un calendrier vide qui ferait croire à un programme
+   effacé. Hors ligne ou base injoignable : la page fait comme avant. */
+function _resoudreLien(suite){
+  var lancer = suite;
+  suite = function(){ if(lancer){ var f = lancer; lancer = null; f(); } };   // jamais deux fois
+  if(!_jeton && !_patientId){ suite(); return; }   // lien programme seul : la base borne par son en-tête
+  fetch(SUPA_URL + '/rest/v1/rpc/r4p_lien_patient', { method:'POST', headers:_entetes(), body:'{}' })
+    .then(function(r){ return r.ok ? r.json() : undefined; })
+    .then(function(pid){
+      if(pid === null){
+        showError('Lien remplacé', 'Ce lien n’est plus valide : ton praticien t’en a envoyé un nouveau. Ouvre le dernier lien reçu.');
+        return;
+      }
+      var resolu = !!(pid && _jeton && !_progId && !_patientId);
+      if(pid && _jeton && !_progId) _patientId = String(pid);
+      suite();
+      /* Notifications et guide d'installation partent au chargement, quand le
+         patient d'un lien à jeton n'est pas encore connu : on les relance. */
+      if(resolu && document.readyState === 'complete'){
+        try { _maybeOfferPush(); } catch(e){}
+        try { _maybeOfferInstallGuide(); } catch(e){}
+      }
+    })
+    .catch(function(){ suite(); });
+}
+
 // ── Init ────────────────────────────────────────────
 function init(){
   var params = new URLSearchParams(window.location.search);
   _progId    = params.get('prog')    || '';
   _patientId = params.get('patient') || '';
+  _jeton     = params.get('j')       || '';
   _seanceId  = params.get('seance')  || '';
   _kineMode  = params.get('mode') === 'kine';
   _pratId    = params.get('prat')    || '';
@@ -1169,13 +1202,13 @@ function init(){
   // athlete.html s'ouvre SANS les paramètres du lien → on les mémorise à la 1re ouverture
   // (via le lien) puis on les restaure quand l'URL n'en contient plus.
   var CTX_KEY = 'r4p-athlete-ctx';
-  if(_patientId || _progId){
-    try { localStorage.setItem(CTX_KEY, JSON.stringify({ prog:_progId, patient:_patientId, seance:_seanceId, mode:(params.get('mode')||''), prat:_pratId, nom:nomParam })); } catch(e){}
+  if(_patientId || _progId || _jeton){
+    try { localStorage.setItem(CTX_KEY, JSON.stringify({ prog:_progId, patient:_patientId, j:_jeton, seance:_seanceId, mode:(params.get('mode')||''), prat:_pratId, nom:nomParam })); } catch(e){}
   } else {
     try {
       var ctx = JSON.parse(localStorage.getItem(CTX_KEY) || 'null');
       if(ctx){
-        _progId = ctx.prog||''; _patientId = ctx.patient||''; _seanceId = ctx.seance||'';
+        _progId = ctx.prog||''; _patientId = ctx.patient||''; _seanceId = ctx.seance||''; _jeton = ctx.j||'';
         _kineMode = ctx.mode === 'kine'; _pratId = ctx.prat||''; nomParam = ctx.nom||'';
       }
     } catch(e){}
@@ -1186,6 +1219,7 @@ function init(){
   var elPat = document.getElementById('headerPatient');
   if(elPat && nomParam) elPat.textContent = nomParam;
 
+  function _demarrer(){
   if(_patientId){
     _mode = 'cal';
     document.getElementById('headerSub').textContent = _kineMode ? '🩺 Vue kiné — Calendrier + notes' : 'Calendrier athlète';
@@ -1200,6 +1234,8 @@ function init(){
   } else {
     showError('Lien invalide', 'Aucun programme ni calendrier spécifié. Demande le lien à ton praticien.');
   }
+  }
+  _resoudreLien(_demarrer);   // la vue se choisit une fois le patient connu
 }
 
 function refresh(){

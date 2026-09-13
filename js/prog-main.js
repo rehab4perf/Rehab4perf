@@ -4491,25 +4491,43 @@ function shareCalLink() {
 
 function _doShare(mode) {
   var menu = document.getElementById('share-cal-menu');
-  var base = menu && menu._base;
-  if(!base) return;
-  menu.style.display = 'none';
-  var link = mode === 'kine'
-    ? base + '&mode=kine' + (_progUid ? '&prat=' + _progUid : '')
-    : base;
+  if(menu) menu.style.display = 'none';
+  if(!_progPatient) return;
+  var pid = String(_progPatient.id);
+  /* Partager AU PATIENT crée son jeton s'il n'en a pas : c'est ce partage qui
+     fait basculer son ancien lien. Partager à un confrère reprend le jeton
+     existant sans en créer — sinon l'ancien lien du patient mourrait sans
+     qu'on lui ait envoyé le nouveau (qualite/lien-jeton-cas.js). */
+  var obtenir = mode === 'kine' ? _lienJetonLire(pid) : _lienJeton(pid);
+  var lien = obtenir.then(function(j){
+    var l = _urlAthlete(pid, j || null);
+    return mode === 'kine' ? l + '&mode=kine' + (_progUid ? '&prat=' + _progUid : '') : l;
+  });
   var label = mode === 'kine' ? '🩺 Lien kiné copié !' : '📅 Lien patient copié !';
-  // Toujours copier dans le presse-papier, quelle que soit la plateforme
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link)
-      .then(function(){ _showToast(label); })
-      .catch(function(){ prompt('Copie ce lien :', link); });
-  } else {
-    prompt('Copie ce lien :', link);
-  }
-  // Sur mobile : ouvrir aussi le partage natif (en plus du clipboard)
+  _copierLienAsync(lien, label);
+  // Sur mobile : ouvrir aussi le partage natif (en plus du presse-papier)
   if(navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
-    navigator.share({ url: link }).catch(function(){});
+    lien.then(function(l){ navigator.share({ url: l }).catch(function(){}); });
   }
+}
+
+/* « Régénérer le lien » : l'ancien jeton est révoqué, un nouveau est créé et
+   copié. L'ancien lien — et l'appli installée — cessent de fonctionner. */
+function _regenererLien(){
+  if(!_progPatient) return;
+  var pid = String(_progPatient.id), ancien = _liensJeton[pid] || null;
+  var menu = document.getElementById('share-cal-menu');
+  if(menu) menu.style.display = 'none';
+  r4pConfirmer({ titre:'Régénérer le lien du patient ?', message:'L’ancien lien — et l’application installée sur son téléphone — cesseront de fonctionner. Il faudra lui envoyer le nouveau.', ok:'Régénérer', danger:true })
+    .then(function(ok){
+      if(!ok) return;
+      var lien = _revoquerLien(pid).then(function(){ return _lienJeton(pid); }).then(function(j){
+        if(!j || j === ancien) throw new Error('lien inchangé');
+        return _urlAthlete(pid, j);
+      });
+      lien.catch(function(){ _showToast('✗ Le lien n’a pas pu être régénéré — réessayez.'); });
+      _copierLienAsync(lien, '🔄 Nouveau lien copié — l’ancien ne fonctionne plus.');
+    });
 }
 
 /* ── Planifier depuis le builder ── */
@@ -10896,6 +10914,7 @@ function _toolOverlayClick(e){
         '<div style="font-size:.7rem;font-weight:700;color:var(--muted);padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.05em;">Partager le calendrier</div>'
         +'<button onclick="_doShare(\'patient\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">👤</span><div style="text-align:left"><div style="font-weight:600;">Partager au patient</div><div style="font-size:.73rem;color:var(--muted);">Séances et feedback uniquement</div></div></button>'
         +'<button onclick="_doShare(\'kine\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">🩺</span><div style="text-align:left"><div style="font-weight:600;">Partager à un kiné</div><div style="font-size:.73rem;color:var(--muted);">Séances + notes cliniques</div></div></button>';
+      menu.innerHTML += '<button id="share-regen-btn" onclick="_regenererLien()" style="display:none;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">🔄</span><div style="text-align:left"><div style="font-weight:600;">Régénérer le lien</div><div style="font-size:.73rem;color:var(--muted);">L’ancien cesse de fonctionner</div></div></button>';
       document.body.appendChild(menu);
       document.addEventListener('click', function _closeMenu(e){
         if(!menu.contains(e.target) && !(e.target.closest && e.target.closest('#share-cal-btn'))){
@@ -10912,6 +10931,10 @@ function _toolOverlayClick(e){
     menu.style.left  = Math.min(rect.left, window.innerWidth - 240) + 'px';
     menu.style.top   = (rect.bottom + 6) + 'px';
     menu.style.display = menu.style.display === 'none' ? 'block' : (menu.style.display ? 'none' : 'block');
+    /* Lire seulement : ouvrir le menu ne crée pas de jeton (qualite/lien-jeton-cas.js). */
+    var _regen = document.getElementById('share-regen-btn');
+    if(_regen) _regen.style.display = 'none';
+    _lienJetonLire(String(_progPatient.id)).then(function(j){ if(_regen && j) _regen.style.display = 'flex'; });
     menu._base = baseLink;
   };
 })();

@@ -92,7 +92,7 @@ function page(fetch, document) {
   /* eslint-disable no-new-func */
   return new Function('fetch', 'document', 'escH',
     'var SUPA_URL = "https://base.test", SUPA_KEY = "cle-publique";\n' +
-    'var _patientId = "pat-1", _progId = "", _pratId = "prat-1";\n' +
+    'var _patientId = "pat-1", _progId = "", _pratId = "prat-1", _jeton = "";\n' +   // _jeton : lien révocable (lien-jeton-cas)
     'var _activeProtoData = null;\n' +
     srcRef + '\n' + srcEntetes + '\n' + srcProto + '\n' +
     'return { charger: _loadActiveProto, donnees: function(){ return _activeProtoData; },\n' +

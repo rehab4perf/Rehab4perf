@@ -2419,20 +2419,91 @@ function _shareNomParam(){
   return nom ? '&nom=' + encodeURIComponent(nom) : '';
 }
 
-/* ── Génère le lien athlete.html?prog=ID ── */
+/* ── Lien athlète révocable (qualite/lien-jeton-cas.js) ─────────────────
+   Un jeton par patient (migration 20260914_lien_jeton) : « Régénérer le
+   lien » coupe l'ancien. Il se crée AU PARTAGE et seulement là — ouvrir le
+   menu ne fait que lire : l'ancien lien d'un patient meurt dès son premier
+   jeton (bascule patient par patient, décision du praticien 2026-09-13).
+   Table absente (migration non appliquée) : pas de jeton, l'ancien lien. */
+var _liensJeton = {};   // patient -> jeton actif, pour la session
+function _jetonAleatoire(){
+  var a = new Uint8Array(24), s = '';
+  crypto.getRandomValues(a);
+  for(var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+/* Lire sans créer : le jeton actif, null s'il n'y en a pas, undefined si la
+   table n'existe pas encore. */
+function _lienJetonLire(pid){
+  if(!pid) return Promise.resolve(undefined);
+  if(_liensJeton[pid]) return Promise.resolve(_liensJeton[pid]);
+  return _fetchRetry(SUPA_URL_P + '/rest/v1/patient_liens?patient_id=eq.' + encodeURIComponent(pid) + '&revoque_at=is.null&select=jeton',
+      { method:'GET', headers:_sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : undefined; })
+    .then(function(rows){
+      if(rows === undefined) return undefined;
+      var j = (Array.isArray(rows) && rows[0] && rows[0].jeton) || null;
+      if(j) _liensJeton[pid] = j;
+      return j;
+    })
+    .catch(function(){ return undefined; });
+}
+/* Lire, ou créer s'il n'y en a pas. Un POST qui rend [] n'a rien écrit (refus
+   RLS silencieux) : on relit, on n'invente jamais de jeton. */
+function _lienJeton(pid){
+  return _lienJetonLire(pid).then(function(j){
+    if(j || j === undefined) return j || null;
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/patient_liens',
+        { method:'POST', headers:_sbHeaders(), body:JSON.stringify({ jeton:_jetonAleatoire(), patient_id:pid }) })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){
+        var l = Array.isArray(res.d) ? res.d[0] : null;
+        if(res.ok && l && l.jeton) return (_liensJeton[pid] = l.jeton);
+        return _lienJetonLire(pid).then(function(j2){ return j2 || null; });   // un autre onglet l'a peut-être créé
+      });
+  }).catch(function(){ return null; });
+}
+function _revoquerLien(pid){
+  delete _liensJeton[pid];
+  return _fetchRetry(SUPA_URL_P + '/rest/v1/patient_liens?patient_id=eq.' + encodeURIComponent(pid) + '&revoque_at=is.null',
+      { method:'PATCH', headers:_sbHeaders(), body:JSON.stringify({ revoque_at:new Date().toISOString() }) })
+    .then(function(r){ return r.json().then(function(d){ return r.ok && Array.isArray(d) && d.length > 0; }); })
+    .catch(function(){ return false; });
+}
+function _urlAthlete(pid, jeton, prog){
+  var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'athlete.html';
+  var q = jeton ? '?j=' + jeton + (prog ? '&prog=' + prog : '') : (prog ? '?prog=' + prog : '?patient=' + pid);
+  return base + q + _shareNomParam();
+}
+function _copierTexte(txt, label){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ _showToast(label); }).catch(function(){ prompt('Copie ce lien :', txt); });
+  } else prompt('Copie ce lien :', txt);
+}
+/* Le jeton peut arriver APRÈS le clic : Safari refuse alors d'écrire dans le
+   presse-papier. ClipboardItem accepte une PROMESSE, et le geste reste valable. */
+function _copierLienAsync(promesse, label){
+  if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+    try {
+      var item = new ClipboardItem({ 'text/plain': promesse.then(function(t){ return new Blob([t], { type:'text/plain' }); }) });
+      return navigator.clipboard.write([item]).then(function(){ _showToast(label); })
+        .catch(function(){ return promesse.then(function(t){ _copierTexte(t, label); }); })
+        .catch(function(){});
+    } catch(e){}
+  }
+  return promesse.then(function(t){ _copierTexte(t, label); }).catch(function(){});
+}
+
+/* ── Le lien d'un programme : ?j=…&prog=ID, l'ancien ?prog=ID sans jeton ── */
 function _athleteLink(id){
-  return window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?prog=' + id + _shareNomParam();
+  var pid = _progPatient ? String(_progPatient.id) : null;
+  return _urlAthlete(pid, pid ? _liensJeton[pid] : null, id);
 }
 
 function _copyLink(id){
-  var link = _athleteLink(id);
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link)
-      .then(function(){ _showToast('📤 Lien copié ! Envoie-le à ton athlète.'); })
-      .catch(function(){ prompt('Copie ce lien :', link); });
-  } else {
-    prompt('Copie ce lien :', link);
-  }
+  var pid = _progPatient ? String(_progPatient.id) : null;
+  var lien = (pid ? _lienJeton(pid) : Promise.resolve(null)).then(function(j){ return _urlAthlete(pid, j, id); });
+  _copierLienAsync(lien, '📤 Lien copié ! Envoie-le à ton athlète.');
 }
 
 /* Option A : bouton Partager dans le builder (auto-save si besoin) */

@@ -46,6 +46,10 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
   transition:color .15s;
 }
 .topnav-right:hover { color:#fff; }
+/* Filet : un nom tres long se tronque au lieu de sortir de la barre
+   (qualite/topbar-tablette-cas.js). */
+.topnav-right { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.nav-cab { font-size:.65rem; opacity:.7; }
 
 /* ── Contrôles de la barre : patient, cloche, centre d'aide ──────────
    Une SEULE regle porte ce qu'ils ont en commun. Ils divergeaient sur cinq
@@ -416,6 +420,19 @@ iframe.active { display:block; }
   .patient-btn { max-width:120px; padding:0 6px; }
   .pm-overlay { padding-top:52px; }
   .pm-card { max-width:100%; border-radius:10px 10px 0 0; }
+}
+/* ── Tablette (701 à 900 px) : la barre porte tout, rien n'y cédait ──
+   Mesuré au banc : 57 px de trop à 820, 109 à 768, 176 à 701 — « Cabinet
+   de Ki… » sortait de l'écran d'un iPad en portrait. « Mon compte » reste :
+   c'est le seul accès au compte sur ordinateur. Cèdent, dans l'ordre : la
+   ligne du cabinet, le nom du patient (répété en dessous), puis le
+   mot-symbole (qualite/topbar-tablette-cas.js). */
+@media (min-width:701px) and (max-width:880px) {
+  .topnav-right .nav-cab { display:none; }
+  .patient-btn { flex-shrink:1; min-width:96px; }
+}
+@media (min-width:701px) and (max-width:760px) {
+  .logo-w { display:none; }
 }
 /* ── Barre étroite : c'est le NOM DU PATIENT qui cède ────────────────
    Les trois contrôles portaient `flex-shrink:0`. Aucun ne pouvant se
@@ -890,7 +907,7 @@ function _r4pBuild(){
 <div class="frame-wrap">
   <iframe id="frame-bilan"        src="bilan.html?v=20260913f"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html?v=20260913f"       ></iframe>
-  <iframe id="frame-prescription" src="programme.html?v=20260913zb" ></iframe>
+  <iframe id="frame-prescription" src="programme.html?v=20260913zd" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260913i"     ></iframe>
   <iframe id="frame-account"      src="account.html?v=20260817b"      ></iframe>
 </div>
@@ -999,7 +1016,7 @@ function updateNav(user) {
   if (!name) return;
   var cab = meta.cabinet || '';
   var el  = document.getElementById('userDisplay');
-  el.innerHTML = name + (cab ? '<br><span style="font-size:.65rem;opacity:.7">' + cab + '</span>' : '');
+  el.innerHTML = name + (cab ? '<br><span class="nav-cab">' + cab + '</span>' : '');   // la ligne du cabinet cède sur tablette
 }
 
 function buildProfile(user) {

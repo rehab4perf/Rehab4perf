@@ -54,7 +54,7 @@ function ok(nom, cond, detail) {
 var TABLES_PATIENT = ['programmes', 'seances_planifiees', 'patient_settings',
   'patient_protocols', 'protocol_criteria_checks', 'patient_messages',
   'clinical_notes', 'strava_activities', 'athlete_feedback', 'athlete_objectifs',
-  'athlete_newsletter'];
+  'athlete_newsletter', 'patient_liens'];
 /* Bibliothèque : ses lignes publiques sont faites pour être partagées. */
 var TABLES_BIBLIO = ['templates', 'template_groups'];
 /* Ce que l'athlète écrit réellement depuis athlete.html. Tout le reste lui est
@@ -67,7 +67,7 @@ var ECRITURES_ATHLETE = {
   athlete_newsletter: ['UPDATE']
 };
 /* Jamais par un lien, quel qu'il soit. */
-var JAMAIS_ANONYME = ['clinical_notes', 'template_groups'];
+var JAMAIS_ANONYME = ['clinical_notes', 'template_groups', 'patient_liens'];   // les jetons : jamais lus par un lien
 var COMMANDES = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
 
 /* ── Lecture du SQL ─────────────────────────────────────────────────────── */
@@ -323,12 +323,12 @@ var srcKine = extraire(athlete, 'function _entetesKine(');
 ok('_entetes() existe', !!srcEnt);
 ok('_entetesKine() existe', !!srcKine);
 var entetes = function () { return {}; }, kine = function () { return {}; };
-function fabrique(patient, prog, stockage) {
+function fabrique(patient, prog, stockage, jeton) {
   var ls = { getItem: function (k) { return stockage && stockage[k] != null ? stockage[k] : null; } };
-  return new Function('SUPA_KEY', '_patientId', '_progId', 'localStorage',
+  return new Function('SUPA_KEY', '_patientId', '_progId', 'localStorage', '_jeton',
     (srcEnt || '') + '\n' + (srcKine || '') +
     '\nreturn [typeof _entetes==="function"?_entetes:null, typeof _entetesKine==="function"?_entetesKine:null];'
-  )('cle-publique', patient, prog, ls);
+  )('cle-publique', patient, prog, ls, jeton || '');
 }
 if (srcEnt) {
   var cal = fabrique('11111111-2222-4333-8444-555555555555', '', null)[0]({ Prefer: 'return=minimal' });
@@ -340,6 +340,8 @@ if (srcEnt) {
   ok('lien programme : x-r4p-prog porte le programme', prg['x-r4p-prog'] === 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
      JSON.stringify(prg));
   ok('… et n\'invente pas de patient vide', !('x-r4p-patient' in prg));
+  var jet = fabrique('', '', null, 'AbCdEfGhIjKlMnOpQrStUvWxYz012345')[0]();
+  ok('lien à jeton : x-r4p-jeton porte le jeton (20260914)', jet['x-r4p-jeton'] === 'AbCdEfGhIjKlMnOpQrStUvWxYz012345', JSON.stringify(jet));
 
   /* Les noms d'en-tête lus par la base doivent être ceux qu'envoie la page :
      une faute de frappe d'un côté vide l'espace athlète en silence. */
@@ -347,7 +349,7 @@ if (srcEnt) {
   Object.keys(etat.fonctions).forEach(function (n) {
     (etat.fonctions[n].match(/'x-r4p-[\w-]+'/gi) || []).forEach(function (h) { lus[h.slice(1, -1).toLowerCase()] = 1; });
   });
-  var envoyes = Object.keys(cal).concat(Object.keys(prg)).map(function (h) { return h.toLowerCase(); });
+  var envoyes = Object.keys(cal).concat(Object.keys(prg)).concat(Object.keys(jet)).map(function (h) { return h.toLowerCase(); });
   var orphelins = Object.keys(lus).filter(function (h) { return envoyes.indexOf(h) < 0; });
   ok('chaque en-tête lu par la base est envoyé par la page', Object.keys(lus).length && !orphelins.length,
      Object.keys(lus).length ? 'jamais envoyé : ' + orphelins.join(', ') : 'aucun en-tête lu par les migrations');
