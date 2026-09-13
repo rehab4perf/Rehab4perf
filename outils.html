@@ -757,6 +757,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 }
 </style>
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
+  <script src="js/r4p-confirmer.js?v=20260913f"></script>
 </head>
 <body>
 
@@ -5011,39 +5012,53 @@ window.addEventListener('message', function(e){
        On demande donc confirmation, et on rend la main au parent s'il refuse
        — meme mecanisme que bilan.html, `source` en plus pour qu'il sache que
        c'est ici qu'il faut revenir en arriere. */
-    if(_crChange && typeof window._crEstEntame === 'function' && window._crEstEntame()){
-      if(!confirm('Un compte-rendu médecin est en cours.\n\nChanger de patient va le vider. Continuer ?')){
-        try {
-          window.parent.postMessage({
-            type: 'r4p-cancel-patient-switch',
-            patientId: _crPatientId,
-            source: 'outils'
-          }, window.location.origin);
-        } catch(ex){}
-        return;
+    /* La question passe par la coquille (js/r4p-confirmer.js) : on change de
+       patient depuis la barre du haut, souvent depuis un autre onglet — cette
+       iframe est alors cachee, et une fenetre posee ici ne se verrait pas. */
+    function _crBasculer(){
+      _prescPatient = _crNouveau;
+      try { _prescFillFromPatient(true); } catch(ex){ console.error('_prescFillFromPatient:', ex); }
+      _crPatientId = _crNouveau ? _crNouveau.id : null;
+      _crPatientCourant = _crNouveau;
+      _crViderPevo();
+      if(_crChange){
+        try { window._crAppliquerPatient(_crNouveau); } catch(ex){ console.error('_crAppliquerPatient:', ex); }
+        /* On arme l'import, puis on tente TOUT DE SUITE : le bilan porte
+           peut-etre deja ce patient (rechargement de page, ou onglet Bilan
+           ouvert avant celui-ci). Si ce n'est pas lui, `_crBilanCorrespond` le
+           refuse et l'attente reste armee — l'ecriture du bilan la levera.
+           Une seconde tentative differee couvre le cas ou le bilan finit son
+           chargement sans qu'aucun evenement `storage` ne nous parvienne. */
+        try { window._crUpdateEvoPanel(); } catch(ex){}
+        _crAttenteImport = !!_crNouveau;
+        _crPatientAttendu = _crNouveau;
+        clearTimeout(_crImportMaj);
+        _crTenterImport();
+        if (_crAttenteImport) _crImportMaj = setTimeout(_crTenterImport, 1500);
       }
     }
-
-    _prescPatient = _crNouveau;
-    try { _prescFillFromPatient(true); } catch(ex){ console.error('_prescFillFromPatient:', ex); }
-    _crPatientId = _crNouveau ? _crNouveau.id : null;
-    _crPatientCourant = _crNouveau;
-    _crViderPevo();
-    if(_crChange){
-      try { window._crAppliquerPatient(_crNouveau); } catch(ex){ console.error('_crAppliquerPatient:', ex); }
-      /* On arme l'import, puis on tente TOUT DE SUITE : le bilan porte
-         peut-etre deja ce patient (rechargement de page, ou onglet Bilan
-         ouvert avant celui-ci). Si ce n'est pas lui, `_crBilanCorrespond` le
-         refuse et l'attente reste armee — l'ecriture du bilan la levera.
-         Une seconde tentative differee couvre le cas ou le bilan finit son
-         chargement sans qu'aucun evenement `storage` ne nous parvienne. */
-      try { window._crUpdateEvoPanel(); } catch(ex){}
-      _crAttenteImport = !!_crNouveau;
-      _crPatientAttendu = _crNouveau;
-      clearTimeout(_crImportMaj);
-      _crTenterImport();
-      if (_crAttenteImport) _crImportMaj = setTimeout(_crTenterImport, 1500);
+    if(_crChange && typeof window._crEstEntame === 'function' && window._crEstEntame()){
+      r4pConfirmer({
+        titre: 'Un compte-rendu médecin est en cours',
+        message: 'Changer de patient va le vider.',
+        ok: 'Changer de patient',
+        danger: true
+      }).then(function(ok){
+        if(!ok){
+          try {
+            window.parent.postMessage({
+              type: 'r4p-cancel-patient-switch',
+              patientId: _crPatientId,
+              source: 'outils'
+            }, window.location.origin);
+          } catch(ex){}
+          return;
+        }
+        _crBasculer();
+      });
+      return;
     }
+    _crBasculer();
   }
   if(e.data && e.data.type==='r4p-pevo-response'){
     var tog2 = document.getElementById('cr-pevo-toggle');
@@ -5842,15 +5857,16 @@ _updateOutilsPatientBtns();
   };
   window.crPathoDelArticu = function(key) {
     crSyncPathoDraftFromDOM();
-    if (!confirm('Supprimer l\'articulation "' + (crAmpConfig[key] ? crAmpConfig[key].label : key) + '" ?\n\nSes mesures ROM seront aussi supprimées.')) return;
-    delete crAmpConfig[key];
-    // Remove from all patho associations
-    if (_crPathoDraft) {
-      _crPathoDraft.forEach(function(p){
-        p.articulations = p.articulations.filter(function(a){ return a !== key; });
-      });
-    }
-    crRenderPathoModal();
+    r4pConfirmer({ titre: 'Supprimer l’articulation « ' + (crAmpConfig[key] ? crAmpConfig[key].label : key) + ' » ?', message: 'Ses mesures d’amplitude seront aussi supprimées.', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
+      delete crAmpConfig[key];
+      // Remove from all patho associations
+      if (_crPathoDraft) {
+        _crPathoDraft.forEach(function(p){
+          p.articulations = p.articulations.filter(function(a){ return a !== key; });
+        });
+      }
+      crRenderPathoModal();
+    });
   };
 
   function crSyncPathoDraftFromDOM() {
@@ -8593,9 +8609,10 @@ _updateOutilsPatientBtns();
   };
 
   window.crReset = function() {
-    if (!confirm('Réinitialiser tous les champs du formulaire ?')) return;
-    _crResetCore(false);
-    _crToast('Formulaire réinitialisé');
+    r4pConfirmer({ titre: 'Réinitialiser le formulaire ?', message: 'Tous les champs du compte-rendu seront vidés.', ok: 'Réinitialiser', danger: true }).then(function(ok){ if(!ok) return;
+      _crResetCore(false);
+      _crToast('Formulaire réinitialisé');
+    });
   };
 
   /* Le courrier se regenere a la frappe — il n'y a plus de bouton pour le

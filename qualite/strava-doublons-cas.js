@@ -119,9 +119,9 @@ verifier('appliqué au chargement des activités',
 {
   const i = src.indexOf('function _stravaSupprimer');
   verifier('_stravaSupprimer existe', i >= 0);
-  const zone = src.slice(i, i + 1400);
+  const zone = src.slice(i, i + 1800);   // la confirmation porte titre et message
   verifier('la suppression est bornée au patient', /patient_id=eq\./.test(zone));
-  verifier('la suppression demande confirmation', /confirm\(/.test(zone));
+  verifier('la suppression demande confirmation', /r4pConfirmer\(/.test(zone));
   verifier('la liste locale est purgée sans rechargement',
     /_stravaActivities\s*=\s*_stravaActivities\.filter/.test(zone));
 }

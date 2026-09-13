@@ -326,15 +326,16 @@ function saveMyExo(){
 function deleteUserExercise(id){
   var ex = _userExercises.find(function(e){ return e.id === id; });
   if(!ex) return;
-  if(!confirm('Supprimer « '+ex.name+' » ? Il ne sera plus disponible pour aucune de vos séances.')) return;
-  _fetchRetry(SUPA_URL_P+'/rest/v1/user_exercises?id=eq.'+ex._dbId, { method:'DELETE', headers: _sbHeaders() })
-  .then(function(r){
-    if(!r.ok) { _showToast('⚠️ Échec de la suppression'); return; }
-    _userExercises = _userExercises.filter(function(e){ return e.id !== id; });
-    LIBRARY = LIBRARY.filter(function(e){ return e.id !== id; });
-    filterLib();
-  })
-  .catch(function(){ _showToast('⚠️ Échec de la suppression'); });
+  r4pConfirmer({ titre: 'Supprimer « ' + ex.name + ' » ?', message: 'Il ne sera plus disponible pour aucune de vos séances.', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
+    _fetchRetry(SUPA_URL_P+'/rest/v1/user_exercises?id=eq.'+ex._dbId, { method:'DELETE', headers: _sbHeaders() })
+    .then(function(r){
+      if(!r.ok) { _showToast('⚠️ Échec de la suppression'); return; }
+      _userExercises = _userExercises.filter(function(e){ return e.id !== id; });
+      LIBRARY = LIBRARY.filter(function(e){ return e.id !== id; });
+      filterLib();
+    })
+    .catch(function(){ _showToast('⚠️ Échec de la suppression'); });
+  });
 }
 
 /* ================================================================
@@ -2362,23 +2363,25 @@ document.addEventListener('click', function(e){
 
 function clearBlocs(){
   if(!blocs.length) return;
-  if(!confirm('Vider tous les blocs ?')) return;
-  blocs = []; etapes = [];
-  activeBloc = null;
-  _draftSave();
-  renderSession();
-  renderLib(document.getElementById('searchInput').value.toLowerCase());
+  r4pConfirmer({ titre: 'Vider tous les blocs ?', ok: 'Vider', danger: true }).then(function(ok){ if(!ok) return;
+    blocs = []; etapes = [];
+    activeBloc = null;
+    _draftSave();
+    renderSession();
+    renderLib(document.getElementById('searchInput').value.toLowerCase());
+  });
 }
 
 function clearSession(){
   if(blocs.length===0) return;
-  if(!confirm('Effacer toute la séance ?')) return;
-  blocs = []; etapes = [];
-  activeBloc = null;
-  document.getElementById('patientName').value = '';
-  _draftClear(); // efface aussi le brouillon
-  renderSession();
-  renderLib(document.getElementById('searchInput').value.toLowerCase());
+  r4pConfirmer({ titre: 'Effacer toute la séance ?', ok: 'Effacer', danger: true }).then(function(ok){ if(!ok) return;
+    blocs = []; etapes = [];
+    activeBloc = null;
+    document.getElementById('patientName').value = '';
+    _draftClear(); // efface aussi le brouillon
+    renderSession();
+    renderLib(document.getElementById('searchInput').value.toLowerCase());
+  });
 }
 
 /* ── Toast ── */
@@ -3343,9 +3346,10 @@ function saveEditor(){
 }
 
 function resetLibrary(){
-  if(!confirm('Réinitialiser la bibliothèque aux exercices par défaut ?')) return;
-  try { localStorage.removeItem(R4P_KEYS.LIBRARY); } catch(ex){}
-  location.reload();
+  r4pConfirmer({ titre: 'Réinitialiser la bibliothèque ?', message: 'Les exercices par défaut seront rétablis et la page rechargée.', ok: 'Réinitialiser', danger: true }).then(function(ok){ if(!ok) return;
+    try { localStorage.removeItem(R4P_KEYS.LIBRARY); } catch(ex){}
+    location.reload();
+  });
 }
 
 function addNewExo(){
@@ -3358,34 +3362,35 @@ function addNewExo(){
 function deleteEditorRow(idx){
   var ex  = _editorData[idx];
   var nom = (ex && ex.name) ? ex.name : 'cet exercice';
-  if(!confirm('Supprimer « ' + nom + ' » de la bibliothèque ?')) return;
-  var exId = ex ? ex.id : null;
-  var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
-  _editorData.splice(idx, 1);
-  // Mettre à jour LIBRARY et la sidebar immédiatement
-  LIBRARY = LIBRARY.filter(function(e){ return e.id !== exId; });
-  renderEditor();
-  filterLib();
-  if(!exId) return;
-  // Exercice Supabase (custom ou default déjà modifié/uploadé) → DELETE Supabase
-  if(_supaExoIds[exId] && _progToken && _progUid){
-    _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+exId, {
-      method:'DELETE', headers: _sbHeaders()
-    }).then(function(r){
-      if(r.ok){ delete _supaExoIds[exId]; }
-      else { r.text().then(function(t){ alert('Erreur suppression : '+t); }); }
-    }).catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
-  }
-  // Exercice hardcodé non encore dans Supabase → marqueur global __deleted__ + cache local
-  if(defaultIds.has(exId) && !_supaExoIds[exId]){
-    _deletedDefaultIds.add(exId);
-    localStorage.setItem('r4p-deleted-defaults', JSON.stringify([..._deletedDefaultIds]));
-    _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library', {
-      method:'POST',
-      headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
-      body: JSON.stringify({ id: exId, name: '', type: '__deleted__', created_by: _progUid })
-    }).then(function(r){ if(r.ok) _supaExoIds[exId] = true; });
-  }
+  r4pConfirmer({ titre: 'Supprimer « ' + nom + ' » de la bibliothèque ?', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
+    var exId = ex ? ex.id : null;
+    var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
+    _editorData.splice(idx, 1);
+    // Mettre à jour LIBRARY et la sidebar immédiatement
+    LIBRARY = LIBRARY.filter(function(e){ return e.id !== exId; });
+    renderEditor();
+    filterLib();
+    if(!exId) return;
+    // Exercice Supabase (custom ou default déjà modifié/uploadé) → DELETE Supabase
+    if(_supaExoIds[exId] && _progToken && _progUid){
+      _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+exId, {
+        method:'DELETE', headers: _sbHeaders()
+      }).then(function(r){
+        if(r.ok){ delete _supaExoIds[exId]; }
+        else { r.text().then(function(t){ alert('Erreur suppression : '+t); }); }
+      }).catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+    }
+    // Exercice hardcodé non encore dans Supabase → marqueur global __deleted__ + cache local
+    if(defaultIds.has(exId) && !_supaExoIds[exId]){
+      _deletedDefaultIds.add(exId);
+      localStorage.setItem('r4p-deleted-defaults', JSON.stringify([..._deletedDefaultIds]));
+      _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library', {
+        method:'POST',
+        headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+        body: JSON.stringify({ id: exId, name: '', type: '__deleted__', created_by: _progUid })
+      }).then(function(r){ if(r.ok) _supaExoIds[exId] = true; });
+    }
+  });
 }
 
 function updateEditorUrl(idx, val){
@@ -6162,46 +6167,56 @@ function _openChipInBuilder(progId, dateStr, seanceId, openFeedback){
   /* Ouvrir une seance planifiee est un geste d'AGENDA, pas de modele : on en
      sort. Mais on le demande — sortir en silence perdrait le travail en cours
      sur le modele sans le moindre signal. */
+  function _ouvrir(){
+    _hideLibPreview();
+    _builderDate = dateStr;
+    _updateBuilderTitle();
+    _pendingOpenFeedback = !!openFeedback;
+    _loadProg(progId, seanceId, true); // true : ouvrir une seance quitte le modele
+  }
   if(_builderFromTemplate){
     var _nomM = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-    if(!confirm('Vous modifiez le modèle « ' + ((_nomM && _nomM.nom) || 'sans nom')
-        + ' ».\n\nOuvrir cette séance quittera le modèle. Vos modifications non enregistrées seront perdues.\n\nContinuer ?')) return;
+    r4pConfirmer({
+      titre: 'Vous modifiez le modèle « ' + ((_nomM && _nomM.nom) || 'sans nom') + ' »',
+      message: 'Ouvrir cette séance quittera le modèle. Vos modifications non enregistrées seront perdues.',
+      ok: 'Ouvrir la séance',
+      danger: true
+    }).then(function(ok){ if(!ok) return; _ouvrir(); });
+    return;
   }
-  _hideLibPreview();
-  _builderDate = dateStr;
-  _updateBuilderTitle();
-  _pendingOpenFeedback = !!openFeedback;
-  _loadProg(progId, seanceId, true); // true : ouvrir une seance quitte le modele
+  _ouvrir();
 }
 
 function _deleteProg(id, nom){
-  if(!confirm('Supprimer le programme "' + nom + '" ?\nCette action est irréversible.')) return;
-  _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id, {method:'DELETE', headers:_sbHeaders()})
-    .then(function(r){
-      if(!r.ok){ return r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
-      // Si le programme supprimé était l'actif, réinitialiser
-      if(_currentProgId === id){
-        _currentProgId = null;
-        _currentProgRawDonnees = null;
-        blocs = []; etapes = [];
-        renderSession();
-        var btn = document.getElementById('prog-cloud-save-btn');
-        if(btn){ btn.textContent='☁️ Sauvegarder'; }
-      }
-      // Rafraîchir la liste
-      openProgHistory();
-    })
-    .catch(function(err){ alert('Erreur réseau : ' + (err&&err.message||err)); });
+  r4pConfirmer({ titre: 'Supprimer le programme « ' + nom + ' » ?', message: 'Cette action est irréversible.', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
+    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id, {method:'DELETE', headers:_sbHeaders()})
+      .then(function(r){
+        if(!r.ok){ return r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
+        // Si le programme supprimé était l'actif, réinitialiser
+        if(_currentProgId === id){
+          _currentProgId = null;
+          _currentProgRawDonnees = null;
+          blocs = []; etapes = [];
+          renderSession();
+          var btn = document.getElementById('prog-cloud-save-btn');
+          if(btn){ btn.textContent='☁️ Sauvegarder'; }
+        }
+        // Rafraîchir la liste
+        openProgHistory();
+      })
+      .catch(function(err){ alert('Erreur réseau : ' + (err&&err.message||err)); });
+  });
 }
 
 function _newProgVierge(){
-  if(!confirm('Créer un nouveau programme vierge ? (le programme actuel non sauvegardé sera perdu)')) return;
-  _currentProgId = null;
-  _currentProgRawDonnees = null;
-  blocs = []; etapes = [];
-  renderSession();
-  var overlay = document.getElementById('progHistoOverlay');
-  if(overlay) overlay.style.display='none';
+  r4pConfirmer({ titre: 'Créer un programme vierge ?', message: 'Le programme actuel non sauvegardé sera perdu.', ok: 'Créer', danger: true }).then(function(ok){ if(!ok) return;
+    _currentProgId = null;
+    _currentProgRawDonnees = null;
+    blocs = []; etapes = [];
+    renderSession();
+    var overlay = document.getElementById('progHistoOverlay');
+    if(overlay) overlay.style.display='none';
+  });
 }
 
 // Doit être défini avant renderLib() (utilisé dans renderLib pour hover/touch)

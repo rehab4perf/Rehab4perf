@@ -2303,6 +2303,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </style>
 
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
+  <script src="js/r4p-confirmer.js?v=20260913f"></script>
 </head>
 <body>
 
@@ -6167,16 +6168,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </main>
 
 <!-- ── MODAL ─────────────────────────────────────────────── -->
-<div class="modal-overlay" id="modal-confirm-switch">
-  <div class="modal">
-    <h2>⚠️ Modifications non sauvegardées</h2>
-    <p>Le bilan actuel contient des modifications non sauvegardées.<br>Changer de patient quand même ?</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="_bilanConfirmCancel()">Annuler</button>
-      <button class="btn btn-danger" onclick="_bilanConfirmOk()">Changer de patient</button>
-    </div>
-  </div>
-</div>
 <div class="modal-overlay" id="modal-reset">
   <div class="modal">
     <h2>↺ Nouveau patient</h2>
@@ -6215,7 +6206,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260911m"></script>
+<script src="js/bilan.js?v=20260913f"></script>
 
 </body>
 </html>

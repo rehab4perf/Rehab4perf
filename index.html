@@ -622,6 +622,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 }
 </style>
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
+  <script src="js/r4p-confirmer.js?v=20260913f"></script>
 </head>
 <body>
 <div class="topnav">
@@ -887,9 +888,9 @@ function _r4pBuild(){
   </div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"        src="bilan.html?v=20260911m"        class="active"></iframe>
-  <iframe id="frame-outils"       src="outils.html?v=20260913d"       ></iframe>
-  <iframe id="frame-prescription" src="programme.html?v=20260913d" ></iframe>
+  <iframe id="frame-bilan"        src="bilan.html?v=20260913f"        class="active"></iframe>
+  <iframe id="frame-outils"       src="outils.html?v=20260913f"       ></iframe>
+  <iframe id="frame-prescription" src="programme.html?v=20260913f" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260910i"     ></iframe>
   <iframe id="frame-account"      src="account.html?v=20260817b"      ></iframe>
 </div>
@@ -2301,26 +2302,27 @@ function deletePatient(id, e) {
   e.stopPropagation();
   var p = _allPatients.find(function(x){ return x.id === id; });
   if (!p) return;
-  if (!confirm('Supprimer ' + p.nom + ' ' + p.prenom + ' et toutes ses données ?\n\nCette action est irréversible — bilans et notes inclus.')) return;
+  r4pConfirmer({ titre: 'Supprimer ' + p.nom + ' ' + p.prenom + ' ?', message: 'Toutes ses données seront effacées, bilans et notes cliniques compris.\n\nCette action est irréversible.', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
 
-  // 1. Supprimer les bilans du patient (RGPD — droit à l'effacement)
-  Promise.all([
-    sb.from('bilans').delete().eq('patient_id', id),
-    sb.from('clinical_notes').delete().eq('patient_id', id)
-  ]).then(function() {
-    // 2. Supprimer le patient
-    return sb.from('patients').delete().eq('id', id);
-  }).then(function(res) {
-    if (res.error) { alert('Erreur : ' + res.error.message); return; }
-    _allPatients = _allPatients.filter(function(x){ return x.id !== id; });
-    if (_currentPatient && _currentPatient.id === id) {
-      deselectPatient();
-      // Purger aussi le brouillon de bilan en cours
-      try { localStorage.removeItem(R4P_KEYS.BILAN_DRAFT); } catch(ex) {}
-    }
-    renderPatients(_allPatients);
-  }).catch(function(err) {
-    alert('Erreur lors de la suppression : ' + (err && err.message ? err.message : err));
+    // 1. Supprimer les bilans du patient (RGPD — droit à l'effacement)
+    Promise.all([
+      sb.from('bilans').delete().eq('patient_id', id),
+      sb.from('clinical_notes').delete().eq('patient_id', id)
+    ]).then(function() {
+      // 2. Supprimer le patient
+      return sb.from('patients').delete().eq('id', id);
+    }).then(function(res) {
+      if (res.error) { alert('Erreur : ' + res.error.message); return; }
+      _allPatients = _allPatients.filter(function(x){ return x.id !== id; });
+      if (_currentPatient && _currentPatient.id === id) {
+        deselectPatient();
+        // Purger aussi le brouillon de bilan en cours
+        try { localStorage.removeItem(R4P_KEYS.BILAN_DRAFT); } catch(ex) {}
+      }
+      renderPatients(_allPatients);
+    }).catch(function(err) {
+      alert('Erreur lors de la suppression : ' + (err && err.message ? err.message : err));
+    });
   });
 }
 </script>

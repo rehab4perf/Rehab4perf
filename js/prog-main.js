@@ -530,18 +530,18 @@ function _echFusionner(id, dateStr){
     if(typeof _showToast === 'function') _showToast('Aucune autre échéance ce jour-là');
     return;
   }
-  if(!confirm('Fusionner les deux échéances du ' + dateStr + ' ?\n\n'
-    + '« ' + moi.text + ' » et « ' + autre.text + ' » n\'occuperont plus qu\'une ligne.\n'
-    + 'Les deux libellés sont conservés : vous pourrez choisir lequel s\'affiche, ou les séparer.')) return;
-  /* Le libelle du PRATICIEN prend la main par defaut — c'est le nom officiel,
-     celui qui part au courrier. Entre deux declarations de l'athlete, on garde
-     celui qu'on vient de designer. */
-  _echEcrireFusion(id, { repris_at:new Date().toISOString(),
-                         fusion:{ avec:autre.text,
-                                  avecId:(autre.echId != null ? autre.echId : null),
-                                  affiche:(autre.source === 'praticien' ? 'autre' : 'moi') } },
-                   '🎯 Échéances fusionnées')
-    .then(function(ok){ if(ok) _echRelire(); });
+  r4pConfirmer({ titre: 'Fusionner les deux échéances du ' + dateStr + ' ?', message: '« ' + moi.text + ' » et « ' + autre.text + ' » n’occuperont plus qu’une ligne.\n'
+    + 'Les deux libellés sont conservés : vous pourrez choisir lequel s’affiche, ou les séparer.', ok: 'Fusionner' }).then(function(ok){ if(!ok) return;
+    /* Le libelle du PRATICIEN prend la main par defaut — c'est le nom officiel,
+       celui qui part au courrier. Entre deux declarations de l'athlete, on garde
+       celui qu'on vient de designer. */
+    _echEcrireFusion(id, { repris_at:new Date().toISOString(),
+                           fusion:{ avec:autre.text,
+                                    avecId:(autre.echId != null ? autre.echId : null),
+                                    affiche:(autre.source === 'praticien' ? 'autre' : 'moi') } },
+                     '🎯 Échéances fusionnées')
+      .then(function(ok){ if(ok) _echRelire(); });
+  });
 }
 
 /* Le panneau : les DEUX libelles, celui qui s'affiche, et la separation. Il
@@ -993,13 +993,14 @@ function submitCycleForm(){
   closeCycleForm();
 }
 function deleteCycle(id){
-  if(!confirm('Supprimer ce cycle ?')) return;
-  if(_cycleEditingId===id){ _cycleEditingId=null; _cycleAddOpen=false; }
-  _cycles=_cycles.filter(function(c){ return c.id!==id; });
-  _saveCyclesToCloud();
-  renderCycleTimeline();
-  renderCycleList();
-  if(typeof renderCalendar==='function') renderCalendar();
+  r4pConfirmer({ titre: 'Supprimer ce cycle ?', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
+    if(_cycleEditingId===id){ _cycleEditingId=null; _cycleAddOpen=false; }
+    _cycles=_cycles.filter(function(c){ return c.id!==id; });
+    _saveCyclesToCloud();
+    renderCycleTimeline();
+    renderCycleList();
+    if(typeof renderCalendar==='function') renderCalendar();
+  });
 }
 function addCycle(){ openCycleForm(null); } // compat
 function renderCycleTimeline(){
@@ -6513,35 +6514,35 @@ function _stravaSupprimer(stravaId){
   var act = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
   if(!act || !_progPatient) return;
   var nom = act.nom || 'cette activité';
-  if(!confirm('Retirer « ' + nom + ' » du dossier ?\n\n'
-    + 'Elle ne comptera plus dans la charge ni dans l\'ACWR.\n'
-    + 'Si l\'athlète modifie l\'activité sur Strava, elle réapparaîtra.')) return;
+  r4pConfirmer({ titre: 'Retirer « ' + nom + ' » du dossier ?', message: 'Elle ne comptera plus dans la charge ni dans l’ACWR.\n'
+    + 'Si l’athlète modifie l’activité sur Strava, elle réapparaîtra.', ok: 'Retirer', danger: true }).then(function(ok){ if(!ok) return;
 
-  var url = SUPA_URL_P + '/rest/v1/strava_activities?strava_id=eq.' + encodeURIComponent(stravaId)
-          + '&patient_id=eq.' + encodeURIComponent(_progPatient.id);
-  _fetchRetry(url, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPA_KEY_P,
-      'Authorization': 'Bearer ' + _progToken,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    }
-  }).then(function(r){
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    var drop = document.getElementById('_stravaDetailDrop');
-    if(drop) drop.remove();
-    /* On retire localement plutot que de tout recharger : le calendrier et les
-       courbes se redessinent immediatement, et l'ACWR se recalcule sans
-       l'activite retiree. */
-    _stravaActivities = _stravaActivities.filter(function(a){ return a.strava_id !== stravaId; });
-    /* Recalcul du signalement : sans ca, l'activite restante garderait sa
-       marque « doublon probable » alors que son jumeau vient de partir. */
-    _stravaDoublons = _stravaDoublonsMap();
-    _renderCalendarUI();
-    _showToast('🗑 Activité retirée');
-  }).catch(function(){
-    _showToast('⚠️ Suppression impossible — réessayez');
+    var url = SUPA_URL_P + '/rest/v1/strava_activities?strava_id=eq.' + encodeURIComponent(stravaId)
+            + '&patient_id=eq.' + encodeURIComponent(_progPatient.id);
+    _fetchRetry(url, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPA_KEY_P,
+        'Authorization': 'Bearer ' + _progToken,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      }
+    }).then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      var drop = document.getElementById('_stravaDetailDrop');
+      if(drop) drop.remove();
+      /* On retire localement plutot que de tout recharger : le calendrier et les
+         courbes se redessinent immediatement, et l'ACWR se recalcule sans
+         l'activite retiree. */
+      _stravaActivities = _stravaActivities.filter(function(a){ return a.strava_id !== stravaId; });
+      /* Recalcul du signalement : sans ca, l'activite restante garderait sa
+         marque « doublon probable » alors que son jumeau vient de partir. */
+      _stravaDoublons = _stravaDoublonsMap();
+      _renderCalendarUI();
+      _showToast('🗑 Activité retirée');
+    }).catch(function(){
+      _showToast('⚠️ Suppression impossible — réessayez');
+    });
   });
 }
 

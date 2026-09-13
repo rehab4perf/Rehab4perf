@@ -349,6 +349,23 @@ c'était déjà la décision inscrite dans la feuille.
 
 Vérifié à 320, 375 et 414 px : aucun débordement, bouton d'aide entier.
 
+## Confirmations — jamais `confirm()`
+
+```bash
+node qualite/confirmer-cas.js
+```
+
+Toute question passe par `r4pConfirmer({titre, message, ok, annuler, danger})`
+(`js/r4p-confirmer.js`), qui rend une promesse. La boîte du navigateur n'avait
+pas l'identité de l'application — et surtout, une question posée depuis une
+**iframe cachée** (changement de patient depuis un autre onglet) ne se voyait
+pas quand elle était dessinée dans l'iframe. La **coquille affiche toujours** :
+une iframe envoie sa question au parent, comme le piège à erreurs.
+
+La suite du geste va dans le `.then(function(ok){ if(!ok) return; … })` : un
+appel devenu asynchrone ne bloque plus rien, tout ce qui suit la question doit
+donc attendre la réponse.
+
 ## Pre-deploy checklist
 
 See `TESTS_AVANT_DEPLOY.md` — mandatory before any push. If a test fails, do not push. On regression: `git revert HEAD`, fix, re-test, push fix.

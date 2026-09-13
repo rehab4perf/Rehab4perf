@@ -2313,14 +2313,20 @@ window.addEventListener('message', function(e){
       }
     }
     // Protection contre la perte de données
+    /* Posee par la coquille (js/r4p-confirmer.js) : la modale de cette page
+       vivait dans l'iframe, cachee des qu'on changeait de patient depuis un
+       autre onglet — la question ne se voyait pas. */
     if(_isDiff && _bilanModified){
-      _bilanConfirm(
-        function(){ _applyPatientSwitch(); },
-        function(){
-          // Demander au parent de revenir à l'ancien patient
-          try { window.parent.postMessage({ type:'r4p-cancel-patient-switch', patientId: _bilanPatient ? _bilanPatient.id : null }, window.location.origin); } catch(ex){}
-        }
-      );
+      r4pConfirmer({
+        titre: 'Modifications non sauvegardées',
+        message: 'Le bilan actuel contient des modifications non sauvegardées.\nChanger de patient quand même ?',
+        ok: 'Changer de patient',
+        danger: true
+      }).then(function(ok){
+        if(ok){ _applyPatientSwitch(); return; }
+        // Demander au parent de revenir à l'ancien patient
+        try { window.parent.postMessage({ type:'r4p-cancel-patient-switch', patientId: _bilanPatient ? _bilanPatient.id : null }, window.location.origin); } catch(ex){}
+      });
       return;
     }
     _applyPatientSwitch();
@@ -3673,7 +3679,11 @@ function _editBilanCancel(){
 
 /* Bouton "↩ Revenir au bilan actuel" — recharge le bilan le plus récent */
 function exitHistoMode(){
-  if(_bilanModified && !confirm('Quitter le mode consultation ? Les modifications non sauvegardées de ce bilan seront perdues.')) return;
+  if(_bilanModified){
+    r4pConfirmer({ titre: 'Quitter le mode consultation ?', message: 'Les modifications non sauvegardées de ce bilan seront perdues.', ok: 'Quitter', danger: true })
+      .then(function(ok){ if(ok){ _bilanModified = false; exitHistoMode(); } });
+    return;
+  }
   _exitHistoMode();
   _exitReadOnlyMode();
   if(_allBilans && _allBilans.length){
@@ -6080,12 +6090,17 @@ function _confirmEditBilanDate(bilanId) {
     return String(b.id) !== String(bilanId) && b.date && b.date.split('T')[0] === newDate;
   });
   if (conflict) {
-    var conflictStr = _isoToReadable(newDate);
-    if (!confirm('⚠️ Un bilan du ' + conflictStr + ' existe déjà pour ce patient.\n\nVoulez-vous quand même changer la date ? Les deux bilans coexisteront.')) {
-      return;
-    }
+    r4pConfirmer({
+      titre: 'Un bilan du ' + _isoToReadable(newDate) + ' existe déjà',
+      message: 'Changer quand même la date ? Les deux bilans coexisteront pour ce patient.',
+      ok: 'Changer la date'
+    }).then(function(ok){ if(ok) _ecrireDateBilan(bilanId, newDate); });
+    return;
   }
+  _ecrireDateBilan(bilanId, newDate);
+}
 
+function _ecrireDateBilan(bilanId, newDate) {
   // Mise à jour Supabase
   sbB.from('bilans').update({ date: newDate }).eq('id', bilanId).then(function(res) {
     if (res.error) { alert('Erreur lors de la mise à jour : ' + res.error.message); return; }
@@ -6402,16 +6417,17 @@ function _newBilanSuiviConfirm(){
 }
 
 function newBilan(){
-  if(!confirm('Créer un nouveau bilan vierge ? (le bilan actuel non sauvegardé sera perdu)')) return;
-  _exitHistoMode();
-  _currentBilanId = null;
-  _prevDonnees    = null;
-  _resetBilanFields();
-  document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
-  showPage('infos');
-  localStorage.removeItem(R4P_KEYS.BILAN_DRAFT);
-  if(_bilanPatient) _autofillPatientFields(_bilanPatient);
-  closeHistoModal();
+  r4pConfirmer({ titre: 'Créer un bilan vierge ?', message: 'Le bilan actuel non sauvegardé sera perdu.', ok: 'Créer', danger: true }).then(function(ok){ if(!ok) return;
+    _exitHistoMode();
+    _currentBilanId = null;
+    _prevDonnees    = null;
+    _resetBilanFields();
+    document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+    showPage('infos');
+    localStorage.removeItem(R4P_KEYS.BILAN_DRAFT);
+    if(_bilanPatient) _autofillPatientFields(_bilanPatient);
+    closeHistoModal();
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -6847,60 +6863,58 @@ function _saveSuiviRapide(){
 function deleteBilan(id, dateStr, isInitial, e) {
   if (e) e.stopPropagation();
   if(!_assertBilanOwnership(id)) return;
-  var msg = 'Supprimer le bilan du ' + dateStr + ' ?'
-    + (isInitial ? '\n\n⚠ Attention : il s\'agit du bilan initial de ce patient.' : '')
-    + '\n\nCette action est irréversible — les données seront définitivement perdues.';
-  if (!confirm(msg)) return;
+  r4pConfirmer({ titre: 'Supprimer le bilan du ' + dateStr + ' ?', message: (isInitial ? 'Il s’agit du bilan initial de ce patient.\n\n' : '') + 'Cette action est irréversible : les données seront définitivement perdues.', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
 
-  _sbRetry(function(){ return sbB.from('bilans').delete().eq('id', id); }).then(function(res) {
-    if (res.error) { alert('Erreur lors de la suppression : ' + res.error.message); return; }
+    _sbRetry(function(){ return sbB.from('bilans').delete().eq('id', id); }).then(function(res) {
+      if (res.error) { alert('Erreur lors de la suppression : ' + res.error.message); return; }
 
-    // Mise à jour locale
-    var wasActive = String(_currentBilanId) === String(id);
-    _allBilans = _allBilans.filter(function(b){ return String(b.id) !== String(id); });
+      // Mise à jour locale
+      var wasActive = String(_currentBilanId) === String(id);
+      _allBilans = _allBilans.filter(function(b){ return String(b.id) !== String(id); });
 
-    if (wasActive) {
-      // Bilan actif supprimé → charger le plus récent restant, sinon vierge
-      _currentBilanId = null;
-      _currentBilanDate = null;
-      try{ _majDateSidebar(); }catch(ex){}
-  try{ _reevalMajVisibilite(); }catch(ex){}
-      _prevDonnees = null;
-      document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
-      if (_allBilans.length > 0) {
-        // Charger le bilan le plus récent restant silencieusement
-        sbB.from('bilans').select('*').eq('id', _allBilans[0].id).single().then(function(r) {
-          if (!r.error && r.data) {
-            _currentBilanId   = r.data.id;
-            _currentBilanDate = r.data.date ? r.data.date.split('T')[0] : null;
-            try{ _majDateSidebar(); }catch(ex){}
-  try{ _reevalMajVisibilite(); }catch(ex){}
-            _deserializeBilan(r.data.donnees || {});
-            if (_allBilans.length >= 2) {
-              _prevDonnees = _prevMergedFrom(_allBilans, 1);
-              _renderDeltas(_prevDonnees);
+      if (wasActive) {
+        // Bilan actif supprimé → charger le plus récent restant, sinon vierge
+        _currentBilanId = null;
+        _currentBilanDate = null;
+        try{ _majDateSidebar(); }catch(ex){}
+    try{ _reevalMajVisibilite(); }catch(ex){}
+        _prevDonnees = null;
+        document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+        if (_allBilans.length > 0) {
+          // Charger le bilan le plus récent restant silencieusement
+          sbB.from('bilans').select('*').eq('id', _allBilans[0].id).single().then(function(r) {
+            if (!r.error && r.data) {
+              _currentBilanId   = r.data.id;
+              _currentBilanDate = r.data.date ? r.data.date.split('T')[0] : null;
+              try{ _majDateSidebar(); }catch(ex){}
+    try{ _reevalMajVisibilite(); }catch(ex){}
+              _deserializeBilan(r.data.donnees || {});
+              if (_allBilans.length >= 2) {
+                _prevDonnees = _prevMergedFrom(_allBilans, 1);
+                _renderDeltas(_prevDonnees);
+              }
+              showToast('🗑 Bilan supprimé — bilan précédent rechargé');
             }
-            showToast('🗑 Bilan supprimé — bilan précédent rechargé');
-          }
+            _renderEvolutionPage();
+          });
+        } else {
+          _resetBilanFields();
           _renderEvolutionPage();
-        });
+          showToast('🗑 Bilan supprimé');
+        }
       } else {
-        _resetBilanFields();
+        // Bilan non actif : recalc _prevDonnees si nécessaire
+        var idx = _allBilans.findIndex(function(b){ return String(b.id) === String(_currentBilanId); });
+        _prevDonnees = (idx !== -1) ? _prevMergedFrom(_allBilans, idx + 1) : null;
+        document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+        if (_prevDonnees) _renderDeltas(_prevDonnees);
         _renderEvolutionPage();
         showToast('🗑 Bilan supprimé');
       }
-    } else {
-      // Bilan non actif : recalc _prevDonnees si nécessaire
-      var idx = _allBilans.findIndex(function(b){ return String(b.id) === String(_currentBilanId); });
-      _prevDonnees = (idx !== -1) ? _prevMergedFrom(_allBilans, idx + 1) : null;
-      document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
-      if (_prevDonnees) _renderDeltas(_prevDonnees);
-      _renderEvolutionPage();
-      showToast('🗑 Bilan supprimé');
-    }
 
-    // Rafraîchir la liste de l'historique
-    openBilanHistory();
+      // Rafraîchir la liste de l'historique
+      openBilanHistory();
+    });
   });
 }
 
@@ -10182,30 +10196,6 @@ function _lmaUpdateMuscle() {
 }
 // ---------------------------------------------------------------
 
-// -- CONFIRM DIALOG --------------------------------------------
-var _bilanConfirmOkCb  = null;
-var _bilanConfirmCancelCb = null;
-function _bilanConfirm(onOk, onCancel) {
-  _bilanConfirmOkCb     = onOk     || null;
-  _bilanConfirmCancelCb = onCancel || null;
-  var ov = document.getElementById('modal-confirm-switch');
-  if(ov) ov.classList.add('open');
-}
-function _bilanConfirmOk() {
-  var ov = document.getElementById('modal-confirm-switch');
-  if(ov) ov.classList.remove('open');
-  var cb = _bilanConfirmOkCb;
-  _bilanConfirmOkCb = _bilanConfirmCancelCb = null;
-  if(cb) cb();
-}
-function _bilanConfirmCancel() {
-  var ov = document.getElementById('modal-confirm-switch');
-  if(ov) ov.classList.remove('open');
-  var cb = _bilanConfirmCancelCb;
-  _bilanConfirmOkCb = _bilanConfirmCancelCb = null;
-  if(cb) cb();
-}
-
 // -- TOAST ------------------------------------------------------
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -12531,17 +12521,18 @@ window.addEventListener('load', function(){
     var pageId = _editCtx.pageId;
     var plId = _editCtx.plId;
     if (!pageId || !plId) return;
-    if (!confirm('Supprimer cette playlist ?')) return;
-    var data = _load();
-    if (data[pageId]) {
-      data[pageId] = data[pageId].filter(function(p){ return p.id !== plId; });
-    }
-    _save(data);
-    _plDbDelete(plId);
-    var wasActive = _activePl[pageId] === plId;
-    _plCloseModal();
-    if (wasActive) _plActivate(pageId, 'all');
-    else _renderBar(pageId);
+    r4pConfirmer({ titre: 'Supprimer cette playlist ?', ok: 'Supprimer', danger: true }).then(function(ok){ if(!ok) return;
+      var data = _load();
+      if (data[pageId]) {
+        data[pageId] = data[pageId].filter(function(p){ return p.id !== plId; });
+      }
+      _save(data);
+      _plDbDelete(plId);
+      var wasActive = _activePl[pageId] === plId;
+      _plCloseModal();
+      if (wasActive) _plActivate(pageId, 'all');
+      else _renderBar(pageId);
+    });
   };
 
   // Wrapper de _favToggleFilter pour synchroniser l'état des playlists
@@ -13210,11 +13201,12 @@ window.addEventListener('load', function(){
     var list = _imgMetaList(type);
     var meta = list[idx];
     if(!meta) return;
-    if(!confirm('Retirer ce fichier ?')) return;
-    sbB.storage.from(IMG_BUCKET).remove([meta.path]).finally(function(){
-      list.splice(idx, 1);
-      _imgSetMetaList(type, list);
-      _renderImgFileBox(type);
+    r4pConfirmer({ titre: 'Retirer ce fichier ?', ok: 'Retirer', danger: true }).then(function(ok){ if(!ok) return;
+      sbB.storage.from(IMG_BUCKET).remove([meta.path]).finally(function(){
+        list.splice(idx, 1);
+        _imgSetMetaList(type, list);
+        _renderImgFileBox(type);
+      });
     });
   };
 

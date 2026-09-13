@@ -68,9 +68,9 @@ ok('l\'identifiant du programme n\'est pas adopté non plus',
 console.log('\nOuvrir une séance de l\'agenda demande confirmation');
 var chip = data.slice(data.indexOf('function _openChipInBuilder'));
 chip = chip.slice(0, chip.indexOf('\n}'));
-ok('un modèle ouvert fait poser la question', /if\(_builderFromTemplate\)\{[\s\S]{0,400}confirm\(/.test(chip));
+ok('un modèle ouvert fait poser la question', /if\(_builderFromTemplate\)\{[\s\S]{0,400}r4pConfirmer\(/.test(chip));
 ok('… en nommant le modèle concerné', /Vous modifiez le modèle/.test(chip));
-ok('… et le refus n\'ouvre rien', /confirm\([\s\S]{0,300}\)\) return;/.test(chip));
+ok('… et le refus n\'ouvre rien', /r4pConfirmer\([\s\S]{0,400}\.then\(function\(ok\)\{ if\(!ok\) return;/.test(chip));
 ok('l\'ouverture déclare qu\'elle quitte le modèle', /_loadProg\(progId, seanceId, true\)/.test(chip));
 
 console.log('\nLe bouton principal met à jour le modèle');

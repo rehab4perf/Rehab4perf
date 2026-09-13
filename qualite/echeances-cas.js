@@ -276,7 +276,7 @@ console.log('\nFusionner : ce que le geste écrit');
   var f = js.slice(F0, F1);
   /* Le geste relie deux echeances du patient : il se confirme, et la
      confirmation nomme les deux libelles. */
-  ok('elle demande confirmation', /confirm\(/.test(f));
+  ok('elle demande confirmation', /r4pConfirmer\(/.test(f));
   ok('… en nommant les deux libellés', /moi\.text/.test(f) && /autre\.text/.test(f));
   /* Et elle dit que RIEN n'est perdu — c'est ce qui distingue cette version de
      la premiere, qui ecrasait le libelle de l'athlete. */

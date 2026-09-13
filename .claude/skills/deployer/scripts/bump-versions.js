@@ -39,7 +39,12 @@ var CHAINE = {
   'js/r4p-erreurs.js':  [['index.html', 'js/r4p-erreurs.js'], ['bilan.html', 'js/r4p-erreurs.js'],
                          ['outils.html', 'js/r4p-erreurs.js'], ['programme.html', 'js/r4p-erreurs.js'],
                          ['patients.html', 'js/r4p-erreurs.js'], ['account.html', 'js/r4p-erreurs.js'],
-                         ['athlete.html', 'js/r4p-erreurs.js']]
+                         ['athlete.html', 'js/r4p-erreurs.js']],
+  /* Fenetre de confirmation : meme chaine que le piege a erreurs, sans
+     patients.html ni account.html, qui ne demandent rien. */
+  'js/r4p-confirmer.js': [['index.html', 'js/r4p-confirmer.js'], ['bilan.html', 'js/r4p-confirmer.js'],
+                          ['outils.html', 'js/r4p-confirmer.js'], ['programme.html', 'js/r4p-confirmer.js'],
+                          ['athlete.html', 'js/r4p-confirmer.js']]
 };
 /* Le service worker praticien couvre tout sauf l'espace athlete, qui a le sien. */
 var SW_PRO = 'sw-pro.js', SW_ATH = 'sw.js';

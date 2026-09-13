@@ -697,6 +697,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 }
 </style>
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
+  <script src="js/r4p-confirmer.js?v=20260913f"></script>
   <!-- Bibliothèque intégrée des protocoles : repli de « Mon protocole » quand
        la ligne meta du praticien n'a pas le protocole actif. -->
   <script src="js/protocoles-ref.js?v=20260910g"></script>
@@ -1893,10 +1894,11 @@ function _echAjouter(){
   }).catch(function(){ b.disabled=false; b.textContent='Ajouter'; alert('Erreur réseau. Réessaie.'); });
 }
 function _echSupprimer(id){
-  if(!confirm('Retirer cette échéance ?')) return;
-  fetch(SUPA_URL + '/rest/v1/athlete_objectifs?id=eq.' + id, {
-    method:'DELETE', headers:_entetes({ 'Prefer':'return=minimal' })
-  }).then(function(){ _echCharger(); }).catch(function(){});
+  r4pConfirmer({ titre: 'Retirer cette échéance ?', ok: 'Retirer', danger: true }).then(function(ok){ if(!ok) return;
+    fetch(SUPA_URL + '/rest/v1/athlete_objectifs?id=eq.' + id, {
+      method:'DELETE', headers:_entetes({ 'Prefer':'return=minimal' })
+    }).then(function(){ _echCharger(); }).catch(function(){});
+  });
 }
 
 /* ── Vue MOIS ── */
