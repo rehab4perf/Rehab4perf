@@ -360,6 +360,9 @@ function _renderEcheances(){
      partenaire vient d'etre retire de la liste. On garde donc le resultat du
      dernier rendu, ou l'information a ete relevee avant le retrait. */
   _dernierRenduEch = liste;
+  /* Dans la colonne, la carte dit quand il n'y a rien (qualite/echeances-colonne-cas.js). */
+  var _vide = document.getElementById('ppEchVide');
+  if(_vide && _vide.style) _vide.style.display = liste.length ? 'none' : '';
 
   if(!liste.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
   box.style.display = '';
@@ -8195,6 +8198,7 @@ function _panneauPatientHtml(){
   /* Seul acces aux cycles : on y cree, pas seulement on y consulte (decision du praticien). */
   h += '<button type="button" class="pp-ajout" onclick="_ppNouveauCycle()">+ Nouveau cycle</button>';
   h += '</div>';
+  h += '<div class="pp-carte pp-ech"><div class="pp-tete">Échéances</div><div id="ppEchSlot"></div><div class="pp-vide" id="ppEchVide">Aucune échéance à venir.</div></div>';
   // La charge — memes calculs que le bilan
   var a = _calcACWR(_buildUaMap()), z = _zoneAcwrFr(a.ratio);
   /* Le curseur : echelle 0–2, zones aux seuils de _zoneAcwrFr ; sans ratio, pas d'aiguille. */
@@ -8230,9 +8234,30 @@ function _panneauPatientHtml(){
 }
 function _renderPanneauPatient(){
   var el = document.getElementById('stmplPatient');
+  /* La bande d'echeances vit dans la colonne : a l'abri AVANT de reecrire la
+     colonne, sinon elle partirait avec l'ancien contenu. */
+  _garerEcheances();
   if(el){ try { el.innerHTML = _panneauPatientHtml(); } catch(ex){ el.innerHTML = ''; } }
+  _placerEcheances();
+  try { _renderEcheances(); } catch(ex){}
   _appliquerOngletColonne();
 }
+/* Les echeances passent dans la colonne (qualite/echeances-colonne-cas.js) :
+   c'est la MEME bande, avec ses actions, deplacee. Sur telephone la colonne
+   est repliee : elle reste au-dessus de l'agenda. */
+function _garerEcheances(){
+  var ech = document.getElementById('calEcheances'), parc = document.getElementById('calEcheancesParc');
+  if(ech && parc && ech.parentNode !== parc) parc.appendChild(ech);
+}
+function _placerEcheances(){
+  var ech = document.getElementById('calEcheances');
+  if(!ech) return;
+  var mobile = !!(_mqActionsMobile && _mqActionsMobile.matches);
+  var slot = document.getElementById('ppEchSlot');
+  if(!mobile && slot){ if(ech.parentNode !== slot) slot.appendChild(ech); }
+  else _garerEcheances();
+}
+if(_mqActionsMobile && _mqActionsMobile.addEventListener) _mqActionsMobile.addEventListener('change', _placerEcheances);
 function _ppNouveauCycle(){
   openCycles();
   openCycleForm(null);

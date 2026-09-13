@@ -177,6 +177,17 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .pp-nom { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
 .pp-vide { font-size:var(--fs-sm); color:var(--muted); font-style:italic; }
 #stmpl-onglet-patient:disabled { opacity:.4; cursor:default; }
+/* Les echeances dans la colonne (qualite/echeances-colonne-cas.js) : la meme
+   bande, les memes actions, empilee — le ⇄ reste sur la ligne de son echeance. */
+.pp-ech .cal-echeances { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; align-items:center; padding:0; margin:0; border-bottom:none; }
+.pp-ech .cal-ech-lbl { display:none; }
+.pp-ech .cal-ech { grid-column:1; width:100%; min-width:0; }
+.pp-ech .cal-ech-txt { flex:1; min-width:0; }
+.pp-ech .cal-ech-txt b { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pp-ech .cal-ech-jm { margin-left:auto; white-space:nowrap; }
+.pp-ech .cal-ech-fus { grid-column:2; margin:0; }
+.pp-ech .cal-ech-plus { grid-column:1 / -1; justify-self:start; }
+.pp-ech .cal-ech-panneau { grid-column:1 / -1; max-width:none; }
 .pp-ajout { margin-top:8px; width:100%; background:none; border:1px dashed var(--border2); border-radius:6px; padding:4px 8px; color:var(--accent); font-family:inherit; font-size:var(--fs-xs); font-weight:700; cursor:pointer; }
 .pp-ajout:hover { background:var(--accent-ll); }
 /* Le curseur ACWR : memes seuils que la zone, jetons de la jauge du bilan. */
@@ -3217,7 +3228,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
            que soit le mois consulte. Une echeance a douze mois ne se voit
            jamais sur la case de son jour — il faudrait naviguer jusqu'a son
            mois pour la trouver, c'est-a-dire savoir deja qu'elle existe. -->
-      <div class="cal-echeances" id="calEcheances" style="display:none"></div>
+      <div id="calEcheancesParc"><div class="cal-echeances" id="calEcheances" style="display:none"></div></div>
       <div class="cal-grid" id="calGrid"></div>
       <div id="upcomingList" style="margin-top:16px;"></div>
       <div id="bilanCharge"></div>
@@ -4896,6 +4907,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913u"></script>
+<script src="js/prog-main.js?v=20260913v"></script>
 </body>
 </html>
