@@ -2820,6 +2820,10 @@ function renderSession(){
           html += '<div class="exo-name">'+escH(e.name)
                +  (e._methApplied ? '<span class="meth-applied-badge">✓ méthode appliquée</span>' : '')+'</div>';
         }
+        /* La derniere seance, DANS la cellule du nom : un enfant de plus dans
+           .exo-row decalerait toute la grille mobile. (Pas d apostrophe ici :
+           qualite/builder-consignes-cas.js lit les litteraux de cette ligne.) */
+        html += '<div class="exo-hist" data-hist="' + escH(e.name||'') + '">' + _histExoHtml(e.name) + '</div>';
         html += '<div class="exo-sub">';
         if(e.url){ var _vt=_ytThumbHtml(e.url); html += _vt ? _vt : '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
         var exoMin=estimateExoMin(e); if(exoMin!==null) html+='<span class="time-tag">⏱ '+fmtMin(exoMin)+'</span>';
@@ -4082,7 +4086,59 @@ function _1rm(kg, reps) {
 /* Accepte un tableau de séances : [{date, programme_id, programmes:{nom,donnees}}]
    Déduplique par programme_id (même programme sur plusieurs séances = 1 seul point,
    à la date de la 1ère séance qui l'utilise). */
-function _extractExoLoads(seances) {
+/* ── Historique d'un exercice dans le builder (qualite/historique-exo-cas.js)
+   Demande du praticien (2026-09-13) : en composant, voir ce que l'exercice a
+   fait la derniere fois pour mettre le bon poids. Memes donnees qu'Evolution
+   — les charges PRESCRITES des seances passees — chargees une fois par
+   patient a l'ouverture du builder. Les lignes se remplissent EN PLACE :
+   redessiner la seance ferait perdre la saisie en cours. */
+var _histExos = { pid:null, map:null, enCours:false };
+function _histExosCharger(){
+  if(!_progPatient || !_progToken) return;
+  var pid = String(_progPatient.id);
+  if(_histExos.pid === pid && (_histExos.map || _histExos.enCours)) return;
+  _histExos = { pid:pid, map:null, enCours:true };
+  var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + encodeURIComponent(pid)
+    + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
+  _fetchRetry(url, { method:'GET', headers:_sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(_histExos.pid !== pid) return;
+      _histExos.map = Array.isArray(data) ? _extractExoLoads(data, 1) : {};
+      _histExos.enCours = false;
+      _histExosRemplir();
+    })
+    .catch(function(){ if(_histExos.pid === pid) _histExos.enCours = false; });
+}
+function _histExosRemplir(){
+  document.querySelectorAll('.exo-hist[data-hist]').forEach(function(el){
+    el.innerHTML = _histExoHtml(el.getAttribute('data-hist'));
+  });
+}
+function _histExoHtml(nom){
+  if(!_histExos.map || !nom) return '';
+  if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return '';   // un modele n'est a personne
+  var h = _histExos.map[_norm(nom).replace(/\s+/g, ' ')];
+  if(!h) return '';
+  var ref = _builderDate || _pevoAujourdhuiIso();
+  var avant = h.points.filter(function(p){ return p.date && p.date < ref; });
+  if(!avant.length) return '';
+  var der = avant[avant.length - 1], prec = avant.length > 1 ? avant[avant.length - 2] : null;
+  var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var kgFr = function(v){ return String(Math.round(v * 10) / 10).replace('.', ',') + ' kg'; };
+  var d = der.date.split('-');
+  var txt = 'Dernière séance (' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ') : '
+    + (der.series ? escH(String(der.series)) + ' × ' : '') + der.reps
+    + (der.bw ? ' poids du corps' : ' à ' + kgFr(der.kg) + ' · 1RM est. ' + kgFr(der.rm1));
+  if(prec && !!prec.bw === !!der.bw){
+    var dv = der.bw ? der.reps - prec.reps : Math.round((der.rm1 - prec.rm1) * 10) / 10;
+    if(dv) txt += ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −')
+      + (der.bw ? Math.abs(dv) + ' reps' : kgFr(Math.abs(dv))) + '</span>';
+  }
+  return txt;
+}
+
+function _extractExoLoads(seances, minPoints) {
   // 1. Dédupliquer par (date + programme_id) : même programme sur jours différents = points séparés
   var seenKeys = {};
   var progList = [];
@@ -4124,7 +4180,7 @@ function _extractExoLoads(seances) {
         if(!rm1) return;
         var key = _norm(name).replace(/\s+/g,' ');
         if(!map[key]) map[key] = { label: name, points: [] };
-        map[key].points.push({ date: prog.date, kg: bw?0:kg, reps: reps, rm1: rm1, bw: bw, progNom: prog.nom });
+        map[key].points.push({ date: prog.date, kg: bw?0:kg, reps: reps, series: exo.series || '', rm1: rm1, bw: bw, progNom: prog.nom });
       });
     });
   });
@@ -4133,7 +4189,8 @@ function _extractExoLoads(seances) {
   var result = {};
   Object.keys(map).forEach(function(key) {
     var pts = map[key].points.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
-    if(pts.length >= 2) result[key] = { label: map[key].label, points: pts };
+    /* Deux points pour une courbe (Evolution) ; le builder en veut un seul. */
+    if(pts.length >= (minPoints || 2)) result[key] = { label: map[key].label, points: pts };
   });
   return result;
 }

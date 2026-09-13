@@ -7697,6 +7697,7 @@ function _enterBuilderMode(){
   document.getElementById('builderPanel').classList.add('open');
   document.querySelector('.app').classList.add('builder-mode');
   _placerActionsProgramme();
+  try { _histExosCharger(); } catch(ex){}   // la derniere seance de chaque exercice
   var lib  = document.getElementById('sidebarLibrary');
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'flex';
@@ -10726,6 +10727,11 @@ function _toggleMoreMenu(e){
   if(!menu) return;
   var isOpen=menu.style.display==='block';
   if(isOpen){ menu.style.display='none'; return; }
+  /* « Evolution » ne se montre que dans le builder : sur l'agenda, la carte
+     Charge y mene. Provisoire, le temps de juger l'historique sous chaque
+     exercice (qualite/historique-exo-cas.js). */
+  var _evo = document.getElementById('moreMenuEvo'), _bp = document.getElementById('builderPanel');
+  if(_evo) _evo.style.display = (_bp && _bp.classList.contains('open')) ? '' : 'none';
   var btn=document.getElementById('topbarMoreBtn');
   var rect=btn?btn.getBoundingClientRect():{right:200,bottom:48};
   menu.style.right=(window.innerWidth-rect.right)+'px';
