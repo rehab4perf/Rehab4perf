@@ -7660,6 +7660,29 @@ function _appliquerModeBuilder(){
 var _builderDate = '';
 var _builderLinkedPhase = null; // { protoId, phaseId, ppId, phaseName, protoName } quand lié à une phase
 
+/* Une seule barre (qualite/barre-unique-cas.js) : les actions du programme
+   vivent la ou l'on travaille — au bout de l'en-tete de l'agenda, ou dans
+   celui du builder. Ce sont les MEMES boutons, deplaces : identifiants et
+   actions ne changent pas. Sur telephone la barre du programme reste — les
+   en-tetes n'ont pas la place, et elle n'y laisse aucun vide. */
+var _mqActionsMobile = (window.matchMedia ? window.matchMedia('(max-width:700px)') : null);
+function _placerActionsProgramme(){
+  var grp = document.querySelector('.topbar-right');
+  if(!grp) return;
+  var mobile = !!(_mqActionsMobile && _mqActionsMobile.matches);
+  var panneau = document.getElementById('builderPanel');
+  var enBuilder = !!(panneau && panneau.classList.contains('open'));
+  var cible = mobile ? document.querySelector('.topbar')
+            : enBuilder ? document.querySelector('.builder-header')
+            : document.querySelector('.cal-central-header');
+  if(!cible || grp.parentNode === cible) return;
+  if(!mobile && enBuilder) cible.insertBefore(grp, cible.querySelector('.builder-header-actions'));
+  else cible.appendChild(grp);
+}
+if(_mqActionsMobile && _mqActionsMobile.addEventListener) _mqActionsMobile.addEventListener('change', _placerActionsProgramme);
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _placerActionsProgramme);
+else _placerActionsProgramme();
+
 function _enterBuilderMode(){
   /* Douze endroits appellent cette fonction, et deux d'entre eux le font alors
      que le builder est DEJA ouvert : les boutons « charger ce modele » de
@@ -7669,6 +7692,7 @@ function _enterBuilderMode(){
   var _dejaOuvert = document.getElementById('builderPanel').classList.contains('open');
   document.getElementById('builderPanel').classList.add('open');
   document.querySelector('.app').classList.add('builder-mode');
+  _placerActionsProgramme();
   var lib  = document.getElementById('sidebarLibrary');
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'flex';
@@ -7813,6 +7837,7 @@ function _builderUnlinkPhase(){
 function _exitBuilderMode(){
   document.getElementById('builderPanel').classList.remove('open');
   document.querySelector('.app').classList.remove('builder-mode');
+  _placerActionsProgramme();
   document.querySelector('.sidebar').classList.remove('mob-lib-open');
   var lib  = document.getElementById('sidebarLibrary');
   var tmpl = document.getElementById('sidebarTemplates');

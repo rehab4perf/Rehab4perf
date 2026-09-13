@@ -103,7 +103,19 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .topbar-btn.primary:hover { background:var(--accent-h); }
 
 /* ── LAYOUT ── */
-.app { display:flex; height:calc(100% - 48px); overflow:hidden; }
+.app { display:flex; height:100%; overflow:hidden; }
+/* Une seule barre (qualite/barre-unique-cas.js) : sur ordinateur, les actions
+   du programme rejoignent l'en-tete ou l'on travaille, et la barre du
+   programme n'est plus affichee — ses 48 px reviennent a la page. Sur
+   telephone elle reste (bloc max-width:700px). */
+.topbar { display:none; }
+.cal-central-header .topbar-right { margin-left:6px; padding-left:10px; border-left:1px solid var(--border); gap:6px; }
+.cal-central-header .topbar-btn { background:var(--surface); border-color:var(--border); color:var(--text); padding:4px 10px; }
+.cal-central-header .topbar-btn:hover { background:var(--bg); }
+.cal-central-header .topbar-btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.cal-central-header .topbar-btn.primary:hover { background:var(--accent-h); }
+.builder-header .topbar-right { gap:6px; margin-right:4px; }
+.builder-header #topbarJournalBtn, .builder-header #topbarNewBtn { display:none; }
 
 /* Sidebar library */
 .sidebar {
@@ -2456,7 +2468,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
      l'action la plus utilisée du builder (ajouter un exercice) et un
      hamburger/icône seule ne suffit pas à la rendre identifiable. */
   #topbarBiblioBtn .btn-label { display:inline; }
-  .topbar { padding:0 8px; gap:6px; }
+  .topbar { display:flex; padding:0 8px; gap:6px; }
+  .app { height:calc(100% - 48px); }
   .topbar-patient { flex:1 1 auto; min-width:0; }
   .topbar-right { flex-shrink:0; }
   .topbar-btn { flex-shrink:0; padding:5px 9px; }
@@ -4836,6 +4849,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913p"></script>
+<script src="js/prog-main.js?v=20260913q"></script>
 </body>
 </html>
