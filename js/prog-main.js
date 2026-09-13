@@ -722,10 +722,44 @@ function _dayCycleInfo(cellDate){
   return null;
 }
 function _dayCycleStyle(cellDate){ var i=_dayCycleInfo(cellDate); return i?i.style:''; }
-function _dayCycleLabelHtml(cellDate, cls){
-  var i=_dayCycleInfo(cellDate);
-  if(!i || !i.name) return '';
-  return '<div class="'+cls+'" style="color:'+i.color+'" title="'+escH(i.name)+'">'+escH(i.name)+'</div>';
+/* ── Le cycle en ruban, une fois par semaine ─────────────────────────────
+   Le nom du cycle etait ecrit dans CHAQUE case du mois — trente fois
+   « Endurance de force ». Il s'ecrit une fois par semaine, au-dessus de ses
+   jours, avec l'avancement (« sem. 3/6 ») ; un cycle qui change en cours de
+   semaine donne deux segments. Retenu par le praticien sur le prototype du
+   2026-09-13 (qualite/cycle-ruban-cas.js). La teinte des cases reste. */
+function _cycleDuJour(date){
+  for(var i=0;i<_cycles.length;i++){
+    var cy=_cycles[i];
+    if(!cy.startDate) continue;
+    var deb=new Date(cy.startDate+'T00:00:00'); deb.setHours(0,0,0,0);
+    var fin;
+    if(cy.endDate){ fin=new Date(cy.endDate+'T00:00:00'); fin.setHours(0,0,0,0); }
+    else { fin=new Date(deb); fin.setDate(fin.getDate()+cy.duree*7-1); }
+    if(date>=deb && date<=fin) return { cy:cy, i:i, deb:deb, fin:fin };
+  }
+  return null;
+}
+/* `jours` : les 7 dates d'une rangee (null hors du mois). Les semaines d'un
+   cycle se comptent par blocs de 7 jours depuis son debut, lues au DERNIER
+   jour du segment : un cycle demarre un jeudi donne 1, 2, 3… et non 1, 1, 2. */
+function _cycleRubanHtml(jours){
+  var segs=[], cur=null, J=864e5;
+  jours.forEach(function(d, col){
+    var c = d ? _cycleDuJour(d) : null;
+    if(cur && c && c.i===cur.c.i && col===cur.fin+1){ cur.fin=col; cur.dFin=d; return; }
+    if(c){ cur={ c:c, deb:col, fin:col, dFin:d }; segs.push(cur); } else cur=null;
+  });
+  if(!segs.length) return '';
+  return '<div class="cal-cycle-ruban">'+segs.map(function(s){
+    var cy=s.c.cy, hex=cy.color||_cycleColors[cy.nom]||'#52514E';
+    var r=parseInt(hex.slice(1,3),16)||82, g=parseInt(hex.slice(3,5),16)||81, b=parseInt(hex.slice(5,7),16)||78;
+    var n=Math.max(1, Math.ceil((Math.round((s.c.fin-s.c.deb)/J)+1)/7));
+    var k=Math.min(n, Math.floor(Math.round((s.dFin-s.c.deb)/J)/7)+1);
+    var nom=escH(cy.nom||'Cycle');
+    return '<div class="cal-cycle-seg" style="grid-column:'+(s.deb+1)+' / '+(s.fin+2)+';background:rgba('+r+','+g+','+b+',.16);color:'+hex+'"'
+      +' title="'+nom+' — semaine '+k+' sur '+n+'"><b>'+nom+'</b>'+(s.fin-s.deb>=2 ? '<span>sem. '+k+'/'+n+'</span>' : '')+'</div>';
+  }).join('')+'</div>';
 }
 var _cycleEditingId = null;
 var _cycleAddOpen   = false;
@@ -2797,7 +2831,12 @@ function _renderWeekUI(){
           + '<div class="cal-week-day-num'+(isTod?' today-num':'')+'">'+(d.getDate())+'</div>'
           + '</div>';
   }
-  // Row 2 : cellules de jours
+  // Row 2 : le cycle en ruban (qualite/cycle-ruban-cas.js)
+  var joursSem = [];
+  for(var i=0;i<7;i++){ var dj = new Date(_calWeekStart.getTime()+i*24*60*60*1000); dj.setHours(0,0,0,0); joursSem.push(dj); }
+  var rubanSem = _cycleRubanHtml(joursSem);
+  html += rubanSem;
+  // Row 3 : cellules de jours
   for(var i=0;i<7;i++){
     var cellDate = new Date(_calWeekStart.getTime()+i*24*60*60*1000); cellDate.setHours(0,0,0,0);
     var isTod = cellDate.getTime()===today.getTime();
@@ -2812,7 +2851,6 @@ function _renderWeekUI(){
           +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
           +' ondragleave="_calDayDragLeave(event)"'
           +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
-          + _dayCycleLabelHtml(cellDate, 'cal-week-cycle-lbl')
           + _dayObjectifLabelHtml(dateStr, 'cal-week-objectif-lbl')
           + _buildDayChips(dateStr, cellDate)
           + '<div class="cal-week-add" onclick="event.stopPropagation();openCalPicker(\''+dateStr+'\')">+ Séance</div>'
@@ -2820,11 +2858,12 @@ function _renderWeekUI(){
   }
   var bilan = _weekBilanHTML();
   var grid = document.getElementById('calGrid');
+  var clsSem = 'cal-week-grid' + (rubanSem ? ' avec-ruban' : '');
   if(bilan){
     grid.className = 'cal-week-outer';
-    grid.innerHTML = bilan + '<div class="cal-week-grid">'+html+'</div>';
+    grid.innerHTML = bilan + '<div class="'+clsSem+'">'+html+'</div>';
   } else {
-    grid.className = 'cal-week-grid';
+    grid.className = clsSem;
     grid.innerHTML = html;
   }
   document.getElementById('bilanCharge').innerHTML = '';
@@ -2848,24 +2887,31 @@ function _renderCalendarUI() {
   var startDow = (first.getDay()+6)%7;
   var daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
   var today = new Date(); today.setHours(0,0,0,0);
-  var cells = '';
-  for(var i=0;i<startDow;i++){ cells += '<div class="cal-day other-month"></div>'; }
+  var cells = '', semaine = [], jours = [];
+  function fermerSemaine(){
+    if(!semaine.length) return;
+    cells += _cycleRubanHtml(jours) + semaine.join('');
+    semaine = []; jours = [];
+  }
+  for(var i=0;i<startDow;i++){ semaine.push('<div class="cal-day other-month"></div>'); jours.push(null); }
   for(var d=1;d<=daysInMonth;d++){
     var dateStr = _calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var cellDate = new Date(_calYear,_calMonth,d);
     var isToday = cellDate.getTime()===today.getTime();
     var cycleBg = _dayCycleStyle(cellDate);
-    cells += '<div class="cal-day'+(isToday?' today':'')+'" id="cal-day-'+dateStr+'"'
+    semaine.push('<div class="cal-day'+(isToday?' today':'')+'" id="cal-day-'+dateStr+'"'
       +(cycleBg?' style="'+cycleBg+'"':'')
       +' onclick="_dayCellClick(\''+dateStr+'\',\'cal-day-'+dateStr+'\')"'
       +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
       +' ondragleave="_calDayDragLeave(event)"'
       +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
       +'<div class="cal-day-num">'+d+'</div>'
-      +_dayCycleLabelHtml(cellDate, 'cal-day-cycle-lbl')
       +_dayObjectifLabelHtml(dateStr, 'cal-day-objectif-lbl')
-      +_buildDayChips(dateStr, cellDate)+'</div>';
+      +_buildDayChips(dateStr, cellDate)+'</div>');
+    jours.push(cellDate);
+    if(semaine.length === 7) fermerSemaine();
   }
+  fermerSemaine();
   grid.innerHTML = headers + cells;
   /* La bande vit au-dessus de la grille : elle se redessine avec elle, sinon
      un changement de patient laisserait les echeances du precedent. */

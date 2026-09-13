@@ -1866,7 +1866,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .cal-nav h2 { font-size:.95rem; font-weight:800; color:var(--navy); flex:1; letter-spacing:-.02em; }
 .cal-nav-btn { background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:var(--fs-md); color:var(--muted); }
 .cal-nav-btn:hover { background:var(--bg); color:var(--navy); }
-.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:88px; gap:2px; user-select:none; -webkit-user-select:none; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; user-select:none; -webkit-user-select:none; }
+/* La hauteur est celle des CASES : `grid-auto-rows` la donnait a toutes les
+   rangees, noms de jours et rubans de cycle compris (qualite/cycle-ruban-cas.js). */
+.cal-grid > .cal-day { height:88px; }
+/* Le cycle en ruban, une fois par semaine, au-dessus de ses jours. */
+.cal-cycle-ruban { grid-column:1 / -1; display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:2px; }
+.cal-cycle-seg { display:flex; align-items:baseline; gap:6px; min-width:0; padding:1px 8px; border-radius:4px;
+  font-size:var(--fs-xs); line-height:1.5; white-space:nowrap; overflow:hidden; }
+.cal-cycle-seg b { font-weight:700; overflow:hidden; text-overflow:ellipsis; }
+.cal-cycle-seg span { font-weight:600; opacity:.8; flex-shrink:0; }
+.cal-week-grid .cal-cycle-ruban { gap:4px; margin-top:0; }
 
 /* ── VUE SEMAINE ── */
 .cal-week-grid {
@@ -1874,6 +1884,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   grid-template-rows:auto 1fr; gap:4px;
   user-select:none; -webkit-user-select:none;
 }
+.cal-week-grid.avec-ruban { grid-template-rows:auto auto 1fr; }
 .cal-week-col-header {
   text-align:center; padding:8px 6px;
   background:var(--surface); border-radius:8px; border:1px solid var(--border);
@@ -2007,14 +2018,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .cal-day.today { border-color:var(--accent2); }
 .cal-day-num { font-size:var(--fs-sm); font-weight:700; color:var(--muted); margin-bottom:3px; }
 .cal-day.today .cal-day-num { color:var(--accent2); }
-.cal-day-cycle-lbl {
-  font-size:.58rem; font-weight:700; margin:-2px 0 3px; white-space:nowrap;
-  overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em;
-}
-.cal-week-cycle-lbl {
-  font-size:var(--fs-xs); font-weight:700; margin-bottom:4px; white-space:nowrap;
-  overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em;
-}
 /* ── Bande d'échéances ───────────────────────────────────────────────
    Le repère 🎯 sur la case du jour existe (.cal-day-objectif-lbl), mais il
    n'apparaît qu'en naviguant jusqu'au mois concerné : une échéance lointaine
@@ -2382,7 +2385,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .cal-central-header { flex-wrap:wrap; row-gap:6px; }
   .cal-central-header h2 { flex-basis:100%; order:-1; }
   /* Grille du mois compacte : 7 colonnes lisibles au doigt sur ~380px. */
-  .cal-grid { grid-auto-rows:62px; gap:1px; }
+  .cal-grid { gap:1px; }
+  .cal-grid > .cal-day { height:62px; }
+  .cal-cycle-ruban { gap:1px; }
+  .cal-cycle-seg { padding:0 4px; }
   .cal-day { padding:2px 3px; }
   .cal-day-num { font-size:var(--fs-2xs); margin-bottom:1px; }
   .cal-central-body { padding:10px; }
@@ -4830,6 +4836,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913l"></script>
+<script src="js/prog-main.js?v=20260913p"></script>
 </body>
 </html>
