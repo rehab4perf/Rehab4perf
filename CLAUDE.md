@@ -100,9 +100,22 @@ Functions, dont le CORS refuserait ces en-têtes.
 cycles ainsi, et les aurait perdus avec la même migration.
 
 L'uuid du patient devient le secret du lien : non devinable, mais **non
-révocable**. La correction de fond est un jeton par patient ; elle ne
-changera que les fonctions `r4p_lien_*()`, pas une politique — voir l'en-tête
-de `20260912`.
+révocable**. D'où le **jeton par patient** (`20260914_lien_jeton`, code
+déployé le 2026-09-13, migration à appliquer par le praticien) : la table
+`patient_liens`, l'en-tête `x-r4p-jeton`, et seules les deux fonctions
+`r4p_lien_*()` changent — aucune politique. Trois règles à ne pas défaire
+(`node qualite/lien-jeton-cas.js`) :
+
+- **bascule patient par patient** (décision du praticien) : l'ancien
+  `?patient=` d'un patient marche jusqu'à son PREMIER jeton, puis plus
+  jamais. Un jeton révoqué n'ouvre rien — jamais de repli sur l'uuid ;
+- **le jeton se crée au partage au patient, et seulement là** : ouvrir le
+  menu Partager ne fait que LIRE, et partager à un confrère reprend le jeton
+  sans en créer — sinon l'ancien lien du patient mourrait sans qu'on lui ait
+  envoyé le nouveau ;
+- `patient_liens` ne se **supprime jamais** : effacer les jetons d'un patient
+  ferait revivre son uuid. On révoque (`revoque_at`), seule colonne
+  modifiable.
 
 ## Deployment
 
