@@ -81,7 +81,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   padding:0 14px; gap:10px; flex-shrink:0; z-index:20;
   border-bottom:1px solid rgba(255,255,255,.1);
 }
-.topbar-logo { color:#fff; font-size:var(--fs-sm); font-weight:800; letter-spacing:.14em; white-space:nowrap; display:flex; align-items:center; }
 .topbar-patient {
   display:flex; align-items:center; gap:7px; flex:1;
   font-size:var(--fs-sm); color:rgba(255,255,255,.85);
@@ -2296,7 +2295,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .main-header h1 { font-size:var(--fs-md); }
   .btn { padding:6px 10px; font-size:var(--fs-sm); }
   .patient-input { width:130px; }
-  .topbar-logo { display:none; }
 }
 
 /* Tablette portrait (701–1024px) uniquement : le builder reste dans le flux
@@ -2453,7 +2451,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
      hamburger/icône seule ne suffit pas à la rendre identifiable. */
   #topbarBiblioBtn .btn-label { display:inline; }
   .topbar { padding:0 8px; gap:6px; }
-  .topbar-logo { display:none; }
   .topbar-patient { flex:1 1 auto; min-width:0; }
   .topbar-right { flex-shrink:0; }
   .topbar-btn { flex-shrink:0; padding:5px 9px; }
@@ -2774,7 +2771,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- ═══════════════════ TOPBAR ═══════════════════ -->
 <div class="topbar">
-  <div class="topbar-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg></div>
+  <!-- Pas de logo ici : l'application le porte au-dessus (qualite/rappels-nom-cas.js). -->
   <div class="topbar-patient">
     <!-- Le patient se lit dans la barre de l'application, au-dessus : pas de second rappel (qualite/rappels-nom-cas.js). -->
   </div>

@@ -45,6 +45,8 @@ const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g,
 console.log('\nPlus de rappel du patient dans le programme');
 ok('la barre du programme ne porte plus de puce patient', !/id="topbarPatientName"/.test(html) && !/id="topbarPatientEmpty"/.test(html));
 ok('… ni l\'agenda son « 👤 nom »', !/id="calPatientLabel"/.test(html));
+/* Même doublon pour le logo : l'application le porte au-dessus (demande du praticien). */
+ok('… ni son propre logo, en double sous celui de l\'application', !/class="topbar-logo"/.test(html) && !/\.topbar-logo \{/.test(html));
 ok('le champ de nom de séance ne se préremplit plus avec le patient',
    !/pnEl\.value = _progPatient\.prenom/.test(pdata) && !/pnEl\.value = _progPatient\.nom/.test(pdata));
 ok('… et le dit : « Nom de la séance (facultatif) »', /id="patientName" placeholder="Nom de la séance \(facultatif\)"/.test(html));
