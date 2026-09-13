@@ -18,6 +18,7 @@ var R4P_KEYS = {
   PICKER_FAVS          : 'r4p_picker_favs',
   LIBRARY              : 'r4p-library',
   EXPANDED_GROUPS      : 'r4p-expanded-groups',
+  ONGLET_COLONNE       : 'r4p-onglet-colonne',   // onglet Patient / Modeles de l'agenda
   COLLAPSED_CATS       : 'r4p-collapsed-cats',
   J0_PREFIX            : 'r4p-j0-',
   PEVO_SEL_PREFIX      : 'r4p-pevo-sel-',

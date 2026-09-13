@@ -2868,6 +2868,7 @@ function _renderWeekUI(){
   }
   document.getElementById('bilanCharge').innerHTML = '';
   if(typeof _renderUpcoming==='function') setTimeout(_renderUpcoming,0);
+  setTimeout(_renderPanneauPatient, 0);
   setTimeout(_applyFbDots, 0);
 }
 
@@ -2918,6 +2919,7 @@ function _renderCalendarUI() {
   try{ _renderEcheances(); }catch(ex){}
   if(typeof _renderUpcoming === 'function') setTimeout(_renderUpcoming, 0);
   setTimeout(_renderBilanCharge, 0);
+  setTimeout(_renderPanneauPatient, 0);
   setTimeout(_applyFbDots, 0);
 }
 
@@ -8130,6 +8132,100 @@ function _v2InitCalendar(){
 // openCalPicker inclut déjà openBuilderForDate (voir définition originale)
 
 // ── Upcoming sessions dans le centre ──
+/* ── Colonne « Patient » ─────────────────────────────────────────────────
+   Retenue par le praticien sur le prototype du 2026-09-13 : avant de poser
+   une seance, on consulte le cycle, la charge, les retours et ce qui vient.
+   Tout etait ailleurs — le cycle dans les cases, la charge sous l'agenda, les
+   retours dans le Journal. La colonne de l'agenda porte deux onglets : le
+   patient, ou le repertoire des modeles, inchange.
+   Memes calculs que le bilan de charge (_buildUaMap, _calcACWR) : les deux
+   disent les memes chiffres. Les echeances restent dans leur bande, qui porte
+   leurs actions (qualite/panneau-patient-cas.js). */
+var _ongletColonneCourant = null;
+function _ongletColonne(o){
+  _ongletColonneCourant = (o === 'modeles') ? 'modeles' : 'patient';
+  try { localStorage.setItem(R4P_KEYS.ONGLET_COLONNE, _ongletColonneCourant); } catch(e){}
+  _appliquerOngletColonne();
+}
+function _appliquerOngletColonne(){
+  var o = _ongletColonneCourant;
+  if(!o){ try { o = localStorage.getItem(R4P_KEYS.ONGLET_COLONNE); } catch(e){} }
+  if(!_progPatient) o = 'modeles';   // sans patient, il n'y a rien a montrer
+  o = (o === 'modeles') ? 'modeles' : 'patient';
+  var p = document.getElementById('stmplPatient'), m = document.getElementById('stmplModeles');
+  if(p) p.style.display = (o === 'patient') ? 'flex' : 'none';
+  if(m) m.style.display = (o === 'modeles') ? 'flex' : 'none';
+  var bp = document.getElementById('stmpl-onglet-patient'), bm = document.getElementById('stmpl-onglet-modeles');
+  if(bp){ bp.classList.toggle('active', o === 'patient'); bp.disabled = !_progPatient; }
+  if(bm) bm.classList.toggle('active', o === 'modeles');
+}
+/* La zone de l'ACWR en francais — le bilan dit encore « Sweet spot ». */
+function _zoneAcwrFr(r){
+  if(r === null) return { txt:'données insuffisantes', cls:'bi-grey' };
+  if(r < 0.8)   return { txt:'sous-charge', cls:'bi-orange' };
+  if(r <= 1.3)  return { txt:'zone favorable', cls:'bi-green' };
+  if(r <= 1.5)  return { txt:'prudence', cls:'bi-orange' };
+  return { txt:'zone à risque', cls:'bi-red' };
+}
+function _panneauPatientHtml(){
+  if(!_progPatient) return '';
+  var auj = new Date(); auj.setHours(0,0,0,0);
+  var aujIso = _dateStr(auj), J = 864e5;
+  var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var JOURS = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+  var jour = function(iso){ var d = new Date(iso + 'T00:00:00'); return JOURS[d.getDay()] + ' ' + d.getDate(); };
+  var ligne = function(ev, retour, marques){
+    return '<div class="pp-ligne" onclick="_openChipInBuilder(\'' + escH(String(ev.programme_id)) + '\',\'' + ev.date + '\',\'' + escH(String(ev.id)) + '\'' + (retour ? ',true' : '') + ')">'
+      + '<span class="pp-date">' + jour(ev.date) + '</span><span class="pp-nom">' + escH(_libelleSeance(ev.programmes && ev.programmes.nom)) + '</span>' + (marques || '') + '</div>';
+  };
+  var h = '';
+  // Le cycle en cours
+  var c = _cycleDuJour(auj);
+  h += '<div class="pp-carte"><div class="pp-tete">Cycle en cours<button type="button" onclick="openCycles()">Cycles</button></div>';
+  if(c){
+    var n = Math.max(1, Math.ceil((Math.round((c.fin - c.deb)/J) + 1)/7));
+    var k = Math.min(n, Math.floor(Math.round((auj - c.deb)/J)/7) + 1);
+    h += '<div class="pp-val">' + escH(c.cy.nom || 'Cycle') + '</div>'
+       + '<div class="pp-sub">Semaine ' + k + ' sur ' + n + ' · jusqu’au ' + c.fin.getDate() + ' ' + MOIS[c.fin.getMonth()] + '</div>'
+       + '<div class="pp-barre"><i style="width:' + Math.round(k/n*100) + '%;background:' + (c.cy.color || _cycleColors[c.cy.nom] || '#2B5FA6') + '"></i></div>';
+  } else h += '<div class="pp-vide">Aucun cycle en cours.</div>';
+  h += '</div>';
+  // La charge — memes calculs que le bilan
+  var a = _calcACWR(_buildUaMap()), z = _zoneAcwrFr(a.ratio);
+  h += '<div class="pp-carte"><div class="pp-tete">Charge<button type="button" onclick="_ppVoirBilan()">Détail</button></div>'
+     + '<div class="pp-val">' + (a.ratio === null ? 'ACWR —' : 'ACWR ' + String(a.ratio).replace('.', ',')) + ' <span class="bc-chip ' + z.cls + '">' + z.txt + '</span></div>'
+     + '<div class="pp-sub">7 jours : ' + _bcFmt(a.aigue) + ' UA · chronique ' + _bcFmt(a.chronic) + ' UA/sem.</div></div>';
+  // Les derniers retours de l'athlete
+  var retours = (_cloudCalEvents || []).filter(function(ev){ return ev.date <= aujIso && _fbEstRetourPatient(ev.athlete_feedback); })
+    .sort(function(x, y){ return y.date.localeCompare(x.date); }).slice(0, 3);
+  h += '<div class="pp-carte"><div class="pp-tete">Derniers retours<button type="button" onclick="openJournal()">Journal</button></div>';
+  if(retours.length){
+    h += '<div class="pp-liste">' + retours.map(function(ev){
+      var fb = ev.athlete_feedback, dl = _fbDouleur(fb), rpe = fb.rpe;
+      return ligne(ev, true, (rpe !== null && rpe !== undefined ? '<span class="bc-chip bi-grey">RPE ' + rpe + '</span>' : '')
+        + (dl !== null ? '<span class="bc-chip ' + (dl >= 5 ? 'bi-red' : dl >= 3 ? 'bi-orange' : 'bi-green') + '">EVA ' + dl + '</span>' : ''));
+    }).join('') + '</div>';
+  } else h += '<div class="pp-vide">Aucun retour récent.</div>';
+  h += '</div>';
+  // A venir
+  var avenir = (_cloudCalEvents || []).filter(function(ev){ return ev.date >= aujIso; })
+    .sort(function(x, y){ return x.date.localeCompare(y.date); }).slice(0, 4);
+  h += '<div class="pp-carte"><div class="pp-tete">À venir</div>';
+  h += avenir.length ? '<div class="pp-liste">' + avenir.map(function(ev){ return ligne(ev, false); }).join('') + '</div>'
+                     : '<div class="pp-vide">Aucune séance planifiée.</div>';
+  h += '</div>';
+  return h;
+}
+function _renderPanneauPatient(){
+  var el = document.getElementById('stmplPatient');
+  if(el){ try { el.innerHTML = _panneauPatientHtml(); } catch(ex){ el.innerHTML = ''; } }
+  _appliquerOngletColonne();
+}
+function _ppVoirBilan(){
+  var b = document.getElementById('bilanCharge');
+  if(b) b.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
 function _renderUpcoming(){
   if(!_progPatient) { document.getElementById('upcomingList').innerHTML = ''; return; }
   var today = new Date().toISOString().split('T')[0];

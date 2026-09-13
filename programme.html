@@ -159,6 +159,27 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 /* ── Sidebar Templates (mode calendrier) ── */
 #sidebarTemplates { display:flex; flex-direction:column; height:100%; }
 #sidebarLibrary   { display:none; flex-direction:column; height:100%; }
+/* ── Colonne « Patient » (qualite/panneau-patient-cas.js) ── */
+#stmplModeles { display:flex; flex-direction:column; flex:1; min-height:0; }
+.pp-panneau { flex:1; min-height:0; overflow-y:auto; padding:12px; display:none; flex-direction:column; gap:10px; background:var(--bg); }
+.pp-carte { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.pp-tete { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:var(--fs-2xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.pp-tete button { background:none; border:none; padding:0; color:var(--accent); font-family:inherit; font-size:var(--fs-xs); font-weight:700; letter-spacing:0; text-transform:none; cursor:pointer; }
+.pp-val { font-size:var(--fs-xl); font-weight:800; color:var(--navy); letter-spacing:-.02em; line-height:1.25; }
+.pp-val .bc-chip { vertical-align:middle; letter-spacing:0; }
+.pp-sub { font-size:var(--fs-xs); color:var(--muted); margin-top:2px; }
+.pp-barre { height:5px; border-radius:3px; background:var(--surface2); margin-top:8px; overflow:hidden; }
+.pp-barre i { display:block; height:100%; border-radius:3px; }
+.pp-ligne { display:flex; align-items:center; gap:6px; padding:6px 0; font-size:var(--fs-sm); cursor:pointer; }
+.pp-ligne + .pp-ligne { border-top:1px solid var(--border); }
+.pp-ligne:hover .pp-nom { color:var(--accent); }
+.pp-date { font-weight:700; color:var(--muted); font-size:var(--fs-xs); min-width:46px; }
+.pp-nom { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+.pp-vide { font-size:var(--fs-sm); color:var(--muted); font-style:italic; }
+#stmpl-onglet-patient:disabled { opacity:.4; cursor:default; }
+/* « Prochaines seances » sous l'agenda : la colonne l'affiche sur ordinateur ;
+   sur telephone la colonne est repliee, la liste reste (bloc max-width:700px). */
+#upcomingList { display:none; }
 .stmpl-header { padding:12px 14px 10px; background:var(--navy); flex-shrink:0; }
 .stmpl-title  { color:#fff; font-size:var(--fs-2xs); font-weight:700; letter-spacing:.13em; text-transform:uppercase; margin-bottom:6px; }
 .stmpl-search { width:100%; padding:6px 10px; border:none; border-radius:6px; background:rgba(255,255,255,.15); color:#fff; font-size:var(--fs-md); outline:none; }
@@ -2474,6 +2495,7 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
   #topbarBiblioBtn .btn-label { display:inline; }
   .topbar { display:flex; padding:0 8px; gap:6px; }
   .app { height:calc(100% - 48px); }
+  #upcomingList { display:block; }
   .topbar-patient { flex:1 1 auto; min-width:0; }
   .topbar-right { flex-shrink:0; }
   .topbar-btn { flex-shrink:0; padding:5px 9px; }
@@ -2831,6 +2853,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
   <!-- ── Panel Templates (mode calendrier, affiché par défaut) ── -->
   <div id="sidebarTemplates">
+    <!-- Deux onglets : le patient, ou le repertoire des modeles (qualite/panneau-patient-cas.js). -->
+    <div class="sb-tabs" id="stmplOnglets">
+      <button class="sb-tab-btn active" id="stmpl-onglet-patient" onclick="_ongletColonne('patient')">Patient</button>
+      <button class="sb-tab-btn" id="stmpl-onglet-modeles" onclick="_ongletColonne('modeles')">Modèles</button>
+      <button class="mob-lib-close-btn" onclick="toggleSidebar()" title="Fermer">✕</button>
+    </div>
+    <div id="stmplPatient" class="pp-panneau"></div>
+    <div id="stmplModeles">
     <div class="stmpl-header">
       <div style="flex:1;min-width:0;">
         <div class="stmpl-title">Modèles</div>
@@ -2857,6 +2887,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     </div>
     <div class="stmpl-scroll" id="stmplScroll">
       <div class="stmpl-empty">Chargement…</div>
+    </div>
     </div>
   </div>
 
@@ -3684,7 +3715,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
 <script src="js/volume-sport.js?v=20260911v"></script>
-<script src="js/prog-data.js?v=20260913l"></script>
+<script src="js/prog-data.js?v=20260913s"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -4853,6 +4884,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913q"></script>
+<script src="js/prog-main.js?v=20260913s"></script>
 </body>
 </html>
