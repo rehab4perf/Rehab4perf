@@ -62,20 +62,26 @@ if (!modifies.length) { console.log('Aucun fichier modifie — rien a faire.'); 
 /* Le tampon du jour. On prend la lettre qui SUIT la plus avancee deja
    presente, jamais le premier trou libre : une lettre relachee ce matin puis
    remplacee reste dans le cache des navigateurs qui l'ont vue, et la
-   reutiliser leur ferait servir l'ancienne copie. */
+   reutiliser leur ferait servir l'ancienne copie.
+   Apres « z » : « za », « zb »… « zz », « zza ». Le tampon plafonnait a « z »
+   (Math.min(…, 122)) : le 27e deploiement du 2026-09-13 a donc REECRIT « z »
+   sans rien changer — code en ligne, invisible pour qui avait deja « z ». */
 function tampon() {
   var d = new Date();
   var j = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
-  var vus = {};
+  var max = '';   // le suffixe le plus avance : le plus long, puis l'ordre alphabetique
   ['index.html', 'bilan.html', 'outils.html', 'programme.html', 'patients.html', 'account.html', 'aide.html', 'athlete.html']
     .forEach(function (f) {
       if (!fs.existsSync(f)) return;
-      (fs.readFileSync(f, 'utf8').match(new RegExp('\\?v=' + j + '([a-z])', 'g')) || [])
-        .forEach(function (m) { vus[m.slice(-1)] = 1; });
+      (fs.readFileSync(f, 'utf8').match(new RegExp('\\?v=' + j + '[a-z]+', 'g')) || [])
+        .forEach(function (m) {
+          var suf = m.slice(3 + j.length);
+          if (suf.length > max.length || (suf.length === max.length && suf > max)) max = suf;
+        });
     });
-  var max = 96;
-  Object.keys(vus).forEach(function (l) { max = Math.max(max, l.charCodeAt(0)); });
-  return j + String.fromCharCode(Math.min(max + 1, 122));
+  if (!max) return j + 'a';
+  var der = max.slice(-1);
+  return j + (der < 'z' ? max.slice(0, -1) + String.fromCharCode(der.charCodeAt(0) + 1) : max + 'a');
 }
 
 var neuf = tampon();
