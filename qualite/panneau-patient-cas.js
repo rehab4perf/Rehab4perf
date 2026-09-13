@@ -71,6 +71,10 @@ const cy = carte('Cycle en cours');
 ok('son nom et où on en est : semaine 2 sur 6', /Endurance de force/.test(cy) && /Semaine 2 sur 6/.test(cy), cy.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 140));
 ok('… sa fin, et une barre d\'avancement (2/6 = 33 %)', /jusqu’au/.test(cy) && /width:33%/.test(cy));
 ok('… et un accès aux cycles', /onclick="openCycles\(\)"/.test(cy));
+/* Décision du praticien (13/09) : la carte devient le SEUL accès aux cycles —
+   elle doit permettre d'en créer, pas seulement de consulter. */
+ok('… et d\'en créer un, directement', /onclick="_ppNouveauCycle\(\)"[^>]*>\+ Nouveau cycle</.test(cy));
+ok('« + Nouveau cycle » ouvre le formulaire de création', /openCycles\(\);\s*openCycleForm\(null\);/.test(fm('_ppNouveauCycle')));
 
 console.log('\nLa charge');
 const ch = carte('Charge');
@@ -78,6 +82,14 @@ ok('l\'ACWR du jour, en chiffres français', /ACWR \d+,\d+|ACWR \d+ /.test(ch), 
 ok('… sa zone en français (pas « Sweet spot »)', /zone favorable|sous-charge|prudence|zone à risque|données insuffisantes/.test(ch) && !/Sweet spot/i.test(h));
 ok('… la charge 7 jours et la chronique', /7 jours : [\d\s\u00a0\u202f]+ UA/.test(ch) && /chronique [\d\s\u00a0\u202f]+ UA\/sem\./.test(ch));   // milliers : espace fine insécable (fr-FR)
 ok('… et le détail, qui descend au bilan de charge', /onclick="_ppVoirBilan\(\)"/.test(ch));
+/* Le curseur du prototype : la zone se lit d'un coup d'œil, avant le chiffre. */
+{
+  const r = (ch.match(/ACWR (\d+),(\d+)/) || []).slice(1).join('.');
+  const pos = r ? Math.round(Math.min(+r, 2) / 2 * 1000) / 10 : null;
+  ok('le curseur ACWR : quatre zones, et l\'aiguille à sa place (échelle 0–2)',
+     /class="pp-jauge"/.test(ch) && (ch.match(/class="z\d"/g) || []).length === 4 && pos !== null && ch.indexOf('<i style="left:' + pos + '%"></i>') > 0, 'ACWR ' + r + ' → ' + pos + ' %');
+  ok('… repères 0,8 et 1,3 (la zone favorable)', /<span style="left:40%">0,8<\/span><span style="left:65%">1,3<\/span>/.test(ch));
+}
 
 console.log('\nLes derniers retours');
 const rt = carte('Derniers retours');
@@ -114,6 +126,7 @@ try { h2 = contexte({ _progPatient: null })._panneauPatientHtml(); } catch (e) {
 ok('sans patient : rien', h2 === '');
 let h3 = '';
 try { h3 = contexte({ _cycles: [], _cloudCalEvents: [], _buildUaMap: () => ({}) })._panneauPatientHtml(); } catch (e) { h3 = 'ERREUR ' + e.message; }
+ok('données insuffisantes : la jauge sans aiguille', /class="pp-jauge"/.test(h3) && !/pp-jauge[^]*?<i style="left/.test(h3.slice(h3.indexOf('pp-jauge'), h3.indexOf('pp-jauge-lbl'))));
 ok('patient sans données : chaque carte le dit, sans chiffre inventé', /Aucun cycle en cours/.test(h3) && /Aucun retour récent/.test(h3) && /Aucune séance planifiée/.test(h3) && /données insuffisantes/.test(h3), h3.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 200));
 
 console.log('\nLes onglets');

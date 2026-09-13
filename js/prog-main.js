@@ -8192,11 +8192,20 @@ function _panneauPatientHtml(){
        + '<div class="pp-sub">Semaine ' + k + ' sur ' + n + ' · jusqu’au ' + c.fin.getDate() + ' ' + MOIS[c.fin.getMonth()] + '</div>'
        + '<div class="pp-barre"><i style="width:' + Math.round(k/n*100) + '%;background:' + (c.cy.color || _cycleColors[c.cy.nom] || '#2B5FA6') + '"></i></div>';
   } else h += '<div class="pp-vide">Aucun cycle en cours.</div>';
+  /* Seul acces aux cycles : on y cree, pas seulement on y consulte (decision du praticien). */
+  h += '<button type="button" class="pp-ajout" onclick="_ppNouveauCycle()">+ Nouveau cycle</button>';
   h += '</div>';
   // La charge — memes calculs que le bilan
   var a = _calcACWR(_buildUaMap()), z = _zoneAcwrFr(a.ratio);
+  /* Le curseur : echelle 0–2, zones aux seuils de _zoneAcwrFr ; sans ratio, pas d'aiguille. */
+  var pos = (a.ratio === null) ? null : Math.round(Math.min(a.ratio, 2) / 2 * 1000) / 10;
+  var jauge = '<div class="pp-jauge" title="Sous-charge sous 0,8 · zone favorable de 0,8 à 1,3 · prudence jusqu’à 1,5 · risque au-delà">'
+    + '<span class="z1"></span><span class="z2"></span><span class="z3"></span><span class="z4"></span>'
+    + (pos === null ? '' : '<i style="left:' + pos + '%"></i>') + '</div>'
+    + '<div class="pp-jauge-lbl"><span style="left:40%">0,8</span><span style="left:65%">1,3</span></div>';
   h += '<div class="pp-carte"><div class="pp-tete">Charge<button type="button" onclick="_ppVoirBilan()">Détail</button></div>'
      + '<div class="pp-val">' + (a.ratio === null ? 'ACWR —' : 'ACWR ' + String(a.ratio).replace('.', ',')) + ' <span class="bc-chip ' + z.cls + '">' + z.txt + '</span></div>'
+     + jauge
      + '<div class="pp-sub">7 jours : ' + _bcFmt(a.aigue) + ' UA · chronique ' + _bcFmt(a.chronic) + ' UA/sem.</div></div>';
   // Les derniers retours de l'athlete
   var retours = (_cloudCalEvents || []).filter(function(ev){ return ev.date <= aujIso && _fbEstRetourPatient(ev.athlete_feedback); })
@@ -8223,6 +8232,10 @@ function _renderPanneauPatient(){
   var el = document.getElementById('stmplPatient');
   if(el){ try { el.innerHTML = _panneauPatientHtml(); } catch(ex){ el.innerHTML = ''; } }
   _appliquerOngletColonne();
+}
+function _ppNouveauCycle(){
+  openCycles();
+  openCycleForm(null);
 }
 function _ppVoirBilan(){
   var b = document.getElementById('bilanCharge');

@@ -177,6 +177,18 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .pp-nom { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
 .pp-vide { font-size:var(--fs-sm); color:var(--muted); font-style:italic; }
 #stmpl-onglet-patient:disabled { opacity:.4; cursor:default; }
+.pp-ajout { margin-top:8px; width:100%; background:none; border:1px dashed var(--border2); border-radius:6px; padding:4px 8px; color:var(--accent); font-family:inherit; font-size:var(--fs-xs); font-weight:700; cursor:pointer; }
+.pp-ajout:hover { background:var(--accent-ll); }
+/* Le curseur ACWR : memes seuils que la zone, jetons de la jauge du bilan. */
+.pp-jauge { position:relative; display:flex; height:8px; margin:10px 0 2px; }
+.pp-jauge span { height:100%; }
+.pp-jauge .z1 { width:40%; background:var(--acwr-cyan-l); border-radius:4px 0 0 4px; }
+.pp-jauge .z2 { width:25%; background:var(--acwr-vert-l); }
+.pp-jauge .z3 { width:10%; background:var(--acwr-ambre-l); }
+.pp-jauge .z4 { width:25%; background:var(--acwr-rouge-l); border-radius:0 4px 4px 0; }
+.pp-jauge i { position:absolute; top:-4px; width:3px; height:16px; margin-left:-1.5px; border-radius:2px; background:var(--acwr-aiguille); }
+.pp-jauge-lbl { position:relative; height:13px; font-size:var(--fs-2xs); color:var(--muted); }
+.pp-jauge-lbl span { position:absolute; transform:translateX(-50%); }
 /* « Prochaines seances » sous l'agenda : la colonne l'affiche sur ordinateur ;
    sur telephone la colonne est repliee, la liste reste (bloc max-width:700px). */
 #upcomingList { display:none; }
@@ -4884,6 +4896,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913t"></script>
+<script src="js/prog-main.js?v=20260913u"></script>
 </body>
 </html>
