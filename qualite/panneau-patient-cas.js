@@ -88,6 +88,21 @@ ok('… avec la RPE et l\'EVA, colorée selon la douleur', /RPE 7/.test(rt) && /
 ok('… un clic ouvre la séance sur son retour (identifiants entre guillemets)', /onclick="_openChipInBuilder\('p-4','[\d-]+','s-4',true\)"/.test(rt), (rt.match(/onclick="[^"]*"/) || [''])[0]);
 ok('… et le Journal est à un clic', /onclick="openJournal\(\)"/.test(rt));
 
+/* Vu en ligne sur la démo : « mar. 14 » pour un retour du 14 JUILLET — sans le
+   mois, on le lisait en septembre, un jour qui n'était pas encore arrivé. */
+{
+  const ctxD = contexte({ _cloudCalEvents: [ev(-75, 'Séance ancienne', { rpe: 5, duree_min: 40 })] });
+  let hd = ''; try { hd = ctxD._panneauPatientHtml(); } catch (e) { hd = 'ERREUR ' + e.message; }
+  const d = (hd.match(/<span class="pp-date">([^<]*)<\/span>/) || [])[1] || '';
+  const vieux = new Date(); vieux.setHours(0, 0, 0, 0); vieux.setDate(vieux.getDate() - 75);
+  const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  ok('une date d\'un autre mois porte son mois (« mar. 14 juil. »)', d.endsWith(' ' + MOIS[vieux.getMonth()]) && d.indexOf(String(vieux.getDate())) > 0, d);
+  const d4 = (h.match(/<span class="pp-date">([^<]*)<\/span>/g) || []).map(x => x.replace(/<[^>]+>/g, ''));
+  const auj = new Date(); auj.setHours(0, 0, 0, 0);
+  const memeMois = dec => { const x = new Date(auj); x.setDate(x.getDate() + dec); return x.getMonth() === auj.getMonth(); };
+  ok('… et une date du mois en cours reste courte', d4.length > 0 && d4.every((x, i) => true) && (memeMois(-4) ? !/\s(janv|févr|mars|avr|mai|juin|juil|août|sept|oct|nov|déc)/.test(d4[0]) : true), d4.join(' | '));
+}
+
 console.log('\nÀ venir');
 const av = carte('À venir');
 const nav = [...av.matchAll(/<span class="pp-nom">([^<]*)<\/span>/g)].map(m => m[1]);

@@ -8173,7 +8173,10 @@ function _panneauPatientHtml(){
   var aujIso = _dateStr(auj), J = 864e5;
   var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
   var JOURS = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
-  var jour = function(iso){ var d = new Date(iso + 'T00:00:00'); return JOURS[d.getDay()] + ' ' + d.getDate(); };
+  /* Le mois s'ajoute des qu'il differe du mois en cours : « mar. 14 » pour un
+     retour de juillet se lisait en septembre (vu en ligne sur la demo). */
+  var jour = function(iso){ var d = new Date(iso + 'T00:00:00');
+    return JOURS[d.getDay()] + ' ' + d.getDate() + (d.getMonth() !== auj.getMonth() || d.getFullYear() !== auj.getFullYear() ? ' ' + MOIS[d.getMonth()] : ''); };
   var ligne = function(ev, retour, marques){
     return '<div class="pp-ligne" onclick="_openChipInBuilder(\'' + escH(String(ev.programme_id)) + '\',\'' + ev.date + '\',\'' + escH(String(ev.id)) + '\'' + (retour ? ',true' : '') + ')">'
       + '<span class="pp-date">' + jour(ev.date) + '</span><span class="pp-nom">' + escH(_libelleSeance(ev.programmes && ev.programmes.nom)) + '</span>' + (marques || '') + '</div>';
