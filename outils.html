@@ -1585,6 +1585,15 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           <div id="cr-pevo-status" style="display:none;margin-top:8px;font-size:.78rem;color:#9D9B96;font-style:italic"></div>
           <div id="cr-pevo-grid" style="display:none;margin-top:12px"></div>
         </div>
+        <!-- Charge d'entraînement dans le PDF (qualite/cr-charge-cas.js) -->
+        <div id="cr-charge-panel" style="margin-top:10px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text,#1A1917)">
+            <input type="checkbox" id="cr-charge-toggle" onchange="crOnChargeToggle()">
+            📈 Inclure la charge d'entraînement
+          </label>
+          <div style="margin:4px 0 0 24px;font-size:.74rem;color:#6B6860">Volume par sport sur 28 jours, charge par semaine et ACWR — utile pour un courrier de reprise sportive.</div>
+          <div id="cr-charge-status" style="display:none;margin-top:8px;font-size:.78rem;color:#9D9B96;font-style:italic"></div>
+        </div>
 
       </div><!-- /cr-left-scroll -->
     </aside>
@@ -4852,6 +4861,7 @@ function downloadOutils(){
 var _crPatientId = null;
 var _crPevoContentHTML = null;
 var _crPevoCards = [];
+var _crChargeHTML = null;   // charge d'entraînement reçue du programme (qualite/cr-charge-cas.js)
 
 /* Cartes d'evolution du patient : vidage partage entre le changement de
    patient et la reinitialisation du formulaire. Ecrit une seule fois — les
@@ -4859,6 +4869,10 @@ var _crPevoCards = [];
 function _crViderPevo(){
   _crPevoContentHTML = null;
   _crPevoCards = [];
+  _crChargeHTML = null;
+  var ctg = document.getElementById('cr-charge-toggle'), cst = document.getElementById('cr-charge-status');
+  if(ctg) ctg.checked = false;
+  if(cst) cst.style.display = 'none';
   var tog = document.getElementById('cr-pevo-toggle');
   var grd = document.getElementById('cr-pevo-grid');
   var sta = document.getElementById('cr-pevo-status');
@@ -5041,15 +5055,29 @@ window.addEventListener('message', function(e){
       no_auth: 'Session expirée — rechargez la page.',
       fetch_error: 'Erreur réseau lors du chargement des graphiques.'
     };
+    var ctg2 = document.getElementById('cr-charge-toggle');
+    var cst2 = document.getElementById('cr-charge-status');
     if(e.data.error){
-      if(sta2){ sta2.textContent = errMsgs[e.data.error] || 'Erreur inconnue.'; sta2.style.display = ''; }
+      if(tog2 && tog2.checked && sta2){ sta2.textContent = errMsgs[e.data.error] || 'Erreur inconnue.'; sta2.style.display = ''; }
       if(grd2) grd2.style.display = 'none';
       if(tog2) tog2.checked = false;
+      if(ctg2 && ctg2.checked && cst2){ cst2.textContent = e.data.error === 'no_data' ? 'Aucune charge d\'entraînement pour ce patient.' : (errMsgs[e.data.error] || 'Erreur inconnue.'); cst2.style.display = ''; }
+      if(ctg2) ctg2.checked = false;
       return;
     }
-    _crPevoContentHTML = e.data.contentHTML;
-    _crBuildPevoSelector();
-    if(sta2) sta2.style.display = 'none';
+    _crPevoContentHTML = e.data.contentHTML || '';
+    /* La charge vient avec les courbes (qualite/cr-charge-cas.js). Chaque case
+       ne montre que ce qu'elle demande : les courbes n'apparaissent que si
+       leur propre case est cochée. */
+    _crChargeHTML = e.data.chargeHTML || '';
+    if (tog2 && tog2.checked) _crBuildPevoSelector();
+    if(tog2 && tog2.checked && !_crPevoContentHTML && sta2){ sta2.textContent = 'Aucune courbe d\'exercice pour ce patient.'; sta2.style.display = ''; }
+    else if(sta2) sta2.style.display = 'none';
+    if(ctg2 && ctg2.checked && cst2){
+      if(!_crChargeHTML){ cst2.textContent = 'Aucune charge d\'entraînement disponible — ouvrez ce patient dans l\'onglet Programme.'; cst2.style.display = ''; }
+      else cst2.style.display = 'none';
+    }
+    try { if (window._crRefreshGraphiques) window._crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
   }
 });
 
@@ -6483,6 +6511,30 @@ _updateOutilsPatientBtns();
       return;
     }
     if (status) { status.textContent = 'Chargement des graphiques…'; status.style.display = ''; }
+    window.parent.postMessage({ type: 'r4p-pevo-request', patientId: _crPatientId }, window.location.origin);
+  };
+
+  /* La charge d'entraînement (qualite/cr-charge-cas.js) : même demande que
+     les courbes — la réponse porte les deux. */
+  window.crOnChargeToggle = function() {
+    var toggle = document.getElementById('cr-charge-toggle');
+    var status = document.getElementById('cr-charge-status');
+    if (!toggle || !toggle.checked) {
+      if (status) status.style.display = 'none';
+      try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
+      return;
+    }
+    if (!_crPatientId) {
+      if (status) { status.textContent = 'Sélectionnez un patient depuis l\'accueil pour inclure sa charge d\'entraînement.'; status.style.display = ''; }
+      toggle.checked = false;
+      return;
+    }
+    if (_crChargeHTML !== null) {
+      if (!_crChargeHTML && status) { status.textContent = 'Aucune charge d\'entraînement disponible — ouvrez ce patient dans l\'onglet Programme.'; status.style.display = ''; }
+      try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
+      return;
+    }
+    if (status) { status.textContent = 'Chargement de la charge d\'entraînement…'; status.style.display = ''; }
     window.parent.postMessage({ type: 'r4p-pevo-request', patientId: _crPatientId }, window.location.origin);
   };
 
@@ -8177,6 +8229,7 @@ _updateOutilsPatientBtns();
       + '<div id="cr-body">' + textEsc + '</div>'
       + _crGetEvoSectionHtml()
       + _crGetPevoSectionHtml()
+      + _crGetChargeSectionHtml()
       + '</div>'
       + '<script>'
       /* La boucle d'ajustement reduit la police jusqu'a ce que le courrier
@@ -8570,8 +8623,9 @@ _updateOutilsPatientBtns();
     if (!graphsDiv) return;
     var evoHtml  = _crGetEvoSectionHtml();
     var pevoHtml = _crGetPevoSectionHtml();
-    if (evoHtml || pevoHtml) {
-      graphsDiv.innerHTML = evoHtml + pevoHtml;
+    var chargeHtml = _crGetChargeSectionHtml();
+    if (evoHtml || pevoHtml || chargeHtml) {
+      graphsDiv.innerHTML = evoHtml + pevoHtml + chargeHtml;
       graphsDiv.style.display = '';
     } else {
       graphsDiv.innerHTML = '';
@@ -8583,6 +8637,7 @@ _updateOutilsPatientBtns();
      l'appellent, et elle reste le point d'entree unique quand il faut tout
      refaire d'un coup. */
   window.crGenerate = function() { _crRefreshLettre(); _crRefreshGraphiques(); };
+  window._crRefreshGraphiques = _crRefreshGraphiques;   // la réponse du programme arrive hors de ce bloc
 
   /* La frappe regenere le texte, jamais les graphiques. Ecoute deleguee sur le
      panneau entier : un champ ajoute demain est couvert d'office — la liste
@@ -8615,7 +8670,7 @@ _updateOutilsPatientBtns();
          Delegation sur les deux panneaux entiers, pas sur deux identifiants :
          une case ajoutee au selecteur demain est couverte d'office — c'est la
          liste tenue a la main qui etait le defaut. */
-      var gp = e.target.closest && e.target.closest('#cr-evo-panel, #cr-pevo-panel');
+      var gp = e.target.closest && e.target.closest('#cr-evo-panel, #cr-pevo-panel, #cr-charge-panel');
       if (gp) { try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); } return; }
       _crMajDifferee();
     }, true);
@@ -9137,6 +9192,17 @@ _updateOutilsPatientBtns();
       + cardsHtml
       + '</div>';
   }
+  /* La charge d'entraînement, comme les courbes : une section du courrier,
+     portée par sa propre case (qualite/cr-charge-cas.js). */
+  function _crGetChargeSectionHtml() {
+    var toggle = document.getElementById('cr-charge-toggle');
+    if (!toggle || !toggle.checked || !_crChargeHTML) return '';
+    return '<div class="cr-evo-section">'
+      + '<div class="cr-evo-section-title">Charge d’entraînement</div>'
+      + _patchPevoCardForPdf(_crChargeHTML)
+      + '</div>';
+  }
+
 
 })();
 

@@ -131,3 +131,24 @@ tout patient bilatéral.
 `romCrTable` (amplitudes) construit ses propres colonnes sans passer par
 `_crMesTab` : elle affichait « Droit » avant « Gauche ». En-têtes et valeurs
 ont été échangés **ensemble** — les dissocier inverserait les deux côtés.
+
+## Charge d'entraînement dans le courrier — à cocher
+
+```bash
+node qualite/cr-charge-cas.js
+```
+
+Décision du praticien (2026-09-13), en retirant l'export de l'onglet
+Évolution : la case « Inclure la charge d'entraînement » ajoute au courrier le
+volume par sport des 28 derniers jours, l'ACWR du jour (zone **en français**,
+jamais « Sweet spot ») et la charge par semaine sur 8 semaines, avec la bande
+favorable. Le bloc est construit par le programme (`_crChargeHtml`,
+prog-main.js), avec les calculs du bilan de charge, et voyage dans la même
+réponse que les courbes (`r4p-pevo-response.chargeHTML`).
+
+Deux règles : le bloc porte **son propre style en couleurs fixes** — le
+courrier et son PDF n'ont pas les variables CSS du programme ; et **chaque case
+ne montre que ce qu'elle demande** — la grille des courbes ne s'affiche que si
+sa case est cochée, même quand la réponse arrive pour la charge. La charge ne
+se calcule que pour le patient que le programme tient (ses activités sont en
+mémoire là) : pour un autre, le panneau le dit.

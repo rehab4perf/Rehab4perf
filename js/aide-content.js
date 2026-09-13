@@ -264,6 +264,7 @@ sections: [
       { t:'Pourquoi le bouton a disparu', x:'Il ne validait rien — il rafraîchissait un aperçu. Et l\'oublier coûtait cher : « Copier », « PDF » et « Mail » exportaient le courrier figé au dernier clic. Une phrase corrigée après coup partait chez le médecin sans y figurer, sans aucun signal.' },
       { t:'L\'export suit toujours l\'écran', x:'Ce que vous voyez et ce que vous exportez sont désormais produits ensemble. Il n\'y a plus d\'écart possible entre les deux.' },
       { t:'Les graphiques, eux, attendent leur case', x:'Ils ne se redessinent que lorsque vous cochez ou décochez « Inclure les graphiques » — inutile de les recalculer à chaque lettre tapée.' },
+      { t:'La charge d’entraînement, à cocher', x:'« Inclure la charge d’entraînement » ajoute au courrier le volume par sport des 28 derniers jours, l’ACWR du jour avec sa zone, et la charge par semaine sur 8 semaines avec la bande favorable — les mêmes calculs que votre bilan de charge. Utile pour un courrier de reprise sportive. Le patient doit être ouvert dans l’onglet Programme : c’est là que ses activités sont chargées.' },
       { t:'« Associer les infos patient » reste', x:'Il n\'est plus nécessaire au quotidien : l\'association se fait au changement de patient. Il sert à la relancer après coup, par exemple si vous avez corrigé un champ à la main et voulez reprendre la valeur du dossier.' }
     ]},
   { id:'cr-destinataire', titre:'Écrire au médecin ou au patient',

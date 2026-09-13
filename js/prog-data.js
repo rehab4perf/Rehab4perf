@@ -3570,24 +3570,34 @@ window.addEventListener('message', function(e){
     if(!_reqPatId){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_patient'},_pevoOrigin); return; }
     if(!_progToken){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_auth'},_pevoOrigin); return; }
 
+    /* La charge d'entraînement voyage avec les courbes (qualite/cr-charge-cas.js).
+       Calculée sur le patient que le programme tient : un autre patient n'a
+       pas ses activités en mémoire ici. */
+    function _chargePourCr(){
+      try {
+        if(_progPatient && String(_progPatient.id)===String(_reqPatId) && typeof _crChargeHtml === 'function')
+          return _crChargeHtml(_buildUaMap(), _volumeParSport(6), _pevoAujourdhuiIso());
+      } catch(ex){}
+      return '';
+    }
     function _sendPevoGrid(){
-      if(!_pevoData || !Object.keys(_pevoData).length){
-        window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return;
-      }
-      var body = document.getElementById('pevoBody');
-      var savedHTML = body ? body.innerHTML : '';
-      var allSel = new Set(Object.keys(_pevoData));
-      _renderPevoCharts(_pevoData, allSel);
-      var grid = document.getElementById('pevoChartsGrid');
       var contentHTML = '';
-      if(grid){
-        var clone = grid.cloneNode(true);
-        clone.querySelectorAll('.pevo-hit,.pevo-pill-toggles').forEach(function(el){ el.remove(); });
-        contentHTML = clone.outerHTML;
+      if(_pevoData && Object.keys(_pevoData).length){
+        var body = document.getElementById('pevoBody');
+        var savedHTML = body ? body.innerHTML : '';
+        var allSel = new Set(Object.keys(_pevoData));
+        _renderPevoCharts(_pevoData, allSel);
+        var grid = document.getElementById('pevoChartsGrid');
+        if(grid){
+          var clone = grid.cloneNode(true);
+          clone.querySelectorAll('.pevo-hit,.pevo-pill-toggles').forEach(function(el){ el.remove(); });
+          contentHTML = clone.outerHTML;
+        }
+        if(body) body.innerHTML = savedHTML;
       }
-      if(body) body.innerHTML = savedHTML;
-      if(!contentHTML){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return; }
-      window.parent.postMessage({type:'r4p-pevo-response',contentHTML:contentHTML},_pevoOrigin);
+      var charge = _chargePourCr();
+      if(!contentHTML && !charge){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return; }
+      window.parent.postMessage({type:'r4p-pevo-response',contentHTML:contentHTML,chargeHTML:charge},_pevoOrigin);
     }
 
     if(_progPatient && String(_progPatient.id)===String(_reqPatId) && _pevoData){
@@ -3599,7 +3609,10 @@ window.addEventListener('message', function(e){
       .then(function(r){ return r.json(); })
       .then(function(data){
         if(!Array.isArray(data)||!data.length){
-          window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return;
+          /* Aucune séance planifiée : la charge (Strava) peut exister quand même. */
+          var _ch = _chargePourCr();
+          if(!_ch){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return; }
+          window.parent.postMessage({type:'r4p-pevo-response',contentHTML:'',chargeHTML:_ch},_pevoOrigin); return;
         }
         _pevoData        = _extractExoLoads(data);
         _pevoNrsData     = _extractExoNRS(data);

@@ -2057,6 +2057,74 @@ function _bilanChargeHtml(uaMap, refIso, todayIso, adhHtml){
     + '<div class="bc-tend">'+_bcTendance(uaMap, refIso, todayIso)+'</div></div></div>';
 }
 
+/* ── La charge d'entraînement pour le courrier (Générateur de CR) ─────
+   Mêmes calculs que le bilan de charge, lus à la date du courrier : le
+   volume par sport des 28 derniers jours, l'ACWR du jour et la charge par
+   semaine sur 8 semaines. Le bloc porte son style en couleurs FIXES — le
+   courrier et son PDF n'ont pas les variables CSS du programme, et une
+   couleur en var() y disparaît sans un mot (qualite/cr-charge-cas.js). */
+function _crChargeHtml(uaMap, vol, aujIso){
+  var de = _pevoPlus(aujIso, -27);
+  var lignes = [], tot = 0, nTot = 0;
+  ((vol && vol.sports) || []).forEach(function(sp){
+    var t = _volSomme(vol, de, aujIso, sp.cle);
+    if(t.n > 0 || t.charge > 0){ lignes.push({ sp:sp, t:t }); tot += t.charge; nTot += t.n; }
+  });
+  var charge8 = _bcSomme(uaMap || {}, _pevoPlus(_pevoLundi(aujIso), -49), aujIso);
+  if(!lignes.length && !charge8) return '';
+  var acwr = _calcACWR(uaMap || {}, _pevoJour(aujIso)), r = acwr.ratio, zone, coul;
+  if(r === null){ zone = 'données insuffisantes (moins de 4 semaines d’historique)'; coul = '#6B6860'; }
+  else if(r < 0.8){ zone = 'sous-charge (moins de 0,8)'; coul = '#B45309'; }
+  else if(r <= 1.3){ zone = 'zone favorable (0,8 à 1,3)'; coul = '#15803D'; }
+  else if(r <= 1.5){ zone = 'prudence (1,3 à 1,5)'; coul = '#B45309'; }
+  else { zone = 'zone à risque (au-delà de 1,5)'; coul = '#B91C1C'; }
+  var style = '<style>'
+    + '.crc{font-size:12px;color:#1A1917;line-height:1.5;break-inside:avoid}'
+    + '.crc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + '.crc-per{margin:0 0 6px;color:#6B6860}'
+    + '.crc-t{width:100%;border-collapse:collapse;margin:0 0 8px}'
+    + '.crc-t th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6B6860;border-bottom:1px solid #E8E6E1;padding:3px 6px;font-weight:700}'
+    + '.crc-t td{padding:4px 6px;border-bottom:1px solid #F0EFEC}'
+    + '.crc-t .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}'
+    + '.crc-t tr.tot td{font-weight:700;border-bottom:none}'
+    + '.crc-pt{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}'
+    + '.crc-acwr{margin:6px 0 10px}'
+    + '.crc-st{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6B6860;margin:4px 0;font-weight:700}'
+    + '.crc .bc-tend-svg{display:block;width:100%;height:120px}'
+    + '.crc .bc-bande{fill:#D4EFDF}.crc .bc-chro{fill:none;stroke:#15803D;stroke-width:2;stroke-dasharray:5 4}'
+    + '.crc .bc-axe{stroke:#D3D1C7;stroke-width:1}'
+    + '.crc .bc-b{fill:#2B5FA6}.crc .bc-b.prud{fill:#B45309}.crc .bc-b.risque{fill:#B91C1C}.crc .bc-b.encours{fill:#2B5FA6;fill-opacity:.35}'
+    + '.crc .bc-tend-lbls{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));margin-top:3px}'
+    + '.crc .bc-tend-lbl{text-align:center;font-size:10px;color:#6B6860}'
+    + '.crc .bc-tend-lbl b{display:block;color:#1A1917}.crc .bc-tend-lbl i{display:block;font-style:normal;color:#2B5FA6}'
+    + '.crc .bc-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:10px;color:#6B6860}'
+    + '.crc .bc-leg span{display:inline-flex;align-items:center;gap:4px}'
+    + '.crc .bc-sw{display:inline-block;width:12px;height:8px;border-radius:2px}'
+    + '.crc .bc-sw-b{background:#2B5FA6}.crc .bc-sw-bande{background:#D4EFDF;border:1px solid #9FD4B5}'
+    + '.crc .bc-sw-chro{height:0;border-top:2px dashed #15803D;border-radius:0}.crc .bc-sw-risque{background:#B91C1C}'
+    + '.crc-note{margin:8px 0 0;font-size:10px;color:#6B6860}'
+    + '</style>';
+  var rows = lignes.map(function(l){
+    var v = _volValeur(l.t, l.sp);
+    return '<tr><td><span class="crc-pt" style="background:' + l.sp.couleur + '"></span>' + escH(l.sp.nom) + '</td>'
+      + '<td class="n">' + _volFmt(v, l.sp.unite) + (l.sp.unite === 'km' ? ' km' : '') + '</td>'
+      + '<td class="n">' + l.t.n + '</td><td class="n">' + _bcFmt(l.t.charge) + ' UA</td>'
+      + '<td class="n">' + (tot > 0 ? Math.round(l.t.charge / tot * 100) : 0) + ' %</td></tr>';
+  }).join('');
+  var tableau = lignes.length
+    ? '<table class="crc-t"><tr><th>Sport</th><th class="n">Volume</th><th class="n">Séances</th><th class="n">Charge</th><th class="n">Part</th></tr>'
+      + rows + '<tr class="tot"><td>Total</td><td></td><td class="n">' + nTot + '</td><td class="n">' + _bcFmt(tot) + ' UA</td><td class="n">100 %</td></tr></table>'
+    : '';
+  return style + '<div class="crc">'
+    + '<p class="crc-per">28 derniers jours — du ' + _pevoFmtCourt(de, true) + ' au ' + _pevoFmtCourt(aujIso, true) + ' ' + aujIso.slice(0, 4) + '</p>'
+    + tableau
+    + '<p class="crc-acwr"><b style="color:' + coul + '">ACWR ' + (r === null ? '—' : String(r).replace('.', ',')) + '</b> — ' + zone
+    + ' · charge aiguë (7 derniers jours) <b>' + _bcFmt(acwr.aigue) + ' UA</b> · chronique <b>' + _bcFmt(acwr.chronic) + ' UA</b> par semaine</p>'
+    + '<div class="crc-st">Charge par semaine — 8 semaines</div>' + _bcTendance(uaMap || {}, aujIso, aujIso)
+    + '<p class="crc-note">UA = RPE × durée (min) — méthode de Foster. Sources : retours de séance de l’athlète et activités Strava.</p>'
+    + '</div>';
+}
+
 /* ── Bilan vue mois : rendu dans #bilanCharge ── */
 function _renderBilanCharge(){
   var el = document.getElementById('bilanCharge');

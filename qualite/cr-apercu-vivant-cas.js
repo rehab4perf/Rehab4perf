@@ -71,7 +71,7 @@ console.log('\n  La frappe régénère, les graphiques non');
      Le detail du routage est tenu par qualite/evolution-graphiques-cas.js,
      qui execute le vrai corps du gestionnaire delegue. */
   verifie('les cases de graphiques ne recomposent pas la lettre', 'true',
-          /closest\('#cr-evo-panel, #cr-pevo-panel'\)/.test(propre) + '');
+          /closest\('#cr-evo-panel, #cr-pevo-panel(, #cr-charge-panel)?'\)/.test(propre) + '');
   verifie('elles redessinent les graphiques', 'true',
           /if \(gp\) \{[^}]*_crRefreshGraphiques\(\)/.test(propre) + '');
   verifie('les deux bascules redessinent vraiment, corps verifie', 'true',
