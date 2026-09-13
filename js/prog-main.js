@@ -2856,7 +2856,6 @@ function _renderWeekUI(){
           +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
           + _dayObjectifLabelHtml(dateStr, 'cal-week-objectif-lbl')
           + _buildDayChips(dateStr, cellDate)
-          + '<div class="cal-week-add" onclick="event.stopPropagation();openCalPicker(\''+dateStr+'\')">+ Séance</div>'
           + '</div>';
   }
   var bilan = _weekBilanHTML();
@@ -7472,7 +7471,7 @@ function quitterModele(){
    Modèles — le geste que le praticien veut favoriser (qualite/builder-clarte-cas.js). */
 function ouvrirModeles(){
   var sb = document.querySelector('.sidebar');
-  if(sb){ if(window.innerWidth <= 700) sb.classList.add('mob-lib-open'); else sb.classList.remove('collapsed'); }
+  if(sb){ if(window.innerWidth <= 700) sb.classList.add('mob-lib-open'); else { sb.classList.remove('collapsed'); _replierColonne(false); } }
   _switchSidebarTab('picker');
 }
 function utiliserModele(){
@@ -8207,7 +8206,7 @@ function _panneauPatientHtml(){
     + '<span class="z1"></span><span class="z2"></span><span class="z3"></span><span class="z4"></span>'
     + (pos === null ? '' : '<i style="left:' + pos + '%"></i>') + '</div>'
     + '<div class="pp-jauge-lbl"><span style="left:40%">0,8</span><span style="left:65%">1,3</span></div>';
-  h += '<div class="pp-carte"><div class="pp-tete">Charge<button type="button" onclick="_ppVoirBilan()">Détail</button></div>'
+  h += '<div class="pp-carte"><div class="pp-tete">Charge<button type="button" onclick="openChargesEvo()">Évolution</button></div>'
      + '<div class="pp-val">' + (a.ratio === null ? 'ACWR —' : 'ACWR ' + String(a.ratio).replace('.', ',')) + ' <span class="bc-chip ' + z.cls + '">' + z.txt + '</span></div>'
      + jauge
      + '<div class="pp-sub">7 jours : ' + _bcFmt(a.aigue) + ' UA · chronique ' + _bcFmt(a.chronic) + ' UA/sem.</div></div>';
@@ -8258,13 +8257,44 @@ function _placerEcheances(){
   else _garerEcheances();
 }
 if(_mqActionsMobile && _mqActionsMobile.addEventListener) _mqActionsMobile.addEventListener('change', _placerEcheances);
+
+/* Replier la colonne SANS bouton (qualite/doublons-cas.js) : un clic sur
+   l'onglet DEJA actif la replie en un rail etroit ; un clic sur un onglet du
+   rail la rouvre sur lui. Meme geste dans le builder. Sur telephone la
+   colonne est un tiroir, deja fermee par defaut : le geste n'y fait rien. */
+function _colonneRepliee(){
+  var sb = document.querySelector('.sidebar');
+  return !!(sb && sb.classList.contains('replie'));
+}
+function _replierColonne(oui){
+  var sb = document.querySelector('.sidebar');
+  if(!sb) return;
+  sb.classList.toggle('replie', !!oui);
+  try { localStorage.setItem(R4P_KEYS.COLONNE_REPLIEE, oui ? '1' : ''); } catch(e){}
+}
+function _ongletClic(o){
+  var b = document.getElementById(o === 'modeles' ? 'stmpl-onglet-modeles' : 'stmpl-onglet-patient');
+  var mobile = !!(_mqActionsMobile && _mqActionsMobile.matches);
+  if(!mobile && b && b.classList.contains('active') && !_colonneRepliee()){ _replierColonne(true); return; }
+  if(_colonneRepliee()) _replierColonne(false);
+  _ongletColonne(o);
+}
+function _ongletClicBuilder(t){
+  var b = document.getElementById(t === 'picker' ? 'sb-tab-btn-picker' : 'sb-tab-btn-lib');
+  var mobile = !!(_mqActionsMobile && _mqActionsMobile.matches);
+  if(!mobile && b && b.classList.contains('active') && !_colonneRepliee()){ _replierColonne(true); return; }
+  if(_colonneRepliee()) _replierColonne(false);
+  _switchSidebarTab(t);
+}
+function _restaurerRepli(){
+  var sb = document.querySelector('.sidebar');
+  try { if(sb && localStorage.getItem(R4P_KEYS.COLONNE_REPLIEE) === '1') sb.classList.add('replie'); } catch(e){}
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _restaurerRepli);
+else _restaurerRepli();
 function _ppNouveauCycle(){
   openCycles();
   openCycleForm(null);
-}
-function _ppVoirBilan(){
-  var b = document.getElementById('bilanCharge');
-  if(b) b.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 function _renderUpcoming(){

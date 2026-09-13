@@ -19,6 +19,7 @@ var R4P_KEYS = {
   LIBRARY              : 'r4p-library',
   EXPANDED_GROUPS      : 'r4p-expanded-groups',
   ONGLET_COLONNE       : 'r4p-onglet-colonne',   // onglet Patient / Modeles de l'agenda
+  COLONNE_REPLIEE      : 'r4p-colonne-repliee',  // colonne repliee en rail (ordinateur)
   COLLAPSED_CATS       : 'r4p-collapsed-cats',
   J0_PREFIX            : 'r4p-j0-',
   PEVO_SEL_PREFIX      : 'r4p-pevo-sel-',

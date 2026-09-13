@@ -81,7 +81,7 @@ const ch = carte('Charge');
 ok('l\'ACWR du jour, en chiffres français', /ACWR \d+,\d+|ACWR \d+ /.test(ch), ch.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 140));
 ok('… sa zone en français (pas « Sweet spot »)', /zone favorable|sous-charge|prudence|zone à risque|données insuffisantes/.test(ch) && !/Sweet spot/i.test(h));
 ok('… la charge 7 jours et la chronique', /7 jours : [\d\s\u00a0\u202f]+ UA/.test(ch) && /chronique [\d\s\u00a0\u202f]+ UA\/sem\./.test(ch));   // milliers : espace fine insécable (fr-FR)
-ok('… et le détail, qui descend au bilan de charge', /onclick="_ppVoirBilan\(\)"/.test(ch));
+ok('… et l\'Évolution à un clic (plus dans le menu ···)', /onclick="openChargesEvo\(\)">Évolution</.test(ch));
 /* Le curseur du prototype : la zone se lit d'un coup d'œil, avant le chiffre. */
 {
   const r = (ch.match(/ACWR (\d+),(\d+)/) || []).slice(1).join('.');

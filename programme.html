@@ -188,6 +188,21 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .pp-ech .cal-ech-fus { grid-column:2; margin:0; }
 .pp-ech .cal-ech-plus { grid-column:1 / -1; justify-self:start; }
 .pp-ech .cal-ech-panneau { grid-column:1 / -1; max-width:none; }
+.pp-ech .cal-echeances:not(:has(.cal-ech-fus)) { grid-template-columns:minmax(0,1fr); }
+/* Une action, un endroit (qualite/doublons-cas.js) : sur ordinateur, le
+   repertoire et le Journal s'ouvrent depuis la colonne ; la colonne se replie
+   par son onglet. Sur telephone ces boutons restent : la colonne y est un tiroir. */
+.cal-central-header #topbarBiblioBtn, .cal-central-header #topbarJournalBtn, .builder-header #topbarBiblioBtn { display:none; }
+/* Le rail : un clic sur l'onglet actif replie la colonne, un clic sur un
+   onglet du rail la rouvre. Ordinateur seulement. */
+@media (min-width:701px) {
+  .sidebar.replie, .app.builder-mode .sidebar.replie { width:44px !important; min-width:44px !important; }
+  .sidebar.replie #stmplPatient, .sidebar.replie #stmplModeles, .sidebar.replie #sb-tab-lib, .sidebar.replie #sb-tab-picker { display:none !important; }
+  .sidebar.replie .sb-tabs { flex-direction:column; flex:1; border-bottom:none; }
+  .sidebar.replie .sb-tab-btn { flex:0 0 auto; writing-mode:vertical-rl; transform:rotate(180deg); padding:14px 0; border-bottom:none; border-right:2px solid transparent; }
+  .sidebar.replie .sb-tab-btn.active { border-right-color:var(--info-b); }
+  .sidebar.replie .mob-lib-close-btn { display:none; }
+}
 .pp-ajout { margin-top:8px; width:100%; background:none; border:1px dashed var(--border2); border-radius:6px; padding:4px 8px; color:var(--accent); font-family:inherit; font-size:var(--fs-xs); font-weight:700; cursor:pointer; }
 .pp-ajout:hover { background:var(--accent-ll); }
 /* Le curseur ACWR : memes seuils que la zone, jetons de la jauge du bilan. */
@@ -1962,12 +1977,6 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .cal-week-cell.today-cell { border:2px solid var(--accent); }
 .cal-week-cell .cal-session-chip { margin-bottom:3px; }
 .cal-week-cell .cal-session-chip span { white-space:normal; overflow:visible; text-overflow:unset; }
-.cal-week-add {
-  margin-top:auto; font-size:var(--fs-2xs); color:var(--border); text-align:center;
-  padding:5px; border:1px dashed var(--border); border-radius:5px;
-  opacity:0; transition:opacity .15s;
-}
-.cal-week-cell:hover .cal-week-add { opacity:1; color:var(--muted); }
 
 /* ── Bilan de charge ── */
 .bilan-title { font-size:var(--fs-xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
@@ -2854,9 +2863,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 <!-- ··· More Menu ─────────────────────────────────────────────── -->
 <div id="more-menu" style="position:fixed;z-index:999;background:#fff;border:1px solid #E8E6E1;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.15);padding:6px;min-width:215px;display:none;">
   <div style="font-size:.63rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.13em;">Planification</div>
-  <button onclick="openCycles();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 Q5 6 8 14 Q11 22 14 14 Q17 6 20 14"/><polyline points="19,10 20,14 22,14"/><line x1="2" y1="22" x2="22" y2="22"/><circle cx="8" cy="14" r="1.5" fill="currentColor"/><circle cx="14" cy="14" r="1.5" fill="currentColor"/></svg> Cycles</button>
   <button onclick="openProtoPanel();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18" fill="currentColor"><path d="M11.0104 21.0026C14.6795 20.9646 16.7269 21.3354 20.622 22.9258L21.378 21.0742C17.2509 19.389 14.9401 18.9618 10.9896 19.0027L11.0104 21.0026Z"/><path d="M20.622 26.9258C16.7269 25.3354 14.6795 24.9646 11.0104 25.0026L10.9896 23.0027C14.9401 22.9618 17.2509 23.389 21.378 25.0742L20.622 26.9258Z"/><path d="M11.0104 29.0026C14.6795 28.9646 16.7269 29.3354 20.622 30.9258L21.378 29.0742C17.2509 27.389 14.9401 26.9618 10.9896 27.0027L11.0104 29.0026Z"/><path d="M36.9896 29.0026C33.3205 28.9646 31.2731 29.3354 27.378 30.9258L26.622 29.0742C30.7491 27.389 33.0599 26.9618 37.0103 27.0027L36.9896 29.0026Z"/><path d="M27.378 26.9258C31.2731 25.3354 33.3205 24.9646 36.9896 25.0026L37.0103 23.0027C33.0599 22.9618 30.7491 23.389 26.622 25.0742L27.378 26.9258Z"/><path d="M36.9896 21.0026C33.3205 20.9646 31.2731 21.3354 27.378 22.9258L26.622 21.0742C30.7491 19.389 33.0599 18.9618 37.0103 19.0027L36.9896 21.0026Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M24 11.2401C29.2537 8.7786 33.559 7.04884 39.5261 8.57671C40.4175 8.80494 41 9.61248 41 10.492V33.0552C41 34.3654 39.7896 35.2657 38.5786 35.0435C34.8028 34.3507 31.7784 34.8512 28.5061 36.0963C33.0792 35.5628 36.9344 35.6943 42 36.5827V13.0333C41.6604 12.9558 41.3273 12.883 41 12.8146V10.7733C41.7202 10.9178 42.4658 11.0833 43.2434 11.2707C43.6888 11.378 44 11.7783 44 12.2364V37.7749C44 38.4077 43.4173 38.8804 42.7957 38.7618C36.5832 37.5766 32.3951 37.4936 26.6742 38.3611C26.1781 39.3339 25.1669 40 24 40C22.8331 40 21.8219 39.3339 21.3258 38.3611C15.6049 37.4936 11.4168 37.5766 5.20425 38.7618C4.58268 38.8804 4 38.4077 4 37.7749V12.2364C4 11.7783 4.31119 11.378 4.75659 11.2707C5.53424 11.0833 6.27982 10.9178 7 10.7733V10.492C7 9.61248 7.58253 8.80494 8.47389 8.57671C14.441 7.04884 18.7464 8.77861 23.7421 11.1855C23.8277 11.2035 23.9136 11.2217 24 11.2401ZM25 13.0471C29.9792 10.6426 33.7339 9.16738 39 10.5065V33.0552C34.0407 32.1775 30.259 33.1127 26.1446 34.9023C25.8272 34.5778 25.4368 34.3251 25 34.1707V13.0471ZM23 13.0481V34.1707C22.5632 34.3251 22.1728 34.5778 21.8554 34.9023C17.741 33.1127 13.9593 32.1775 9 33.0552V10.5065C14.2661 9.16738 18.0208 10.6436 23 13.0481ZM19.4939 36.0963C16.2217 34.8512 13.1972 34.3507 9.42139 35.0435C8.2104 35.2657 7 34.3654 7 33.0552V12.8146C6.67271 12.883 6.33962 12.9558 6 13.0333V36.5827C11.0656 35.6943 14.9209 35.5628 19.4939 36.0963Z"/></svg> Protocoles</button>
-  <button onclick="openChargesEvo();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M6 41C6 41.5523 6.44772 42 7 42H41V40H8V35.3588L14.3519 27.6458C14.8545 27.8733 15.4124 28 16 28C17.3878 28 18.6106 27.2932 19.3279 26.22L24.0035 28.1681C24.0916 30.2993 25.8472 32 28 32C30.2091 32 32 30.2091 32 28C32 27.2166 31.7748 26.4858 31.3856 25.8688L36.3608 19.6498C36.861 19.8748 37.4159 20 38 20C40.2091 20 42 18.2091 42 16C42 13.7909 40.2091 12 38 12C35.7909 12 34 13.7909 34 16C34 16.9004 34.2975 17.7313 34.7995 18.3998L29.9251 24.4929C29.354 24.1787 28.6979 24 28 24C26.4456 24 25.0983 24.8866 24.4362 26.1817L19.9868 24.3278C19.9955 24.2197 20 24.1104 20 24C20 21.7909 18.2091 20 16 20C13.7909 20 12 21.7909 12 24C12 24.8968 12.2951 25.7247 12.7936 26.3919L8 32.2127V7H6V41ZM18 24C18 25.1046 17.1046 26 16 26C14.8954 26 14 25.1046 14 24C14 22.8954 14.8954 22 16 22C17.1046 22 18 22.8954 18 24ZM28 30C29.1046 30 30 29.1046 30 28C30 26.8954 29.1046 26 28 26C26.8954 26 26 26.8954 26 28C26 29.1046 26.8954 30 28 30ZM40 16C40 17.1046 39.1046 18 38 18C36.8954 18 36 17.1046 36 16C36 14.8954 36.8954 14 38 14C39.1046 14 40 14.8954 40 16Z"/></svg> Évolution</button>
   <button onclick="_closeMoreMenu();shareCalLink()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M15 23C13.8954 23 13 23.8954 13 25V27C13 28.1046 13.8954 29 15 29H17C18.1046 29 19 28.1046 19 27V25C19 23.8954 18.1046 23 17 23H15ZM15 25V27H17V25H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M21 25C21 23.8954 21.8954 23 23 23H25C26.1046 23 27 23.8954 27 25V27C27 28.1046 26.1046 29 25 29H23C21.8954 29 21 28.1046 21 27V25ZM23 25H25V27H23V25Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M31 23C29.8954 23 29 23.8954 29 25V27C29 28.1046 29.8954 29 31 29H33C34.1046 29 35 28.1046 35 27V25C35 23.8954 34.1046 23 33 23H31ZM31 25V27H33V25H31Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M13 33C13 31.8954 13.8954 31 15 31H17C18.1046 31 19 31.8954 19 33V35C19 36.1046 18.1046 37 17 37H15C13.8954 37 13 36.1046 13 35V33ZM15 35V33H17V35H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M23 31C21.8954 31 21 31.8954 21 33V35C21 36.1046 21.8954 37 23 37H25C26.1046 37 27 36.1046 27 35V33C27 31.8954 26.1046 31 25 31H23ZM25 33H23V35H25V33Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M29 33C29 31.8954 29.8954 31 31 31H33C34.1046 31 35 31.8954 35 33V35C35 36.1046 34.1046 37 33 37H31C29.8954 37 29 36.1046 29 35V33ZM31 35V33H33V35H31Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M16 6C15.4477 6 15 6.44772 15 7V10H11C8.79086 10 7 11.7909 7 14V38C7 40.2092 8.79086 42 11 42H37C39.2091 42 41 40.2092 41 38V14C41 11.7909 39.2091 10 37 10H35V13C35 13.5523 34.5523 14 34 14C33.4477 14 33 13.5523 33 13V7C33 6.44772 32.5523 6 32 6C31.4477 6 31 6.44772 31 7V10H19V13C19 13.5523 18.5523 14 18 14C17.4477 14 17 13.5523 17 13V7C17 6.44772 16.5523 6 16 6ZM9 38V21H39V38C39 39.1046 38.1046 40 37 40H11C9.89543 40 9 39.1046 9 38Z"/></svg> Partager le calendrier</button>
   <div style="border-top:1px solid #E8E6E1;margin:4px 0;"></div>
   <div style="font-size:.63rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.13em;">Générateur</div>
@@ -2878,8 +2885,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div id="sidebarTemplates">
     <!-- Deux onglets : le patient, ou le repertoire des modeles (qualite/panneau-patient-cas.js). -->
     <div class="sb-tabs" id="stmplOnglets">
-      <button class="sb-tab-btn active" id="stmpl-onglet-patient" onclick="_ongletColonne('patient')">Patient</button>
-      <button class="sb-tab-btn" id="stmpl-onglet-modeles" onclick="_ongletColonne('modeles')">Modèles</button>
+      <button class="sb-tab-btn active" id="stmpl-onglet-patient" onclick="_ongletClic('patient')" title="Un clic sur l’onglet actif replie la colonne">Patient</button>
+      <button class="sb-tab-btn" id="stmpl-onglet-modeles" onclick="_ongletClic('modeles')" title="Un clic sur l’onglet actif replie la colonne">Modèles</button>
       <button class="mob-lib-close-btn" onclick="toggleSidebar()" title="Fermer">✕</button>
     </div>
     <div id="stmplPatient" class="pp-panneau"></div>
@@ -2918,8 +2925,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div id="sidebarLibrary">
     <!-- Onglets -->
     <div class="sb-tabs">
-      <button class="sb-tab-btn active" id="sb-tab-btn-lib" onclick="_switchSidebarTab('lib')">Exercices</button>
-      <button class="sb-tab-btn" id="sb-tab-btn-picker" onclick="_switchSidebarTab('picker')">Modèles</button>
+      <button class="sb-tab-btn active" id="sb-tab-btn-lib" onclick="_ongletClicBuilder('lib')" title="Un clic sur l’onglet actif replie la colonne">Exercices</button>
+      <button class="sb-tab-btn" id="sb-tab-btn-picker" onclick="_ongletClicBuilder('picker')" title="Un clic sur l’onglet actif replie la colonne">Modèles</button>
       <button class="mob-lib-close-btn" onclick="toggleSidebar()" title="Fermer">✕</button>
     </div>
     <!-- Contenu onglet Exercices -->
@@ -3738,7 +3745,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
 <script src="js/volume-sport.js?v=20260911v"></script>
-<script src="js/prog-data.js?v=20260913s"></script>
+<script src="js/prog-data.js?v=20260913w"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -4907,6 +4914,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913v"></script>
+<script src="js/prog-main.js?v=20260913w"></script>
 </body>
 </html>
