@@ -59,7 +59,7 @@ function banc(etat) {
   const corps = { innerHTML: '' };
   const code = 'var _pevoUnite = ' + JSON.stringify(etat.unite || 'mois') + ', _pevoDecalage = 0, _pevoFilterDays = null,'
     + ' _pevoFilterFrom = "", _pevoFilterTo = "", _pevoShowFuture = false, _pevoProgPortee = ' + JSON.stringify(etat.portee || 'tout') + ';\n'
-    + 'var _pevoChartCtr = 0, _pevoUaMode = "seance";\n'
+    + 'var _pevoChartCtr = 0, _pevoUaMode = "seance", _pevoFocusCle = null;\n'   // carte visée depuis le builder (cible-1rm-cas)
     + ['PEVO_DATE_ECART', 'PEVO_HALO'].map(v => (pdata.match(new RegExp('\\nvar ' + v + ' = [^;]+;')) || [''])[0]).join('\n') + '\n'   // les dates sous les courbes (qualite/pevo-dates-cas.js)
     + 'function _pevoAujourdhuiIso(){ return "' + AUJ + '"; }\n'
     + PERIODE.concat(BANDE, ['_pevoUneSeule', '_pevoDatesX', '_pevoValEtiq', '_pevoDouleurEtiq', '_buildPevoChart', '_renderPevoCharts']).map(fn).join('\n')
@@ -79,7 +79,8 @@ const EXO = {
    attraperait aussi `pevo-card-header` et `pevo-card-kpis`. */
 const carte = (h, nom) => {
   const i = h.indexOf('pevo-card-title">' + nom + '<'); if (i < 0) return '';
-  const d = h.lastIndexOf('<div class="pevo-card">', i); const f = h.indexOf('<div class="pevo-card">', i);
+  /* sans le « > » : les cartes d'exercice portent aussi data-cle (cible-1rm-cas) */
+  const d = h.lastIndexOf('<div class="pevo-card"', i); const f = h.indexOf('<div class="pevo-card"', i);
   return h.slice(d < 0 ? 0 : d, f > 0 ? f : undefined);
 };
 
@@ -113,7 +114,7 @@ ok('… et début → actuel portent sur tout l\'historique', /Début : 60\.0kg/
 console.log('\nLa charge UA');
 function ua(unite, map, mode) {
   const code = 'var _pevoUnite = ' + JSON.stringify(unite) + ', _pevoDecalage = 0, _pevoFilterDays = null, _pevoFilterFrom = "", _pevoFilterTo = "",'
-    + ' _pevoShowFuture = false, _pevoChartCtr = 0, _pevoUaMode = ' + JSON.stringify(mode) + ';\n'
+    + ' _pevoShowFuture = false, _pevoChartCtr = 0, _pevoFocusCle = null, _pevoUaMode = ' + JSON.stringify(mode) + ';\n'
     + 'function _pevoAujourdhuiIso(){ return "' + AUJ + '"; }\n'
     + PERIODE.map(fn).join('\n') + fn('_buildUaTrendSection')
     + '\n_pevoAppliquerPeriode(); return _buildUaTrendSection();';

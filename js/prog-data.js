@@ -2209,6 +2209,7 @@ function updateCible(blocId, exoId, idx, field, val){
   var e = _getExo(blocId, exoId); if(!e) return;
   _normCibles(e);
   if(e.cibles[idx]) e.cibles[idx][field] = val;
+  _cibleKgMaj(blocId, exoId, idx);   // le poids d'un %1RM suit la frappe (qualite/cible-1rm-cas.js)
   _draftSaveLazy();
 }
 
@@ -2862,6 +2863,8 @@ function renderSession(){
           html += '<input class="cible-max-input" type="text" value="'+escH(c.max||'')+'" placeholder="max" title="Max (optionnel)" oninput="updateCible(\''+b.id+'\',\''+e.id+'\','+ci+',\'max\',this.value)">';
           html += '<button class="cible-del-btn" onclick="removeCible(\''+b.id+'\',\''+e.id+'\','+ci+')" title="Retirer">×</button>';
           html += '</div>';
+          /* Le poids que donne un pourcentage du 1RM, sous sa cible (qualite/cible-1rm-cas.js) */
+          html += '<div class="cible-kg" data-ck="'+b.id+'|'+e.id+'|'+ci+'">' + _cibleKgHtml(e, c) + '</div>';
         });
         html += '<button class="cible-add-btn" onclick="addCible(\''+b.id+'\',\''+e.id+'\')">＋ cible</button>';
         html += '</div>';
@@ -4114,6 +4117,10 @@ function _histExosRemplir(){
   document.querySelectorAll('.exo-hist[data-hist]').forEach(function(el){
     el.innerHTML = _histExoHtml(el.getAttribute('data-hist'));
   });
+  document.querySelectorAll('.cible-kg[data-ck]').forEach(function(el){
+    var p = el.getAttribute('data-ck').split('|');
+    _cibleKgMaj(p[0], p[1], parseInt(p[2], 10), el);
+  });
 }
 function _histExoHtml(nom){
   if(!_histExos.map || !nom) return '';
@@ -4135,7 +4142,59 @@ function _histExoHtml(nom){
     if(dv) txt += ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −')
       + (der.bw ? Math.abs(dv) + ' reps' : kgFr(Math.abs(dv))) + '</span>';
   }
-  return txt;
+  /* Un clic ouvre la courbe de l'exercice (qualite/cible-1rm-cas.js). */
+  return '<button type="button" class="exo-hist-lien" onclick="_histVoirCourbe(this)" title="Voir la courbe de l’exercice">' + txt + '</button>';
+}
+
+/* ── Le poids que donne une cible %1RM (qualite/cible-1rm-cas.js) ──────────
+   La reference : le 1RM ESTIME de la derniere seance CHARGEE avant celle qu'on
+   compose. Rien sans elle, rien sur un modele : un poids invente serait pire
+   qu'aucun. */
+function _rm1Ref(nom){
+  if(!_histExos.map || !nom) return null;
+  if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return null;
+  var h = _histExos.map[_norm(nom).replace(/\s+/g, ' ')];
+  if(!h) return null;
+  var ref = _builderDate || _pevoAujourdhuiIso(), der = null;
+  h.points.forEach(function(p){ if(p.date && p.date < ref && !p.bw && p.rm1 > 0) der = p; });
+  return der ? { rm1: der.rm1, date: der.date } : null;
+}
+function _cibleKgHtml(e, c){
+  if(!e || !c || c.type !== '%1RM') return '';
+  var lire = function(v){ var n = parseFloat(String(v || '').replace(',', '.')); return isFinite(n) && n > 0 ? n : null; };
+  var mn = lire(c.min), mx = lire(c.max);
+  if(mn === null) return '';
+  var r = _rm1Ref(e.name);
+  if(!r) return '';
+  var fr = function(v){ return String(v).replace('.', ','); };
+  var kg = function(p){ return fr(Math.round(r.rm1 * p / 100 * 2) / 2); };
+  var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var d = r.date.split('-');
+  var titre = fr(mn) + (mx !== null && mx !== mn ? '–' + fr(mx) : '') + ' % du 1RM estimé : ' + fr(Math.round(r.rm1 * 10) / 10)
+    + ' kg (séance du ' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ')';
+  return '<span title="' + escH(titre) + '">≈ ' + kg(mn) + (mx !== null && mx !== mn ? '–' + kg(mx) : '') + ' kg</span>';
+}
+/* updateCible ne redessine pas la seance : le poids se recalcule en place. */
+function _cibleKgMaj(bid, eid, ci, el){
+  el = el || document.querySelector('.cible-kg[data-ck="' + bid + '|' + eid + '|' + ci + '"]');
+  if(!el) return;
+  var e = _getExo(bid, eid);
+  var c = e ? ((e.cibles && e.cibles[ci]) || (ci === 0 ? { type: e.cibleType, min: e.cibleVal, max: '' } : null)) : null;
+  el.innerHTML = e ? _cibleKgHtml(e, c) : '';
+}
+/* La courbe de l'exercice : ajoute a la selection d'Evolution (sans retirer
+   les autres), ouvre le panneau, amene la carte a l'ecran. */
+var _pevoFocusCle = null;
+function _histVoirCourbe(el){
+  var bloc = el && el.closest ? el.closest('.exo-hist') : null;
+  var nom = bloc ? bloc.getAttribute('data-hist') : '';
+  if(!nom || !_progPatient) return;
+  var cle = _norm(nom).replace(/\s+/g, ' ');
+  var sel = _pevoGetSel(_progPatient.id);
+  sel.add(cle);
+  _pevoSaveSel(_progPatient.id, sel);
+  _pevoFocusCle = cle;
+  openChargesEvo();
 }
 
 function _extractExoLoads(seances, minPoints) {
@@ -5580,7 +5639,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
         +'</div>';
     }
     var rmTag = allBwMeta ? '' : '<span class="pevo-kpi-neutral" style="font-size:.65rem;opacity:.7;">· 1RM</span>';
-    chartsHtml += '<div class="pevo-card">'
+    chartsHtml += '<div class="pevo-card" data-cle="'+escH(key)+'">'
       +'<div class="pevo-card-header">'
       +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
       +'<div class="pevo-card-kpis">'
@@ -5836,6 +5895,12 @@ function _renderPevoCharts(exoData, selectedKeys) {
   var parts = [volSectionHtml, uaSectionHtml, _progTete, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
   body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
   _attachPevoEvents();
+  /* Ouvert depuis la ligne d'historique d'un exercice : sa carte a l'ecran. */
+  if(_pevoFocusCle){
+    var _cle = _pevoFocusCle; _pevoFocusCle = null;
+    var _carte = Array.prototype.find.call(body.querySelectorAll('.pevo-card[data-cle]'), function(el){ return el.getAttribute('data-cle') === _cle; });
+    if(_carte){ _carte.classList.add('pevo-focus'); _carte.scrollIntoView({ block:'center' }); }
+  }
 }
 
 function togglePevoPill(btn, svgId, line) {

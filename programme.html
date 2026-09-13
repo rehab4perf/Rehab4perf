@@ -1404,6 +1404,13 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .exo-hist-t { font-weight:700; }
 .exo-hist-t.up { color:var(--ok-d); }
 .exo-hist-t.down { color:var(--warn-d); }
+/* La ligne d'historique ouvre la courbe ; le poids d'un %1RM sous sa cible
+   (qualite/cible-1rm-cas.js). */
+.exo-hist-lien { background:none; border:none; padding:0; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+.exo-hist-lien:hover { color:var(--accent); text-decoration:underline; }
+.cible-kg { font-size:var(--fs-xs); color:var(--muted); padding-left:4px; font-variant-numeric:tabular-nums; }
+.cible-kg:empty { display:none; }
+.pevo-card.pevo-focus { outline:2px solid var(--accent2); outline-offset:2px; }
 .cell-input {
   width:100%; padding:4px 6px; border:1px solid var(--border); border-radius:5px;
   font-size:var(--fs-sm); color:var(--text); text-align:center; outline:none;
@@ -3760,7 +3767,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
 <script src="js/volume-sport.js?v=20260911v"></script>
-<script src="js/prog-data.js?v=20260913x"></script>
+<script src="js/prog-data.js?v=20260913zb"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
