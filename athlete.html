@@ -1174,8 +1174,11 @@ function _resoudreLien(suite){
         showError('Lien remplacé', 'Ce lien n’est plus valide : ton praticien t’en a envoyé un nouveau. Ouvre le dernier lien reçu.');
         return;
       }
-      var resolu = !!(pid && _jeton && !_progId && !_patientId);
-      if(pid && _jeton && !_progId) _patientId = String(pid);
+      /* Seule une chaîne est un patient : toute autre réponse (tableau, objet
+         d'erreur) laisse la page faire comme avant. */
+      var valide = typeof pid === 'string' && pid !== '';
+      var resolu = valide && !!_jeton && !_progId && !_patientId;
+      if(valide && _jeton && !_progId) _patientId = String(pid);
       suite();
       /* Notifications et guide d'installation partent au chargement, quand le
          patient d'un lien à jeton n'est pas encore connu : on les relance. */
