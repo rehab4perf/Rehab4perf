@@ -75,7 +75,7 @@ function entete(etat) {
 }
 let e = entete({ _builderDate: '2026-09-15' });
 ok('séance datée : « Séance du 15 septembre », sans le nom du patient', e.titre === 'Séance du 15 septembre', e.titre);
-ok('… le patient est dans la ligne sous l\'en-tête', /Thomas Martin/.test(e.bandeau.innerHTML) && !e.bandeau._cl['mode-modele'], e.bandeau.innerHTML.slice(0, 120));
+ok('… et plus de ligne pour le patient : la barre de l\'application le montre (qualite/rappels-nom-cas.js)', !/Thomas Martin/.test(e.bandeau.innerHTML) && e.bandeau.style.display === 'none' && !e.bandeau._cl['mode-modele'], e.bandeau.innerHTML.slice(0, 120));
 ok('… sans répéter la date (le titre la porte)', !/15 septembre/.test(e.bandeau.innerHTML));
 e = entete({});
 ok('séance sans date : « Nouvelle séance »', e.titre === 'Nouvelle séance', e.titre);
@@ -120,7 +120,7 @@ ok('l\'état initial de la page dit la même chose', /Partir d.un modèle/.test(
    et poussait la fermeture hors de l'écran. */
 console.log('\nSur téléphone');
 ok('« Utiliser pour un patient » se replie en icône, comme ses voisins', /id="builder-utiliser-btn"[^>]*>\s*<svg[\s\S]{0,400}<span class="btn-label"> Utiliser pour un patient<\/span><\/button>/.test(html));
-ok('« Mettre à jour » replie le nom du modèle', /'Mettre à jour<span class="btn-label"> « '/.test(fn('_refreshSaveBtn')));
+ok('« Mettre à jour » replie « le modèle » (son nom est dans le titre)', /'Mettre à jour<span class="btn-label"> le modèle<\/span>'/.test(fn('_refreshSaveBtn')));
 ok('la ligne patient et le protocole s\'empilent sans « · » orphelin', /@media \(max-width:700px\) \{\n[\s\S]{0,300}#builder-proto-banner::before \{ content:none; \}/.test(html));
 ok('la dernière tuile du bilan, seule sur sa rangée, prend la largeur', /\.bc-kpi:last-child:nth-child\(odd\) \{ grid-column:1 \/ -1; \}/.test(html));
 

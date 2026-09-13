@@ -2775,8 +2775,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 <div class="topbar">
   <div class="topbar-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg></div>
   <div class="topbar-patient">
-    <span id="topbarPatientEmpty" class="topbar-patient-empty">Aucun patient sélectionné</span>
-    <span id="topbarPatientName" class="topbar-patient-name" style="display:none;"></span>
+    <!-- Le patient se lit dans la barre de l'application, au-dessus : pas de second rappel (qualite/rappels-nom-cas.js). -->
   </div>
   <div class="topbar-right">
     <button class="topbar-btn" id="topbarBiblioBtn" onclick="toggleSidebar()" title="Modèles"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg><span class="btn-label"> Modèles</span></button>
@@ -3189,8 +3188,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="builder-body">
     <!-- Champ nom programme -->
     <div class="builder-seance-bar" style="padding:8px 14px 0;display:flex;align-items:center;gap:8px;">
-      <input class="patient-input" type="text" id="patientName" placeholder="Nom de la séance / patient" style="flex:1;" />
-      <span style="position:relative;"><button class="btn btn-outline" onclick="ouvrirMenuAjout(event,-1)" style="white-space:nowrap;">+ Ajouter ▾</button></span>
+      <input class="patient-input" type="text" id="patientName" placeholder="Nom de la séance (facultatif)" style="flex:1;" />
+      <span style="position:relative;margin-left:auto;"><button class="btn btn-outline" onclick="ouvrirMenuAjout(event,-1)" style="white-space:nowrap;">+ Ajouter ▾</button></span>
       <button id="clearBlocsBtn" class="btn btn-danger" onclick="clearBlocs()" title="Vider tous les blocs" style="display:none;white-space:nowrap;"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="-40 0 427 427.00131" xmlns="http://www.w3.org/2000/svg"><path d="m232.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m114.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m28.398438 127.121094v246.378906c0 14.5625 5.339843 28.238281 14.667968 38.050781 9.285156 9.839844 22.207032 15.425781 35.730469 15.449219h189.203125c13.527344-.023438 26.449219-5.609375 35.730469-15.449219 9.328125-9.8125 14.667969-23.488281 14.667969-38.050781v-246.378906c18.542968-4.921875 30.558593-22.835938 28.078124-41.863282-2.484374-19.023437-18.691406-33.253906-37.878906-33.257812h-51.199218v-12.5c.058593-10.511719-4.097657-20.605469-11.539063-28.03125-7.441406-7.421875-17.550781-11.5546875-28.0625-11.46875h-88.796875c-10.511719-.0859375-20.621094 4.046875-28.0625 11.46875-7.441406 7.425781-11.597656 17.519531-11.539062 28.03125v12.5h-51.199219c-19.1875.003906-35.394531 14.234375-37.878907 33.257812-2.480468 19.027344 9.535157 36.941407 28.078126 41.863282zm239.601562 279.878906h-189.203125c-17.097656 0-30.398437-14.6875-30.398437-33.5v-245.5h250v245.5c0 18.8125-13.300782 33.5-30.398438 33.5zm-158.601562-367.5c-.066407-5.207031 1.980468-10.21875 5.675781-13.894531 3.691406-3.675781 8.714843-5.695313 13.925781-5.605469h88.796875c5.210937-.089844 10.234375 1.929688 13.925781 5.605469 3.695313 3.671875 5.742188 8.6875 5.675782 13.894531v12.5h-128zm-71.199219 32.5h270.398437c9.941406 0 18 8.058594 18 18s-8.058594 18-18 18h-270.398437c-9.941407 0-18-8.058594-18-18s8.058593-18 18-18zm0 0"/><path d="m173.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/></svg>Vider</button>
     </div>
     <div class="session-area" id="sessionArea">
@@ -3222,7 +3221,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div id="mpanel-seances"></div>
   <div id="mpanel-cal"></div>
   <div id="patientBadge"><span id="patientBadgeName"></span></div>
-  <div id="calPatientLabel"></div>
 </div>
 
 </div><!-- .app -->
@@ -3665,7 +3663,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
 <script src="js/volume-sport.js?v=20260911v"></script>
-<script src="js/prog-data.js?v=20260913k"></script>
+<script src="js/prog-data.js?v=20260913l"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -4834,6 +4832,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260913g"></script>
+<script src="js/prog-main.js?v=20260913l"></script>
 </body>
 </html>

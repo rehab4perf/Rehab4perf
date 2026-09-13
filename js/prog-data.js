@@ -2439,7 +2439,7 @@ function shareBuilderProg(){
   if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
   var btn = document.getElementById('prog-share-btn');
   if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
-  var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
+  var nomProg = (document.getElementById('patientName')||{}).value || 'Séance';
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
@@ -2966,7 +2966,7 @@ function getProfile(){
 }
 
 function buildExportHTML(){
-  var patient = document.getElementById('patientName').value || 'Patient';
+  var patient = _nomPatientCourant() || 'Patient';
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
   var notes = _notes;
   var p = getProfile();
@@ -3101,7 +3101,7 @@ function buildExportHTML(){
 
 function downloadExport(){
   var html = buildExportHTML();
-  var patient = (document.getElementById('patientName').value||'prescription').replace(/\s+/g,'_');
+  var patient = (_nomPatientCourant()||'prescription').replace(/\s+/g,'_');
   var date = new Date().toISOString().slice(0,10);
   var blob = new Blob([html],{type:'text/html;charset=utf-8'});
   var a = document.createElement('a');
@@ -3671,11 +3671,11 @@ window.addEventListener('message', function(e){
       _loadUserRole();
       _fetchFavsFromSupabase();
     }
-    // Auto-remplir le champ nom du patient + mettre à jour toute l'UI
-    if(_progPatient){
-      var pnEl = document.getElementById('patientName');
-      if(pnEl) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
-    }
+    // Le champ de nom de la seance ne reprend plus le nom du patient : la barre
+    // de l'application le montre deja (qualite/rappels-nom-cas.js). On le vide
+    // au changement de patient, pour qu'un nom ne passe pas d'un dossier a l'autre.
+    var pnEl = document.getElementById('patientName');
+    if(pnEl) pnEl.value = '';
     // Changement de patient pendant que le builder est ouvert : revenir à l'agenda plutôt
     // que de rester sur le builder de l'ancien patient. Le brouillon auto-sauvegardé est
     // propre à cette session de builder (pas au patient) — on le vide pour éviter qu'il soit
@@ -3715,6 +3715,24 @@ function _capName(str){
   if(!str) return str;
   return str.toLowerCase().replace(/(^|[\s\-])([\wÀ-ÿ])/g, function(m, sep, c){ return sep + c.toUpperCase(); });
 }
+/* Le nom du patient se lit dans la barre de l'application, au-dessus : le
+   programme ne le rappelle plus (demande du praticien, 2026-09-13). Le champ
+   de nom de la seance le reprenait, et il devenait le NOM de chaque seance —
+   l'agenda de Maeva affichait « J+16 · Maeva Zara » partout.
+   `_nomSeancePropre` ecarte ce nom herite (les seances deja enregistrees le
+   portent, rien n'est reecrit en base) ; `_libelleSeance` affiche « Seance »
+   a la place d'un nom vide (qualite/rappels-nom-cas.js). */
+function _nomPatientCourant(){
+  return _progPatient ? ((_progPatient.prenom||'') + ' ' + (_progPatient.nom||'')).trim() : '';
+}
+function _nomSeancePropre(nom){
+  var n = String(nom || '').trim();
+  if(!n || !_progPatient) return n;
+  var p = String(_progPatient.prenom || '').trim().toLowerCase(), f = String(_progPatient.nom || '').trim().toLowerCase();
+  var l = n.toLowerCase().replace(/\s+/g, ' ');
+  return (l === (p + ' ' + f).trim() || l === (f + ' ' + p).trim()) ? '' : n;
+}
+function _libelleSeance(nom){ return _nomSeancePropre(nom) || 'Séance'; }
 function _normalizePatient(p){
   if(!p) return p;
   if(p.prenom) p.prenom = _capName(p.prenom);
@@ -3747,8 +3765,6 @@ function _normalizePatient(p){
     var sp = localStorage.getItem(R4P_KEYS.PATIENT);
     if(sp && sp !== '') {
       _progPatient = _normalizePatient(JSON.parse(sp));
-      var pnEl = document.getElementById('patientName');
-      if(pnEl && !pnEl.value) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
     }
   } catch(ex){}
   _updatePatientUI();
@@ -3891,7 +3907,7 @@ function saveProgToCloud(){
   if(!_progUid || !_progToken){ alert('Session non disponible. Veuillez sélectionner à nouveau le patient depuis la barre de navigation.'); return; }
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
-  var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
+  var nomProg = (document.getElementById('patientName')||{}).value || 'Séance';
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
   // Préserver les métadonnées HSR / CAP (type, ref1RM, pct, sets, reps, phase_key, exercice, …)
@@ -6162,7 +6178,7 @@ function _loadProg(id, seanceId, quitterModele){
          la mise a jour renommait alors la phase — le nom officiel etait perdu
          sans que rien ne le signale. */
       var pnEl = document.getElementById('patientName');
-      if(pnEl && !_gardeModele) pnEl.value = d.nom || '';
+      if(pnEl && !_gardeModele) pnEl.value = _nomSeancePropre(d.nom);
       renderSession();
       _enterBuilderMode();
       try {

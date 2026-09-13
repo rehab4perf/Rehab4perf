@@ -77,8 +77,10 @@ console.log('\nLe nom du modèle, celui de la barre latérale');
   try { n2 = c._nomModele({ id: 'x', nom: 'Gainage' }); n3 = c._nomModele(null); } catch (e) { n2 = 'ERREUR ' + e.message; }
   ok('… un modèle hors groupe garde son nom', n2 === 'Gainage', n2);
   ok('… et sans modèle connu : « Modèle »', n3 === 'Modèle', n3);
-  ok('le titre, le bandeau et la notification d\'ouverture le lisent',
-     /'Modèle : ' \+ _nomModele\(_mT\)/.test(main) && /escH\(_nomModele\(ref\)\)/.test(main) && /'✎ Modèle « ' \+ _nomModele\(t\)/.test(main));
+  /* Le bandeau ne nomme plus le modèle : son nom est dans le titre, une fois
+     (décision du praticien, qualite/rappels-nom-cas.js). */
+  ok('le titre et la notification d\'ouverture le lisent',
+     /'Modèle : ' \+ _nomModele\(_mT\)/.test(main) && /'✎ Modèle « ' \+ _nomModele\(t\)/.test(main));
 }
 
 /* ── Refermer le builder ─────────────────────────────────────────────────── */

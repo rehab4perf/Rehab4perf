@@ -84,7 +84,7 @@ ok('… mais après le mode « nouveau modèle », qui a son propre verbe',
 
 var btn = main.slice(main.indexOf('function _refreshSaveBtn'));
 btn = btn.slice(0, btn.indexOf('\nfunction '));
-ok('le libellé nomme le modèle', /Mettre à jour « ' \+/.test(btn));
+ok('le libellé dit l\'objet : « le modèle » (son nom est dans le titre)', /Mettre à jour<span class="btn-label"> le modèle/.test(btn));
 /* Deux boutons pour un seul geste laissent croire qu'ils different. */
 ok('le bouton secondaire ne fait pas doublon',
    /if\(_builderFromTemplate && !_currentSeanceId && !_currentProgId\)\{[\s\S]{0,700}if\(updBtn\) updBtn\.style\.display = 'none';[\s\S]{0,40}return;/.test(btn));
@@ -99,7 +99,7 @@ console.log('\nLe nom du modèle ne suit pas le contenu');
 var corps = data.slice(data.indexOf('function _loadProg('));
 corps = corps.slice(0, corps.indexOf('\nfunction '));
 ok('charger un contenu n\'écrase pas le champ de nom',
-   /if\(pnEl && !_gardeModele\) pnEl\.value = d\.nom/.test(corps),
+   /if\(pnEl && !_gardeModele\) pnEl\.value = (d\.nom|_nomSeancePropre\(d\.nom\))/.test(corps),   // le nom hérité du patient est écarté (qualite/rappels-nom-cas.js)
    'le nom du modèle serait remplacé par celui de la séance chargée');
 
 var maj = main.slice(main.indexOf('function _doUpdateTemplate'));

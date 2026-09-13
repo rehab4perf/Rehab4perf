@@ -157,11 +157,11 @@ function bandeau(etat) {
   return bar;
 }
 let b = bandeau({ _builderFromTemplate: 't1' });
-ok('modification d\'un modèle : bandeau ambre, qui le nomme', b._cl['mode-modele'] && /Modification du modèle « WARM-UP MARP — Lower »/.test(b.innerHTML), b.innerHTML.slice(0, 160));
+ok('modification d\'un modèle : bandeau ambre, sans répéter le nom (il est dans le titre)', b._cl['mode-modele'] && /Modification d’un modèle/.test(b.innerHTML) && !/WARM-UP/.test(b.innerHTML), b.innerHTML.slice(0, 160));
 ok('… dit qu\'aucun patient n\'est concerné', /aucun patient n.est concerné/.test(b.innerHTML));
 ok('… et offre d\'en sortir', /quitterModele\(\)/.test(b.innerHTML) && /Quitter le modèle/.test(b.innerHTML));
 b = bandeau({ _progPatient: { prenom: 'Antoine', nom: 'Peronnaud' }, _builderDate: '2026-09-01' });
-ok('séance d\'un patient : son nom, sans la couleur du modèle (la date est dans le titre)', /Antoine Peronnaud/.test(b.innerHTML + b.textContent) && !b._cl['mode-modele'],
+ok('séance d\'un patient : pas de bandeau, son nom est dans la barre de l\'application', !/Antoine Peronnaud/.test(b.innerHTML + b.textContent) && b.style.display === 'none' && !b._cl['mode-modele'],
    (b.innerHTML || b.textContent).slice(0, 160));
 b = bandeau({ _builderMode: 'template' });
 ok('nouveau modèle : même bandeau ambre', b._cl['mode-modele'] && /Nouveau modèle/.test(b.innerHTML), b.innerHTML.slice(0, 120));

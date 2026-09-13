@@ -1319,7 +1319,7 @@ function exportCycles(){
   if(!_cycles.length){ alert('Aucun cycle à exporter.'); return; }
   var totalWeeks = _cycles.reduce(function(s,c){ return s+c.duree; },0);
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  var patient = (document.getElementById('patientName')||{}).value || '';
+  var patient = _nomPatientCourant();
   var blocksHtml = '';
   _cycles.forEach(function(c){
     var col = _cycleColor(c.nom);
@@ -2236,7 +2236,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
     var _j0Ref = _progPatient ? _getJ0ForPatient(_progPatient.id) : '';
     allChips = dayEvs.map(function(ev){
-      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      var nom = _libelleSeance(ev.programmes&&ev.programmes.nom);
 
       // ── Chip CAP — séance de retour à la course ──
       if (nom.indexOf('CAP —') === 0) {
@@ -4507,7 +4507,7 @@ function _assurerProgrammeEnregistre(suite){
   if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
   var btn = document.getElementById('planConfirmBtn');
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Sauvegarde…'; }
-  var nomProg = (document.getElementById('patientName')||{}).value || 'Programme';
+  var nomProg = (document.getElementById('patientName')||{}).value || 'Séance';
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
@@ -4580,11 +4580,7 @@ document.getElementById('calPickerOverlay').addEventListener('click', function(e
 // ── Topbar patient sync ──
 function _updatePatientUI(){
   var nom = _progPatient ? ((_progPatient.prenom||'') + ' ' + (_progPatient.nom||'')).trim() : '';
-  // Topbar
-  var empty = document.getElementById('topbarPatientEmpty');
-  var name  = document.getElementById('topbarPatientName');
-  if(empty) empty.style.display = nom ? 'none' : 'inline';
-  if(name){ name.style.display = nom ? 'inline' : 'none'; name.textContent = '👤 ' + nom; }
+  // Plus de rappel du patient dans la barre du programme : l'application le montre au-dessus.
   // Elements fantômes (compat)
   var badge = document.getElementById('patientBadge');
   var badgeName = document.getElementById('patientBadgeName');
@@ -5590,9 +5586,8 @@ function _refreshSaveBtn(){
   /* Le libelle nomme l'objet : « Sauvegarder » sur un modele ouvert ne
      disait pas ce qui allait etre ecrit. */
   if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){
-    var _mRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-    var _mNom = _mRef ? (_mRef.nom || 'Modèle') : 'Modèle';
-    btn.innerHTML = _PROG_SAVE_ICON + 'Mettre à jour<span class="btn-label"> « ' + escH(_mNom.length > 22 ? _mNom.substring(0,21)+'…' : _mNom) + ' »</span>';
+    /* « le modèle », pas son nom : il est dans le titre (qualite/rappels-nom-cas.js). */
+    btn.innerHTML = _PROG_SAVE_ICON + 'Mettre à jour<span class="btn-label"> le modèle</span>';
     btn.title = 'Remplace le contenu de ce modèle par la séance en cours';
     btn.style.background = '';
     if(planBtn) planBtn.style.display = 'none';
@@ -7849,7 +7844,7 @@ function _saveAndPlanForDate(){
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var _patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
-  var nomProg = (document.getElementById('patientName')||{}).value || _patName || 'Programme';
+  var nomProg = (document.getElementById('patientName')||{}).value || 'Séance';
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   var dateToSchedule = _builderDate;
@@ -7999,6 +7994,8 @@ function _updateBuilderTitle(){
   if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){
     var _mT = (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); });
     if(titleEl) titleEl.textContent = 'Modèle : ' + _nomModele(_mT);
+    /* Le champ de nom n'agit pas sur le modèle — il se renomme par « … › Modifier ». */
+    var _pnM = document.getElementById('patientName'); if(_pnM) _pnM.style.display = 'none';
     _majBandeauMode();
     return;
   }
@@ -8012,6 +8009,7 @@ function _updateBuilderTitle(){
     titre = 'Séance du ' + parseInt(_p[2]) + ' ' + _M[parseInt(_p[1])-1];
   }
   if(titleEl) titleEl.textContent = titre;
+  var _pnS = document.getElementById('patientName'); if(_pnS) _pnS.style.display = '';
   _majBandeauMode();
 }
 
@@ -8026,7 +8024,6 @@ function _majBandeauMode(){
   /* Icônes dessinées, comme l'en-tête — plus de 📅 ni de ✎ (qualite/builder-clarte-cas.js). */
   var ico = function(d){ return '<svg class="bdb-ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
   var CRAYON  = ico('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>');
-  var PATIENT = ico('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>');
   var enModele = _builderMode === 'template' || !!(_builderFromTemplate && !_currentSeanceId && !_currentProgId);
   bar.classList.toggle('mode-modele', enModele);
   if(_builderMode === 'template'){
@@ -8036,19 +8033,17 @@ function _majBandeauMode(){
     return;
   }
   if(enModele){
-    var ref = (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); });
-    bar.innerHTML = CRAYON + '<span><b>Modification du modèle « ' + escH(_nomModele(ref)) + ' »</b>'
+    /* Le nom du modèle est dans le titre, une fois (qualite/rappels-nom-cas.js). */
+    bar.innerHTML = CRAYON + '<span><b>Modification d’un modèle</b>'
                   + ' — aucun patient n\'est concerné</span>'
                   + '<button type="button" class="bdb-quitter" onclick="quitterModele()">Quitter le modèle</button>';
     bar.style.display = '';
     return;
   }
-  /* Séance d'un patient : son nom, une fois. La date est dans le titre ; le
-     protocole vient se ranger à côté, sur la même ligne (#builder-proto-banner). */
-  var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
-  if(!patNom){ bar.innerHTML = ''; bar.style.display = 'none'; return; }
-  bar.innerHTML = PATIENT + '<b>' + escH(patNom) + '</b>';
-  bar.style.display = '';
+  /* Séance d'un patient : rien. Son nom est dans la barre de l'application,
+     la date dans le titre — le rappeler ici faisait un troisième affichage
+     (qualite/rappels-nom-cas.js). Le protocole garde sa place à côté. */
+  bar.innerHTML = ''; bar.style.display = 'none';
 }
 
 // ── Override openCalPicker pour v2 : ouvrir le builder sur le jour cliqué ──
@@ -8075,7 +8070,7 @@ function _renderUpcoming(){
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   var html = '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Prochaines séances</div>';
   upcoming.forEach(function(ev){
-    var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+    var nom = _libelleSeance(ev.programmes&&ev.programmes.nom);
     var p = ev.date.split('-');
     var lbl = parseInt(p[2])+' '+months[parseInt(p[1])-1];
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="_openChipInBuilder(\''+ev.programme_id+'\',\''+ev.date+'\',\''+ev.id+'\')">'
