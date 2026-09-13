@@ -4514,6 +4514,30 @@ function _extractCardioLoads(seances) {
 }
 
 /* SVG courbe durée (axe Y en secondes, labels formatés Xm Ys). */
+/* Dates sous une courbe de progression : une par seance tant qu'elles
+   tiennent, puis une sur deux, sur trois… — la premiere et la derniere
+   toujours, ancrees vers l'interieur. Vingt seances ecrivaient vingt dates
+   bord a bord, illisibles (signale par le praticien le 2026-09-13, pistol
+   squat de Zied). Le detail de chaque point reste dans sa bulle. L'ecart
+   minimal est en unites du viewBox, comme la police : il tient a toute
+   largeur (qualite/pevo-dates-cas.js). */
+var PEVO_DATE_ECART = 34;
+function _pevoDatesX(items, y){
+  var u = [];
+  (items || []).forEach(function(it){ if(!u.length || u[u.length-1].t !== it.t) u.push(it); });
+  var n = u.length;
+  if(!n) return '';
+  var garde = [0];
+  for(var i = 1; i < n - 1; i++){
+    if(u[i].x - u[garde[garde.length-1]].x >= PEVO_DATE_ECART && u[n-1].x - u[i].x >= PEVO_DATE_ECART) garde.push(i);
+  }
+  if(n > 1) garde.push(n - 1);
+  return garde.map(function(i, k){
+    var ancre = n === 1 ? 'middle' : k === 0 ? 'start' : k === garde.length - 1 ? 'end' : 'middle';
+    return '<text class="pevo-date" x="'+u[i].x.toFixed(1)+'" y="'+y+'" text-anchor="'+ancre+'" font-size="9" fill="#C0BDB8">'+u[i].t+'</text>';
+  }).join('');
+}
+
 function _buildPevoDureeChart(pts, chartId, nrsPts, bande) {
   if(!pts || pts.length < 2) return '';
   nrsPts = nrsPts || null;
@@ -4559,9 +4583,8 @@ function _buildPevoDureeChart(pts, chartId, nrsPts, bande) {
       html+='<text x="'+(VW-PAD.right+5)+'" y="'+(gy2+4).toFixed(1)+'" text-anchor="start" font-size="8" fill="#A89BDA">'+v+'</text>';
     });
   }
-  // Dates X
-  var shownD={};
-  pts.forEach(function(p,i){ var dt=dates[i]; if(shownD[dt])return; shownD[dt]=true; html+='<text x="'+pxy(i,p.secs).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+dt+'</text>'; });
+  // Dates X — espacees pour rester lisibles
+  html += _pevoDatesX(pts.map(function(p,i){ return { x:pxy(i,p.secs).x, t:dates[i] }; }), VH-PAD.bottom+12);
   html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
   // Courbe durée
   var vp=pts.map(function(p,i){ var q=pxy(i,p.secs); return {x:q.x,y:q.y,secs:p.secs,date:dates[i]}; });
@@ -4694,13 +4717,11 @@ function _buildPevoCardioChart(pts, chartId, intensiteType, useKm, bande) {
     });
   }
 
-  // Axe X (dates)
-  var shownDates = {};
-  pts.forEach(function(p) {
-    if(shownDates[p.date]) return; shownDates[p.date] = true;
-    var dp = p.date ? p.date.split('-') : ['','',''];
-    html += '<text x="'+xOf(p.date).toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+(dp[2]||'?')+'/'+(dp[1]||'?')+'</text>';
-  });
+  // Axe X (dates) — espacees pour rester lisibles
+  html += _pevoDatesX(allDates.map(function(d){
+    var dp = d ? d.split('-') : ['','',''];
+    return { x:xOf(d), t:(dp[2]||'?')+'/'+(dp[1]||'?') };
+  }), VH-PAD.bottom+12);
   html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
 
   // ── Courbe durée ou km (vert, trait plein) ──
@@ -4769,11 +4790,7 @@ function _buildPevoNrsChart(pts, chartId, bande) {
   });
   // Axe X
   var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
-  var shownD = {};
-  pts.forEach(function(p, i){
-    var date = dates[i]; if(shownD[date]) return; shownD[date]=true;
-    html += '<text x="'+pxy(i, p.nrs).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+date+'</text>';
-  });
+  html += _pevoDatesX(pts.map(function(p, i){ return { x:pxy(i, p.nrs).x, t:dates[i] }; }), VH-PAD.bottom+12);
   html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
   // Courbe bézier
   var vp = pts.map(function(p, i){ var q=pxy(i, p.nrs); return {x:q.x, y:q.y, nrs:p.nrs, date:dates[i]}; });
@@ -4834,9 +4851,8 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts, todayLastIdx, bande
   var _bi = _pevoBandeIdx(meta.map(function(m){ return m && m.date; }), bande);
   if(_bi) html += _pevoBandeSvg(function(i){ return pt(i, minV).x; }, n, _bi.i0, _bi.i1, PAD.left, VW-PAD.right, PAD.top, VH-PAD.bottom);
   // (grille Y et labels axe supprimés)
-  // Dates X (partagées)
-  var shownD={};
-  pts.forEach(function(p){ if(shownD[p.date])return; shownD[p.date]=true; html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>'; });
+  // Dates X (partagées) — espacées pour rester lisibles
+  html += _pevoDatesX(pts.map(function(p){ return { x:p.x, t:p.date }; }), VH-PAD.bottom+13);
   html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
   // Ligne verticale "Aujourd'hui" (mode Programmé uniquement)
   if(todayLastIdx !== null && todayLastIdx !== undefined && todayLastIdx >= 0 && todayLastIdx < n-1){
