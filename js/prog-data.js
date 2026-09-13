@@ -6165,8 +6165,9 @@ function _loadProg(id, seanceId, quitterModele){
 function _openChipInBuilder(progId, dateStr, seanceId, openFeedback){
   if(_calDragJustEnded || _calDrag) return; // pas d'ouverture en fin de drag
   /* Ouvrir une seance planifiee est un geste d'AGENDA, pas de modele : on en
-     sort. Mais on le demande — sortir en silence perdrait le travail en cours
-     sur le modele sans le moindre signal. */
+     sort. On ne le demande que s'il y a quelque chose a perdre — des
+     modifications du modele pas encore mises a jour. Le demander toujours
+     posait la question a qui ne modifiait plus rien (qualite/modele-ferme-cas.js). */
   function _ouvrir(){
     _hideLibPreview();
     _builderDate = dateStr;
@@ -6176,13 +6177,15 @@ function _openChipInBuilder(progId, dateStr, seanceId, openFeedback){
   }
   if(_builderFromTemplate){
     var _nomM = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-    r4pConfirmer({
-      titre: 'Vous modifiez le modèle « ' + ((_nomM && _nomM.nom) || 'sans nom') + ' »',
-      message: 'Ouvrir cette séance quittera le modèle. Vos modifications non enregistrées seront perdues.',
-      ok: 'Ouvrir la séance',
-      danger: true
-    }).then(function(ok){ if(!ok) return; _ouvrir(); });
-    return;
+    if(blocs && blocs.length && _sessionHash() !== _lastSavedHash){
+      r4pConfirmer({
+        titre: 'Vous modifiez le modèle « ' + _nomModele(_nomM) + ' »',
+        message: 'Ses modifications ne sont pas mises à jour : ouvrir cette séance quittera le modèle, et elles seront perdues.',
+        ok: 'Ouvrir la séance',
+        danger: true
+      }).then(function(ok){ if(!ok) return; _ouvrir(); });
+      return;
+    }
   }
   _ouvrir();
 }

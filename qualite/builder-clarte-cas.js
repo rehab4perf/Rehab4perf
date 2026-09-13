@@ -69,7 +69,7 @@ function entete(etat) {
     _progPatient: { prenom: 'Thomas', nom: 'Martin' }, _builderDate: '', _activeGroupNom: '', escH: esc,
     document: { getElementById: id => mk(id) }
   }, etat));
-  vm.runInContext(fn('_updateBuilderTitle') + fn('_majBandeauMode'), ctx);
+  vm.runInContext('var _groups = _groups || [];\n' + fn('_nomModele') + fn('_updateBuilderTitle') + fn('_majBandeauMode'), ctx);   // le titre nomme le modèle par _nomModele
   ctx._updateBuilderTitle();
   return { titre: mk('builderTitle').textContent, bandeau: mk('builderDateBar') };
 }

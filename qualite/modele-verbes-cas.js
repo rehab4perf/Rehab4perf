@@ -55,7 +55,7 @@ function banc(etat) {
     _refreshSaveBtn() {}, _sessionHash() { return 'h' + ctx.blocs.length; }, _refreshDraftBadge() {}, _showToast() {},
     alert(m) { ctx._alerte = m; }, document: { getElementById: id => (id === 'patientName' ? champ : null) }
   }, etat));
-  vm.runInContext(fn('loadTemplate'), ctx);
+  vm.runInContext('var _groups = _groups || [];\n' + fn('_nomModele') + fn('loadTemplate'), ctx);   // la notification nomme le modèle par _nomModele
   ctx._champ = champ;
   return ctx;
 }
@@ -153,7 +153,7 @@ function bandeau(etat) {
     escH: s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'),
     document: { getElementById: id => (id === 'builderDateBar' ? bar : null) }
   }, etat));
-  try { vm.runInContext(fn('_majBandeauMode'), ctx); ctx._majBandeauMode(); } catch (e) { bar.innerHTML = 'ERREUR ' + e.message; }
+  try { vm.runInContext('var _groups = _groups || [];\n' + fn('_nomModele') + fn('_majBandeauMode'), ctx); ctx._majBandeauMode(); } catch (e) { bar.innerHTML = 'ERREUR ' + e.message; }
   return bar;
 }
 let b = bandeau({ _builderFromTemplate: 't1' });

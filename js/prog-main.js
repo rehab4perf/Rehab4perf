@@ -5759,7 +5759,7 @@ function loadTemplate(id, ouvrirModele){
       _builderSaved = false;
     }
     _refreshDraftBadge();
-    _showToast(ouvrirModele ? '✎ Modèle « ' + (t.nom||'Modèle') + ' » ouvert'
+    _showToast(ouvrirModele ? '✎ Modèle « ' + _nomModele(t) + ' » ouvert'
                             : '✚ « ' + (t.nom||'Modèle') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
   }
 
@@ -7903,16 +7903,47 @@ function openBuilderNew(){
   _enterBuilderMode();
 }
 
+/* Le nom d'un modele, tel que la barre laterale l'affiche : le groupe TEL
+   QU'IL S'APPELLE AUJOURD'HUI, puis la phase. `nom` est fige a la creation :
+   un groupe renomme (« WARM-UP MARP » -> « WARM-UP RAMP ») laissait l'ancien
+   nom dans le titre, le bandeau et la question (qualite/modele-ferme-cas.js). */
+function _nomModele(ref){
+  if(!ref) return 'Modèle';
+  var g = ref.group_id ? (_groups||[]).find(function(x){ return String(x.id) === String(ref.group_id); }) : null;
+  if(g && g.nom && ref.phase_nom) return g.nom + ' — ' + ref.phase_nom;
+  return ref.nom || ref.phase_nom || 'Modèle';
+}
+
+/* Refermer le builder TERMINE la modification d'un modele ouvert. Le mode
+   survivait a la fermeture, sans plus rien pour le montrer : ouvrir ensuite
+   la seance d'un patient depuis l'agenda demandait « Vous modifiez le
+   modele… » a qui ne modifiait plus rien (signale par le praticien le
+   2026-09-13). Le contenu du modele ne reste pas non plus en memoire : il
+   reviendrait comme une seance de patient au prochain « + Seance ». */
+function _sortirDuModeleOuvert(){
+  if(_builderMode === 'template') return;
+  if(!(_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return;
+  _resetBuilderState();
+  _lastSavedHash = _sessionHash(); _builderSaved = true;
+  _refreshDraftBadge();
+}
+
 function closeBuilder(){
   var estTmpl = (_builderMode === 'template');
+  var enModele = !estTmpl && !!(_builderFromTemplate && !_currentSeanceId && !_currentProgId);
   if(blocs && blocs.length && !_builderSaved){
+    var _ref = enModele ? (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); }) : null;
     _confirmDialog({id:'cd-close-builder', emoji:'⚠️',
-      title: estTmpl ? 'Modèle non enregistré' : 'Contenu non sauvegardé',
-      body: (estTmpl ? 'Ce modèle n\'a pas été enregistré.' : 'La séance contient du contenu non sauvegardé.')
-            + '\n\nFermer quand même ?',
-      confirmLabel:'Fermer quand même', confirmColor:'#d97706'}, function(){
+      title: estTmpl ? 'Modèle non enregistré'
+           : enModele ? 'Quitter sans mettre à jour le modèle ?'
+           : 'Contenu non sauvegardé',
+      body: estTmpl ? 'Ce modèle n\'a pas été enregistré.\n\nFermer quand même ?'
+          : enModele ? 'Vos changements ne seront pas enregistrés dans « ' + _nomModele(_ref) + ' », qui reste tel qu\'il était.'
+          : 'La séance contient du contenu non sauvegardé.\n\nFermer quand même ?',
+      confirmLabel: enModele ? 'Quitter sans mettre à jour' : 'Fermer quand même', confirmColor:'#d97706'}, function(){
       _draftClear();
       _quitterModeTemplate();
+      _sortirDuModeleOuvert();
       _exitBuilderMode();
     });
     return;
@@ -7926,6 +7957,7 @@ function closeBuilder(){
   /* Rendre la seance empruntee AVANT de fermer : _exitBuilderMode re-affiche
      la sidebar des templates, et la seance doit deja etre revenue en place. */
   _quitterModeTemplate();
+  _sortirDuModeleOuvert();
   _exitBuilderMode();
 }
 
@@ -7966,7 +7998,7 @@ function _updateBuilderTitle(){
      personne. */
   if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){
     var _mT = (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); });
-    if(titleEl) titleEl.textContent = 'Modèle : ' + (_mT ? (_mT.nom || 'Modèle') : 'Modèle');
+    if(titleEl) titleEl.textContent = 'Modèle : ' + _nomModele(_mT);
     _majBandeauMode();
     return;
   }
@@ -8005,7 +8037,7 @@ function _majBandeauMode(){
   }
   if(enModele){
     var ref = (_sidebarProgs||[]).find(function(x){ return String(x.id) === String(_builderFromTemplate); });
-    bar.innerHTML = CRAYON + '<span><b>Modification du modèle « ' + escH(ref ? (ref.nom || 'Modèle') : 'Modèle') + ' »</b>'
+    bar.innerHTML = CRAYON + '<span><b>Modification du modèle « ' + escH(_nomModele(ref)) + ' »</b>'
                   + ' — aucun patient n\'est concerné</span>'
                   + '<button type="button" class="bdb-quitter" onclick="quitterModele()">Quitter le modèle</button>';
     bar.style.display = '';

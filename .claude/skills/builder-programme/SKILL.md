@@ -170,6 +170,18 @@ inutile le repli « champ vide → nom déjà enregistré », qui a été retir�
 c'est un geste d'agenda. Mais elle se **déclare** (`_loadProg(…, true)`) après
 confirmation nommant le modèle : sortir en silence perdrait le travail en cours.
 
+**Refermer le builder sort du modèle** (`qualite/modele-ferme-cas.js`). Le
+mode survivait à la fermeture, sans rien pour le montrer : la question
+« Vous modifiez le modèle… » revenait au premier clic sur une séance de
+l'agenda, à qui ne modifiait plus rien. `closeBuilder` appelle
+`_sortirDuModeleOuvert()` — avec « Quitter sans mettre à jour ? » s'il y a
+des changements — et l'ouverture d'une séance ne demande plus rien quand
+le modèle n'a pas de modification en attente.
+
+**Le nom d'un modèle se lit par `_nomModele()`** : le groupe tel qu'il
+s'appelle aujourd'hui, puis la phase. `nom` est figé à la création — un
+groupe renommé gardait son ancien nom dans le titre et le bandeau.
+
 **L'aperçu d'une phase doit décrire ses blocs cardio.** Un bloc cardio n'a pas
 d'exercices : `_renderTmplCardTree` n'affichait donc que son **titre**. Un titre
 comme « Bloc raise » ne dit ni le sport ni la durée — le praticien voyait une
