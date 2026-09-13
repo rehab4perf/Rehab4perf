@@ -61,7 +61,7 @@ console.log('\nLes boutons suivent le travail');
 placer();
 ok('sur l\'agenda : au bout de l\'en-tête du calendrier', groupe.parentNode === calHeader && calHeader.enfants[calHeader.enfants.length - 1] === groupe, groupe.parentNode && groupe.parentNode.nom);
 panneau.classList.add('open'); placer();
-ok('builder ouvert : dans son en-tête, avant ses propres actions', groupe.parentNode === builderHeader && builderHeader.enfants.indexOf(groupe) === builderHeader.enfants.indexOf(actions) - 1,
+ok('builder ouvert : dans son en-tête, APRÈS ses propres actions (··· en dernier, barre-builder-cas)', groupe.parentNode === builderHeader && builderHeader.enfants.indexOf(groupe) === builderHeader.enfants.length - 1 && builderHeader.enfants.indexOf(actions) === builderHeader.enfants.length - 2,
    builderHeader.enfants.map(e => e.nom).join(' | '));
 panneau.classList.remove('open'); placer();
 ok('builder refermé : retour à l\'agenda', groupe.parentNode === calHeader);
@@ -81,7 +81,7 @@ ok('sur ordinateur, la barre du programme n\'est plus affichée', /\n\.topbar \{
 ok('… et ses 48 px sont rendus à la page', /\n\.app \{ display:flex; height:100%; overflow:hidden; \}/.test(html));
 const mob = html.slice(html.indexOf('@media (max-width:700px) {\n'));
 ok('sur téléphone, elle revient avec sa hauteur', /\n  \.topbar \{ display:flex; padding:0 8px; gap:6px; \}\n  \.app \{ height:calc\(100% - 48px\); \}/.test(mob));
-ok('dans le builder : ni Journal ni « + Séance »', /\.builder-header #topbarJournalBtn, \.builder-header #topbarNewBtn \{ display:none; \}/.test(html));
+ok('dans le builder : ni Journal ni « + Séance » (ni Partager, barre-builder-cas)', /\.builder-header #topbarJournalBtn, \.builder-header #topbarNewBtn(, [^{]*)? \{ display:none; \}/.test(html));
 ok('sur l\'agenda, les boutons prennent le style de l\'en-tête clair', /\.cal-central-header \.topbar-btn \{[^}]*background:var\(--surface\)/.test(html)
    && /\.cal-central-header \.topbar-btn\.primary \{[^}]*background:var\(--accent\)/.test(html));
 

@@ -7679,8 +7679,9 @@ function _placerActionsProgramme(){
             : enBuilder ? document.querySelector('.builder-header')
             : document.querySelector('.cal-central-header');
   if(!cible || grp.parentNode === cible) return;
-  if(!mobile && enBuilder) cible.insertBefore(grp, cible.querySelector('.builder-header-actions'));
-  else cible.appendChild(grp);
+  /* Dans le builder aussi, APRES ses actions : le menu ··· ferme la barre
+     (qualite/barre-builder-cas.js). */
+  cible.appendChild(grp);
 }
 if(_mqActionsMobile && _mqActionsMobile.addEventListener) _mqActionsMobile.addEventListener('change', _placerActionsProgramme);
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _placerActionsProgramme);
@@ -7960,6 +7961,10 @@ function openBuilderNew(){
      une seance planifiee gardait _currentSeanceId, et l'enregistrement
      modifiait cette seance-la au lieu d'en creer une. */
   _currentSeanceId = null;
+  /* Une seance NEUVE n'a pas de retour : sans ca, l'identifiant d'une seance
+     CAP ou HSR ouverte plus tot affichait « Feedback » (qualite/barre-builder-cas.js). */
+  _capBbSeanceId = null; _hsrBbSeanceId = null;
+  _updateFeedbackBtn(false);
   _builderFromTemplate = null;
   _applyBuilderReadOnly(false);
   // Pas de protocole actif quand on ouvre une nouvelle séance depuis + Séance
@@ -10731,6 +10736,10 @@ function _toggleMoreMenu(e){
      exercice (qualite/historique-exo-cas.js). */
   var _evo = document.getElementById('moreMenuEvo'), _bp = document.getElementById('builderPanel');
   if(_evo) _evo.style.display = (_bp && _bp.classList.contains('open')) ? '' : 'none';
+  /* « Programmes du patient » : sorti de la barre du builder, il y reste a un
+     clic — le praticien s'en sert pour importer une ancienne seance. */
+  var _prog = document.getElementById('moreMenuProg');
+  if(_prog) _prog.style.display = (_bp && _bp.classList.contains('open')) ? '' : 'none';
   var btn=document.getElementById('topbarMoreBtn');
   var rect=btn?btn.getBoundingClientRect():{right:200,bottom:48};
   menu.style.right=(window.innerWidth-rect.right)+'px';
