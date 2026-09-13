@@ -1017,7 +1017,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   flex:1 1 auto; min-width:0; font-size:var(--fs-sm); line-height:1.45; color:var(--info-d);
   padding:6px 14px 6px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
 }
-#builder-proto-banner::before { content:'·'; color:var(--text3); font-weight:700; }
+/* Plus de séparateur : le nom du patient ne précède plus le protocole sur cette ligne (qualite/rappels-nom-cas.js). */
+#builder-proto-banner::before { content:none; }
 #builder-proto-banner .bpb-phase { font-weight:700; }
 #builder-proto-banner .bpb-link-btn {
   margin-left:auto; background:var(--info); color:#fff; border:none; border-radius:6px;
