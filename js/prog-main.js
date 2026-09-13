@@ -4476,9 +4476,8 @@ function shareCalLink() {
       +'<button onclick="_doShare(\'kine\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">🩺</span><div style="text-align:left"><div style="font-weight:600;">Partager à un kiné</div><div style="font-size:.73rem;color:var(--muted);">Séances + notes cliniques</div></div></button>';
     document.body.appendChild(menu);
     document.addEventListener('click', function _closeMenu(e){
-      if(!menu.contains(e.target) && e.target.id !== 'share-cal-btn'){
+      if(!menu.contains(e.target) && !(e.target.closest && e.target.closest('#share-cal-btn'))){
         menu.style.display = 'none';
-        document.removeEventListener('click', _closeMenu);
       }
     }, true);
   }
@@ -10890,9 +10889,8 @@ function _toolOverlayClick(e){
         +'<button onclick="_doShare(\'kine\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">🩺</span><div style="text-align:left"><div style="font-weight:600;">Partager à un kiné</div><div style="font-size:.73rem;color:var(--muted);">Séances + notes cliniques</div></div></button>';
       document.body.appendChild(menu);
       document.addEventListener('click', function _closeMenu(e){
-        if(!menu.contains(e.target) && e.target.id !== 'share-cal-btn'){
+        if(!menu.contains(e.target) && !(e.target.closest && e.target.closest('#share-cal-btn'))){
           menu.style.display = 'none';
-          document.removeEventListener('click', _closeMenu);
         }
       }, true);
     }

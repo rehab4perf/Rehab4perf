@@ -13,7 +13,8 @@
      - + Séance ............ le bouton et le clic sur un jour — le « + Séance »
                              au survol des cases de la vue Semaine doublait
                              ce clic ;
-     - menu ··· ............ Protocoles, Partager, générateurs, calculateurs.
+     - Partager ........... le bouton du groupe d'actions (partager-barres-cas) ;
+     - menu ··· ............ Protocoles, générateurs, calculateurs.
    Sur téléphone la colonne est un tiroir : les boutons qui l'ouvrent restent.
 
    Replier la colonne SANS bouton : un clic sur l'onglet déjà actif la replie

@@ -659,7 +659,7 @@ sections: [
   { id:'lien-athlete', titre:'Partager le calendrier à l\'athlète (ou à un confrère)',
     intro:'L\'athlète n\'a pas de compte : il accède à son programme par un lien personnel, sur n\'importe quel téléphone.',
     etapes:[
-      { t:'Menu ⋯ → « Partager le calendrier »', x:'Deux modes : « Partager au patient » (séances et feedback uniquement) ou « Partager à un kiné » (séances + notes cliniques, pour une prise en charge partagée).', img:true },
+      { t:'Bouton « Partager », en haut du Programme', x:'Deux modes : « Partager au patient » (séances et feedback uniquement) ou « Partager à un kiné » (séances + notes cliniques, pour une prise en charge partagée).', img:true },
       { t:'Copiez le lien et envoyez-le', x:'SMS, WhatsApp ou email. Le lien reste valable en permanence : pas besoin de le renvoyer à chaque séance. Le nom du patient est inclus en clair dans le lien copié — pratique pour reconnaître à qui il correspond dans votre historique de conversation, et il s\'affiche aussi en titre dans l\'en-tête de la page que l\'athlète ou le confrère ouvre.' },
       { t:'Le lien de partage d\'un programme (bouton 📤)', x:'Depuis le builder ou l\'historique des programmes, le bouton 📤 copie de la même façon un lien à sens unique vers ce programme précis, avec le nom du patient inclus.' },
       { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Il retrouvera son calendrier comme une application. Un bouton « 📲 Installer » sur sa page ouvre directement un tuto pas-à-pas adapté à son téléphone (iPhone ou Android) — voir la section Notifications push ci-dessous.' }
