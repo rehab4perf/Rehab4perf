@@ -109,7 +109,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
    programme n'est plus affichee — ses 48 px reviennent a la page. Sur
    telephone elle reste (bloc max-width:700px). */
 .topbar { display:none; }
-.cal-central-header .topbar-right { margin-left:6px; padding-left:10px; border-left:1px solid var(--border); gap:6px; }
+.cal-central-header .topbar-right { margin-left:auto; padding-left:10px; border-left:1px solid var(--border); gap:6px; }
+/* A l'etroit (iPad : la colonne laisse 350 a 600 px), l'en-tete passe a la ligne
+   plutot que de deborder ; `div.` le fait passer devant la regle de base. */
+div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
+@media (max-width:1100px) { .builder-header .topbar-right .btn-label { display:none; } }
 .cal-central-header .topbar-btn { background:var(--surface); border-color:var(--border); color:var(--text); padding:4px 10px; }
 .cal-central-header .topbar-btn:hover { background:var(--bg); }
 .cal-central-header .topbar-btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }

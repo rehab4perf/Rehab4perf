@@ -85,6 +85,15 @@ ok('dans le builder : ni Journal ni « + Séance »', /\.builder-header #topbarJ
 ok('sur l\'agenda, les boutons prennent le style de l\'en-tête clair', /\.cal-central-header \.topbar-btn \{[^}]*background:var\(--surface\)/.test(html)
    && /\.cal-central-header \.topbar-btn\.primary \{[^}]*background:var\(--accent\)/.test(html));
 
+/* Mesuré en ligne à 768 et 1024 px (iPad) : la colonne de gauche laisse 350 à
+   600 px à l'agenda. Les quatre boutons en plus faisaient déborder son en-tête
+   de 84 à 340 px, et celui du builder de 57 px à 768. */
+console.log('\nÀ l\'étroit (iPad)');
+ok('l\'en-tête de l\'agenda passe à la ligne au lieu de déborder, le groupe à droite',
+   /div\.cal-central-header \{ flex-wrap:wrap; row-gap:6px; \}/.test(html) && /\.cal-central-header \.topbar-right \{ margin-left:auto;/.test(html));
+ok('dans le builder, sous 1100 px, « Bibliothèque » et ··· se replient en icône',
+   /@media \(max-width:1100px\) \{ \.builder-header \.topbar-right \.btn-label \{ display:none; \} \}/.test(html));
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Programme : une seule barre, les boutons là où l\'on travaille.');
