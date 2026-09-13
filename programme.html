@@ -1015,7 +1015,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
    deux bandeaux empilés disaient deux fois pour qui est la séance. */
 #builder-proto-banner {
   flex:1 1 auto; min-width:0; font-size:var(--fs-sm); line-height:1.45; color:var(--info-d);
-  padding:6px 14px 6px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:6px 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;   /* seul sur sa ligne : sa propre marge */
 }
 /* Plus de séparateur : le nom du patient ne précède plus le protocole sur cette ligne (qualite/rappels-nom-cas.js). */
 #builder-proto-banner::before { content:none; }

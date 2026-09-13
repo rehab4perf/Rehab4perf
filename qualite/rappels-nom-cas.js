@@ -105,6 +105,10 @@ ok('le bouton : « Mettre à jour le modèle »', /'Mettre à jour<span class="b
    parti, il restait seul devant « LCA — Phase 1 » (vu en ligne sur la démo). */
 ok('le protocole ne garde pas de « · » orphelin devant lui',
    !/#builder-proto-banner::before \{ content:'·'/.test(html) && /\n#builder-proto-banner::before \{ content:none; \}/.test(html));
+/* … et sa marge : elle venait du nom du patient qui le précédait. Seul sur la
+   ligne, il était collé au bord (vu en ligne sur la démo). */
+ok('… ni collé au bord : il a sa propre marge, alignée sur le champ de nom',
+   /#builder-proto-banner \{[^}]*padding:6px 14px;/.test(html));
 ok('« + Ajouter » reste à droite quand le champ est masqué', /<span style="position:relative;margin-left:auto;"><button class="btn btn-outline" onclick="ouvrirMenuAjout\(event,-1\)"/.test(html));
 
 console.log('');
