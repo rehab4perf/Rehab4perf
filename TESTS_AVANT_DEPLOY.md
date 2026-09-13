@@ -179,7 +179,10 @@ node qualite/newsletter-cas.js
 - [ ] Lien athlète de ce patient → bloc « Ma newsletter » sous « Mes objectifs »
 - [ ] « Oui, je la veux » → format et sujets apparaissent → Enregistrer →
       « Préférences enregistrées » ; recharger → tout est resté
-- [ ] Côté fiche → « l'athlète a accepté le … » avec format et sujets
+- [ ] E-mail mal formé (« prenom@club ») → « ne semble pas valide », rien
+      d'enregistré ; e-mail correct → « vous la recevrez chaque dimanche »
+- [ ] Côté fiche → « l'athlète a accepté le … » avec e-mail, format et sujets
+- [ ] « Non merci » puis « Oui » → le champ e-mail est revenu vide (effacé)
 - [ ] Même lien en `?mode=kine` → lecture seule, aucun bouton
 - [ ] Désactiver côté fiche → le bloc disparaît de l'espace athlète
 

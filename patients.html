@@ -937,6 +937,8 @@ function nlStatut(l){
 function nlCarteHtml(p){
   if (!_nlInscrit) return '';
   var l = _nlLignes[String(p.id)], on = !!(l && l.active), st = nlStatut(l), prefs = [];
+  if (l && l.consentement) prefs.push(l.email ? 'E-mail : ' + esc(l.email)
+    : 'Pas encore d\'e-mail : son numéro vous arrivera pour transfert');
   if (l && l.consentement && l.format) prefs.push('Format : ' + esc(l.format));
   if (l && l.consentement && l.sujets && l.sujets.length)
     prefs.push('Sujets préférés : ' + esc(l.sujets.map(function(s){ return NL_SUJETS_LIB[s] || s; }).join(', ')));

@@ -27,12 +27,20 @@ function memes(a, b) { return !!a && a.slice().sort().join(',') === b.slice().so
 
 /* ═══ 1. La base ═════════════════════════════════════════════════════════ */
 
-var sql = lire('supabase/migrations/20260913_newsletter_vestiaire.sql').replace(/--[^\n]*/g, '');
+/* Toutes les migrations de la newsletter, dans l'ordre : un droit accordé
+   plus tard s'ajoute aux premiers, une fonction redéfinie remplace l'autre. */
+var sql = ['20260913_newsletter_vestiaire.sql', '20260914_newsletter_email.sql']
+  .map(function (f) { return lire('supabase/migrations/' + f); }).join('\n').replace(/--[^\n]*/g, '');
 function colonnes(priv, table, role) {
-  var re = new RegExp('GRANT\\s+' + priv + '\\s*\\(([^)]*)\\)\\s*ON\\s+public\\.' + table + '\\s+TO\\s+' + role + '\\s*;', 'i');
-  var m = re.exec(sql);
-  return m ? m[1].split(',').map(function (s) { return s.trim(); }) : null;
+  var re = new RegExp('GRANT\\s+' + priv + '\\s*\\(([^)]*)\\)\\s*ON\\s+public\\.' + table + '\\s+TO\\s+' + role + '\\s*;', 'gi');
+  var m, cols = null;
+  while ((m = re.exec(sql))) cols = (cols || []).concat(m[1].split(',').map(function (s) { return s.trim(); }));
+  return cols;
 }
+/* Seule la DERNIÈRE définition du déclencheur compte en base. */
+var iFn = sql.lastIndexOf('CREATE OR REPLACE FUNCTION public.r4p_newsletter_horodatage');
+var iCorps = iFn >= 0 ? sql.indexOf('$$', iFn) : -1;
+var declencheur = iCorps >= 0 ? sql.slice(iCorps, sql.indexOf('$$', iCorps + 2)) : '';
 
 console.log('\nLa base : chacun n\'écrit que sa clé');
 var iRevoke = sql.search(/REVOKE ALL ON public\.athlete_newsletter FROM anon, authenticated/i);
@@ -40,8 +48,8 @@ var iGrant = sql.search(/GRANT [^;]*ON public\.athlete_newsletter/i);
 ok('les droits par défaut sont retirés AVANT d\'être rendus colonne par colonne',
    iRevoke >= 0 && iGrant > iRevoke, 'sans ce REVOKE, le GRANT ALL par défaut de Supabase rend toute restriction inutile');
 var majAnon = colonnes('UPDATE', 'athlete_newsletter', 'anon');
-ok('l\'athlète ne met à jour que consentement, format et sujets',
-   memes(majAnon, ['consentement', 'format', 'sujets']), JSON.stringify(majAnon));
+ok('l\'athlète ne met à jour que consentement, format, sujets et e-mail',
+   memes(majAnon, ['consentement', 'format', 'sujets', 'email']), JSON.stringify(majAnon));
 ok('… jamais `active`, qui est au praticien', !!majAnon && majAnon.indexOf('active') < 0);
 ok('l\'athlète ne reçoit aucun droit d\'insertion ni de suppression',
    !/GRANT\s+[^;]*\b(INSERT|DELETE|ALL)\b[^;]*ON\s+public\.athlete_newsletter\s+TO\s+[^;]*\banon\b/i.test(sql));
@@ -49,12 +57,16 @@ ok('le praticien ne met à jour que `active`',
    memes(colonnes('UPDATE', 'athlete_newsletter', 'authenticated'), ['active']));
 ok('… et ne crée la ligne qu\'avec patient_id et active',
    memes(colonnes('INSERT', 'athlete_newsletter', 'authenticated'), ['patient_id', 'active']));
-ok('à la création, le déclencheur remet le consentement à zéro',
-   /TG_OP\s*=\s*'INSERT'[\s\S]*?NEW\.consentement\s*:=\s*false/i.test(sql),
-   'un praticien pourrait sinon créer une ligne déjà « consentie »');
+ok('à la création, le déclencheur remet consentement et e-mail à zéro',
+   /TG_OP\s*=\s*'INSERT'[\s\S]*?NEW\.consentement\s*:=\s*false[\s\S]*?NEW\.email\s*:=\s*NULL[\s\S]*?RETURN NEW/i.test(declencheur),
+   'un praticien pourrait sinon créer une ligne déjà « consentie », adresse comprise');
 ok('l\'horodatage de l\'accord est posé par la base, pas par le client',
-   /NEW\.consenti_at\s*:=\s*CASE WHEN NEW\.consentement THEN now\(\)/i.test(sql) &&
+   /NEW\.consenti_at\s*:=\s*CASE WHEN NEW\.consentement THEN now\(\)/i.test(declencheur) &&
    !(majAnon || []).some(function (c) { return /_at$/.test(c); }));
+ok('pas d\'accord, pas d\'adresse : l\'e-mail est effacé dès que le consentement est faux',
+   /IF NOT NEW\.consentement THEN\s+NEW\.email\s*:=\s*NULL/i.test(declencheur),
+   'retirer son accord doit effacer l\'adresse — et aucune ne doit s\'enregistrer avant');
+ok('une adresse mal formée est refusée par la base', /athlete_newsletter_email_check[\s\S]*?CHECK\s*\(\s*email IS NULL OR/i.test(sql));
 ok('le praticien sait s\'il est inscrit sans jamais lire l\'empreinte du secret',
    memes(colonnes('SELECT', 'newsletter_praticiens', 'authenticated'), ['praticien_id']));
 ok('aucune écriture de newsletter_praticiens depuis l\'application',
@@ -71,7 +83,7 @@ var escLigne = /function escH\(s\)\{[^\n]*\}/.exec(ath);
 if (d0 < 0 || d1 < d0 || !escLigne) { console.error('Bornes introuvables dans athlete.html.'); process.exit(1); }
 /* eslint-disable no-new-func */
 var nlApi = new Function('_echDateLisibleAth',
-  escLigne[0] + '\n' + ath.slice(d0, d1) + '\nreturn { html:_nlHtml, corps:_nlCorps, sujets:NL_SUJETS };'
+  escLigne[0] + '\n' + ath.slice(d0, d1) + '\nreturn { html:_nlHtml, corps:_nlCorps, sujets:NL_SUJETS, emailRe:NL_EMAIL_RE };'
 )(function (d) { return 'le ' + d; });
 
 ok('rien de proposé : la section se tait', nlApi.html(null, null, false) === '');
@@ -100,12 +112,23 @@ ok('une saisie en cours survit au re-rendu', /value="Trail"/.test(saisie) &&
 var piege = nlApi.html({ active: true, consentement: true, format: '"><img src=x onerror=alert(1)>', sujets: [] }, null, false);
 ok('le format saisi est échappé', piege.indexOf('<img') < 0);
 
+ok('acceptée : l\'e-mail est demandé, et celui enregistré est repris',
+   /id="nlEmail"[^>]*value="a@b\.fr"/.test(nlApi.html({ active: true, consentement: true, email: 'a@b.fr', sujets: [] }, null, false)));
+ok('… jamais avant l\'accord', attente.indexOf('nlEmail') < 0);
+ok('… et une adresse en cours de saisie survit au re-rendu',
+   /id="nlEmail"[^>]*value="en@cours\.fr"/.test(nlApi.html({ active: true, consentement: true, email: 'a@b.fr', sujets: [] },
+     { email: 'en@cours.fr', format: '', sujets: [] }, false)));
+var piegeMail = nlApi.html({ active: true, consentement: true, email: '"><script>x</script>', sujets: [] }, null, false);
+ok('l\'e-mail est échappé', piegeMail.indexOf('<script>') < 0);
+ok('une adresse mal formée est refusée avant l\'envoi, comme en base',
+   nlApi.emailRe.test('prenom@club.fr') && !nlApi.emailRe.test('prenom@club') && !nlApi.emailRe.test('pas un mail'));
+
 var kine = nlApi.html({ active: true, consentement: false, sujets: [] }, null, true);
 ok('mode kiné : lecture seule — le praticien ne consent pas à la place de l\'athlète',
    kine.indexOf('<button') < 0 && kine.indexOf('<input') < 0 && /Vue praticien/.test(kine));
 
-var c = nlApi.corps({ consentement: true, active: true, patient_id: 'x', consenti_at: 'hier', format: 'a', sujets: [] });
-ok('une écriture de l\'athlète ne porte que ses trois colonnes', memes(Object.keys(c), ['consentement', 'format', 'sujets']),
+var c = nlApi.corps({ consentement: true, active: true, patient_id: 'x', consenti_at: 'hier', format: 'a', sujets: [], email: 'a@b.fr' });
+ok('une écriture de l\'athlète ne porte que ses colonnes', memes(Object.keys(c), ['consentement', 'format', 'sujets', 'email']),
    Object.keys(c).join(','));
 ok('… et n\'invente pas les colonnes absentes', memes(Object.keys(nlApi.corps({ consentement: false })), ['consentement']));
 

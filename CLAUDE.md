@@ -349,6 +349,9 @@ publique pouvait allumer `active`. Conséquences à ne pas défaire :
 - l'athlète ne crée jamais la ligne — elle naît quand le praticien active ;
 - les horodatages (`consenti_at`…) sont posés par un déclencheur, jamais par
   le client ;
+- pas d'accord, pas d'adresse : le même déclencheur efface `email` dès que
+  `consentement` est faux (20260914). L'e-mail sert à la tâche pour préparer
+  un brouillon Gmail adressé à l'athlète ; il n'existe nulle part ailleurs ;
 - l'export ne sort que prénom, sport, niveau, tranche d'âge, sexe, échéances
   et volume Strava **agrégé** — ni nom, ni date de naissance, ni bilan, ni
   l'uuid du patient (secret du lien athlète), remplacé par une référence

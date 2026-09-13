@@ -7,7 +7,7 @@
 // le praticien : un secret n'ouvre que SES athlètes.
 //
 // Ce qui sort, et rien d'autre : prénom, sport, niveau, tranche d'âge, sexe,
-// format et sujets choisis par l'athlète, ses échéances, et le volume Strava
+// e-mail, format et sujets donnés par l'athlète, ses échéances, et le volume Strava
 // AGRÉGÉ des 28 derniers jours. Jamais le nom, la date de naissance, un
 // bilan, une note clinique ni l'identifiant du patient — l'uuid est le
 // secret du lien athlète (20260912) : il est remplacé par une référence
@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
   const auj = new Date()
   const { data: nl, error: e1 } = await supabase
     .from('athlete_newsletter')
-    .select('patient_id, format, sujets, consenti_at')
+    .select('patient_id, format, sujets, consenti_at, email')
     .eq('active', true)
     .eq('consentement', true)
   if (e1) return json({ error: 'Lecture des newsletters : ' + e1.message }, 500)
@@ -140,6 +140,7 @@ Deno.serve(async (req: Request) => {
     athletes.push({
       ref: (await sha256Hex('r4p-vestiaire:' + p.id)).slice(0, 10),
       prenom: p.prenom || null,
+      email: r.email || null,
       sport: p.sport || null,
       format: r.format || null,
       niveau: p.niveau || null,
