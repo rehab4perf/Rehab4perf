@@ -81,6 +81,13 @@ ok('il porte son propre style…', /<style>[\s\S]*\.crc[\s\S]*<\/style>/.test(h)
 const style = (h.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1];
 ok('… en couleurs fixes : aucune variable CSS du programme (absente du courrier)', style && !/var\(--/.test(style) && !/var\(--/.test(h.replace(/<style>[\s\S]*?<\/style>/, '')),
    (h.match(/var\(--[a-z-]+\)/g) || []).slice(0, 4).join(' '));
+/* Vu en ligne sur la démo : une seule semaine de charge, et le courrier
+   écrivait « ACWR — — données insuffisantes ». Sans ratio, pas de tiret-valeur. */
+let court = '';
+try { court = ctx._crChargeHtml({ '2026-09-10': 325 }, VOL, '2026-09-13'); } catch (e) { court = 'ERREUR ' + e.message; }
+ok('historique trop court : « ACWR : données insuffisantes », sans double tiret',
+   /données insuffisantes/.test(court) && !/ACWR —<\/b> —/.test(court) && /ACWR<\/b> : données insuffisantes/.test(court),
+   (court.match(/crc-acwr">[\s\S]{0,140}/) || ['absent'])[0]);
 let vide = 'x';
 try { vide = ctx._crChargeHtml({}, { sports: VOL.sports, semaines: [] }, '2026-09-13'); } catch (e) { vide = 'ERREUR ' + e.message; }
 ok('sans aucune charge : rien (le générateur le dit)', vide === '', vide.slice(0, 80));

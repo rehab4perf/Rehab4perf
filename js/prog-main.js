@@ -2118,7 +2118,7 @@ function _crChargeHtml(uaMap, vol, aujIso){
   return style + '<div class="crc">'
     + '<p class="crc-per">28 derniers jours — du ' + _pevoFmtCourt(de, true) + ' au ' + _pevoFmtCourt(aujIso, true) + ' ' + aujIso.slice(0, 4) + '</p>'
     + tableau
-    + '<p class="crc-acwr"><b style="color:' + coul + '">ACWR ' + (r === null ? '—' : String(r).replace('.', ',')) + '</b> — ' + zone
+    + '<p class="crc-acwr"><b style="color:' + coul + '">' + (r === null ? 'ACWR</b> : ' : 'ACWR ' + String(r).replace('.', ',') + '</b> — ') + zone
     + ' · charge aiguë (7 derniers jours) <b>' + _bcFmt(acwr.aigue) + ' UA</b> · chronique <b>' + _bcFmt(acwr.chronic) + ' UA</b> par semaine</p>'
     + '<div class="crc-st">Charge par semaine — 8 semaines</div>' + _bcTendance(uaMap || {}, aujIso, aujIso)
     + '<p class="crc-note">UA = RPE × durée (min) — méthode de Foster. Sources : retours de séance de l’athlète et activités Strava.</p>'
