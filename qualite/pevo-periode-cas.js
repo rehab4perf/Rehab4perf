@@ -36,7 +36,17 @@ function ok(nom, cond, detail) {
 function egal(nom, attendu, obtenu) {
   ok(nom, String(attendu) === String(obtenu), String(attendu) === String(obtenu) ? '' : 'attendu ' + attendu + ', obtenu ' + obtenu);
 }
-const fn = nom => { const d = pdata.indexOf('\nfunction ' + nom + '('); return d < 0 ? '' : pdata.slice(d, pdata.indexOf('\n}\n', d) + 3); };
+/* Une fonction d'UNE ligne (volume-sport.js en compte plusieurs) s'arrête à sa
+   ligne. Chercher le prochain « \n}\n » embarquait les suivantes — dont la vraie
+   _pevoAujourdhuiIso, qui écrasait la date fixée du banc : échec du lundi
+   2026-09-14, la vraie date tombant dans une autre semaine que le 11. */
+const fn = nom => {
+  const d = pdata.indexOf('\nfunction ' + nom + '('); if (d < 0) return '';
+  const fl = pdata.indexOf('\n', d + 1), ligne = pdata.slice(d, fl < 0 ? undefined : fl);
+  const o = (ligne.match(/\{/g) || []).length, c = (ligne.match(/\}/g) || []).length;
+  if (o && o === c) return ligne + '\n';
+  return pdata.slice(d, pdata.indexOf('\n}\n', d) + 3);
+};
 const AUJ = '2026-09-11';
 
 /* ── Les périodes, calculées ─────────────────────────────────────────────── */
