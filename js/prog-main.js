@@ -7715,7 +7715,7 @@ function _enterBuilderMode(){
   document.getElementById('builderPanel').classList.add('open');
   document.querySelector('.app').classList.add('builder-mode');
   _placerActionsProgramme();
-  try { _histExosCharger(); } catch(ex){}   // la derniere seance de chaque exercice
+  try { _histExosCharger(!_dejaOuvert); } catch(ex){}   // la derniere seance de chaque exercice, rechargee a chaque ouverture
   var lib  = document.getElementById('sidebarLibrary');
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'flex';

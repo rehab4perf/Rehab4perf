@@ -55,7 +55,7 @@ function contexte(etat) {
     _pevoAujourdhuiIso: () => '2026-09-13',
     escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }, etat));
-  vm.runInContext(['_norm', '_1rm', '_extractExoLoads', '_histExoHtml'].map(fd).join('\n') + '\nvar _histExos = { pid:"x", map:null, enCours:false };', c);
+  vm.runInContext(['_norm', '_1rm', '_extractExoLoads', '_rm1Ref', '_histExoCourant', '_histExoHtml'].map(fd).join('\n') + '\nvar _histExos = { pid:"x", map:null, enCours:false };', c);
   return c;
 }
 const c = contexte({});
@@ -86,8 +86,9 @@ ok('sur un modèle : rien (il n\'est à personne)', ligne('Back squat', Object.a
 console.log('\nDans le builder');
 const rs = fd('renderSession');
 ok('la ligne vit DANS la cellule du nom, avant ses vignettes (la grille de la ligne ne bouge pas)',
-   /html \+= '<div class="exo-hist" data-hist="' \+ escH\(e\.name\|\|''\) \+ '">' \+ _histExoHtml\(e\.name\) \+ '<\/div>';\n\s*html \+= '<div class="exo-sub">';/.test(rs));
-ok('l\'historique se charge à l\'ouverture du builder', /_histExosCharger\(\)/.test(fm('_enterBuilderMode')));
+   /* data-exo : la ligne se recalcule en place à la frappe (historique-vivant-cas) */
+   /html \+= '<div class="exo-hist" data-hist="' \+ escH\(e\.name\|\|''\) \+ '" data-exo="' \+ b\.id \+ '\|' \+ e\.id \+ '">' \+ _histExoHtml\(e\.name, e\) \+ '<\/div>';\n\s*html \+= '<div class="exo-sub">';/.test(rs));
+ok('l\'historique se charge à l\'ouverture du builder', /_histExosCharger\(/.test(fm('_enterBuilderMode'))   /* forcé à chaque ouverture : historique-vivant-cas */);
 const ch = fd('_histExosCharger');
 ok('… une fois par patient, avec la requête d\'Évolution', /_histExos\.pid === pid && \(_histExos\.map \|\| _histExos\.enCours\)/.test(ch) && /programmes\(nom,donnees\)/.test(ch) && /_extractExoLoads\(data, 1\)/.test(ch));
 ok('… une réponse arrivée après un changement de patient est ignorée', /if\(_histExos\.pid !== pid\) return;/.test(ch));

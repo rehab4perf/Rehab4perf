@@ -2026,6 +2026,7 @@ function updateExoName(blocId, exoId, value) {
   var exo = bloc.exos.find(function(e){ return e.id === exoId; });
   if(!exo) return;
   exo.name = value;
+  try { _histExoMaj(blocId, exoId); } catch(ex){}   // la ligne suit le nouvel exercice
   if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
 
@@ -2099,6 +2100,7 @@ function updateField(blocId, exoId, field, val){
   if(!bloc) return;
   var exo = bloc.exos.find(function(e){ return e.id===exoId; });
   if(exo) exo[field] = val;
+  if(field === 'reps'){ try { _histExoMaj(blocId, exoId); } catch(ex){} }   // la ligne compare ce qu'on prescrit
   _draftSaveLazy();
 }
 
@@ -2210,6 +2212,7 @@ function updateCible(blocId, exoId, idx, field, val){
   _normCibles(e);
   if(e.cibles[idx]) e.cibles[idx][field] = val;
   _cibleKgMaj(blocId, exoId, idx);   // le poids d'un %1RM suit la frappe (qualite/cible-1rm-cas.js)
+  try { _histExoMaj(blocId, exoId); } catch(ex){}   // et la ligne de la dernière séance aussi
   _draftSaveLazy();
 }
 
@@ -2895,7 +2898,7 @@ function renderSession(){
         /* La derniere seance, DANS la cellule du nom : un enfant de plus dans
            .exo-row decalerait toute la grille mobile. (Pas d apostrophe ici :
            qualite/builder-consignes-cas.js lit les litteraux de cette ligne.) */
-        html += '<div class="exo-hist" data-hist="' + escH(e.name||'') + '">' + _histExoHtml(e.name) + '</div>';
+        html += '<div class="exo-hist" data-hist="' + escH(e.name||'') + '" data-exo="' + b.id + '|' + e.id + '">' + _histExoHtml(e.name, e) + '</div>';
         html += '<div class="exo-sub">';
         if(e.url){ var _vt=_ytThumbHtml(e.url); html += _vt ? _vt : '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
         var exoMin=estimateExoMin(e); if(exoMin!==null) html+='<span class="time-tag">⏱ '+fmtMin(exoMin)+'</span>';
@@ -4167,11 +4170,14 @@ function _1rm(kg, reps) {
    patient a l'ouverture du builder. Les lignes se remplissent EN PLACE :
    redessiner la seance ferait perdre la saisie en cours. */
 var _histExos = { pid:null, map:null, enCours:false };
-function _histExosCharger(){
+function _histExosCharger(forcer){
   if(!_progPatient || !_progToken) return;
   var pid = String(_progPatient.id);
-  if(_histExos.pid === pid && (_histExos.map || _histExos.enCours)) return;
-  _histExos = { pid:pid, map:null, enCours:true };
+  if(!forcer && _histExos.pid === pid && (_histExos.map || _histExos.enCours)) return;
+  /* Rechargé à chaque ouverture du builder : une séance enregistrée y entre
+     sans attendre un changement de patient. L'ancien historique reste affiché
+     le temps du chargement (qualite/historique-vivant-cas.js). */
+  _histExos = { pid:pid, map: (_histExos.pid === pid ? _histExos.map : null), enCours:true };
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + encodeURIComponent(pid)
     + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
   _fetchRetry(url, { method:'GET', headers:_sbHeaders() })
@@ -4186,14 +4192,33 @@ function _histExosCharger(){
 }
 function _histExosRemplir(){
   document.querySelectorAll('.exo-hist[data-hist]').forEach(function(el){
-    el.innerHTML = _histExoHtml(el.getAttribute('data-hist'));
+    var p = (el.getAttribute('data-exo') || '').split('|');
+    var e = p[1] ? _getExo(p[0], p[1]) : null;
+    el.innerHTML = _histExoHtml(el.getAttribute('data-hist'), e);
   });
   document.querySelectorAll('.cible-kg[data-ck]').forEach(function(el){
     var p = el.getAttribute('data-ck').split('|');
     _cibleKgMaj(p[0], p[1], parseInt(p[2], 10), el);
   });
 }
-function _histExoHtml(nom){
+/* Ce qu'on prescrit dans CETTE séance, lu comme l'historique et Évolution
+   (_extractExoLoads) : la cible kg (moyenne d'une fourchette), les répétitions,
+   _1rm. Faute de cible kg, une cible %1RM donne sa charge. null sans reps. */
+function _histExoCourant(e){
+  if(!e) return null;
+  var reps = parseFloat(e.reps);
+  if(isNaN(reps) || reps <= 0) return null;
+  var kg = 0, pct = null;
+  (e.cibles || []).forEach(function(c){
+    var a = parseFloat(c.min) || 0, b = parseFloat(c.max) || 0;
+    if(c.type === 'kg' && (a > 0 || b > 0)) kg = (a > 0 && b > 0) ? (a + b) / 2 : (a || b);
+    if(c.type === '%1RM' && (a > 0 || b > 0)) pct = (a > 0 && b > 0) ? (a + b) / 2 : (a || b);
+  });
+  if(!kg && pct){ var r = _rm1Ref(e.name); if(r) kg = Math.round(r.rm1 * pct / 100 * 2) / 2; }
+  var bw = kg <= 0;
+  return { reps: reps, kg: bw ? 0 : kg, bw: bw, rm1: _1rm(kg, reps) };
+}
+function _histExoHtml(nom, e){
   if(!_histExos.map || !nom) return '';
   if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return '';   // un modele n'est a personne
   var h = _histExos.map[_norm(nom).replace(/\s+/g, ' ')];
@@ -4208,10 +4233,21 @@ function _histExoHtml(nom){
   var txt = 'Dernière séance (' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ') : '
     + (der.series ? escH(String(der.series)) + ' × ' : '') + der.reps
     + (der.bw ? ' poids du corps' : ' à ' + kgFr(der.kg) + ' · 1RM est. ' + kgFr(der.rm1));
-  if(prec && !!prec.bw === !!der.bw){
+  var fleche = function(dv, bw){
+    return ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −')
+      + (bw ? Math.abs(dv) + ' reps' : kgFr(Math.abs(dv))) + '</span>';
+  };
+  /* Dès qu'on prescrit (reps, et une charge si la dernière en avait une),
+     la ligne compare CETTE séance à la dernière. Sinon, l'écart entre les deux
+     séances précédentes, comme avant (qualite/historique-vivant-cas.js). */
+  var cur = _histExoCourant(e);
+  if(cur && cur.rm1 && cur.bw === !!der.bw){
+    var dc = der.bw ? cur.reps - der.reps : Math.round((cur.rm1 - der.rm1) * 10) / 10;
+    txt += ' → aujourd’hui' + (!dc ? ' : même charge'
+      : (der.bw ? ' ' + cur.reps + ' reps' : ' 1RM est. ' + kgFr(cur.rm1)) + fleche(dc, der.bw));
+  } else if(prec && !!prec.bw === !!der.bw){
     var dv = der.bw ? der.reps - prec.reps : Math.round((der.rm1 - prec.rm1) * 10) / 10;
-    if(dv) txt += ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −')
-      + (der.bw ? Math.abs(dv) + ' reps' : kgFr(Math.abs(dv))) + '</span>';
+    if(dv) txt += fleche(dv, der.bw);
   }
   /* Un clic ouvre la courbe de l'exercice (qualite/cible-1rm-cas.js). */
   return '<button type="button" class="exo-hist-lien" onclick="_histVoirCourbe(this)" title="Voir la courbe de l’exercice">' + txt + '</button>';
@@ -4244,6 +4280,17 @@ function _cibleKgHtml(e, c){
   var titre = fr(mn) + (mx !== null && mx !== mn ? '–' + fr(mx) : '') + ' % du 1RM estimé : ' + fr(Math.round(r.rm1 * 10) / 10)
     + ' kg (séance du ' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ')';
   return '<span title="' + escH(titre) + '">≈ ' + kg(mn) + (mx !== null && mx !== mn ? '–' + kg(mx) : '') + ' kg</span>';
+}
+/* La ligne d'un exercice, recalculée EN PLACE à la frappe — nom, répétitions,
+   cibles — sans redessiner la séance (qualite/historique-vivant-cas.js). */
+function _histExoMaj(bid, eid){
+  var e = _getExo(bid, eid);
+  if(!e) return;
+  var el = document.querySelector('.exo-hist[data-exo="' + bid + '|' + eid + '"]');
+  if(el){ el.setAttribute('data-hist', e.name || ''); el.innerHTML = _histExoHtml(e.name, e); }
+  document.querySelectorAll('.cible-kg[data-ck^="' + bid + '|' + eid + '|"]').forEach(function(k){
+    _cibleKgMaj(bid, eid, parseInt(k.getAttribute('data-ck').split('|')[2], 10), k);
+  });
 }
 /* updateCible ne redessine pas la seance : le poids se recalcule en place. */
 function _cibleKgMaj(bid, eid, ci, el){
