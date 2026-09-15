@@ -57,7 +57,7 @@ function contexte(etat) {
     _pevoAujourdhuiIso: () => '2026-09-13',
     escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }, etat));
-  vm.runInContext(['_norm', '_1rm', '_extractExoLoads', '_rm1Ref', '_histExoCourant', '_histExoHtml'].map(fd).join('\n') + '\nvar _histExos = { pid:"x", map:null, enCours:false };', c);
+  vm.runInContext(['_norm', '_cleExo', '_1rm', '_extractExoLoads', '_rm1Ref', '_histExoCourant', '_histExoHtml'].map(fd).join('\n') + '\nvar _histExos = { pid:"x", map:null, enCours:false };', c);
   return c;
 }
 const c = contexte({});

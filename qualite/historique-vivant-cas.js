@@ -48,7 +48,7 @@ const c = vm.createContext({
   escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 });
 try {
-  vm.runInContext(['_norm', '_1rm', '_extractExoLoads', '_rm1Ref', '_histExoCourant', '_histExoHtml'].map(fd).join('\n')
+  vm.runInContext(['_norm', '_cleExo', '_1rm', '_extractExoLoads', '_rm1Ref', '_histExoCourant', '_histExoHtml'].map(fd).join('\n')
     + '\nvar _histExos = { pid:"x", map:null, enCours:false };', c);
   c._histExos.map = c._extractExoLoads(SEANCES, 1);
 } catch (e) { ok('les fonctions se chargent', false, e.message); }

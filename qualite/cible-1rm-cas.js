@@ -47,7 +47,7 @@ function contexte(etat) {
     escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }, etat));
   try {
-    vm.runInContext(['_norm', '_1rm', '_extractExoLoads', '_histExoHtml', '_rm1Ref', '_cibleKgHtml'].map(fd).join('\n')
+    vm.runInContext(['_norm', '_cleExo', '_1rm', '_extractExoLoads', '_histExoHtml', '_rm1Ref', '_cibleKgHtml'].map(fd).join('\n')
       + '\nvar _histExos = { pid:"x", map:null, enCours:false };', c);
     c._histExos.map = c._extractExoLoads(SEANCES, 1);
   } catch (e) { ok('les fonctions se chargent', false, e.message); }
@@ -86,7 +86,7 @@ ok('la ligne d\'historique est un bouton', /<button type="button" class="exo-his
   let ouvert = 0; const sel = new Set(['fentes']); let sauve = null;
   const v = vm.createContext({ _progPatient: { id: 'p1' }, _pevoFocusCle: null,
     _pevoGetSel: () => sel, _pevoSaveSel: (id, s) => { sauve = Array.from(s); }, openChargesEvo: () => { ouvert++; } });
-  try { vm.runInContext(fd('_norm') + fd('_histVoirCourbe'), v); v._histVoirCourbe({ closest: () => ({ getAttribute: () => 'Back Squat' }) }); }
+  try { vm.runInContext(fd('_norm') + fd('_cleExo') + fd('_histVoirCourbe'), v); v._histVoirCourbe({ closest: () => ({ getAttribute: () => 'Back Squat' }) }); }
   catch (e) { ok('_histVoirCourbe se charge', false, e.message); }
   ok('le clic ajoute l\'exercice à la sélection d\'Évolution, sans retirer les autres', sauve && sauve.includes('back squat') && sauve.includes('fentes'), JSON.stringify(sauve));
   ok('… et ouvre Évolution, sur sa carte', ouvert === 1 && v._pevoFocusCle === 'back squat', v._pevoFocusCle);

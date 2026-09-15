@@ -44,7 +44,7 @@ const c = vm.createContext({
   escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 });
 try {
-  vm.runInContext(['_norm', '_1rm', '_parseDuree', '_formatDuree', '_extractExoLoads', '_extractExoDurations', '_rm1Ref',
+  vm.runInContext(['_norm', '_cleExo', '_1rm', '_parseDuree', '_formatDuree', '_extractExoLoads', '_extractExoDurations', '_rm1Ref',
     '_histExoCourant', '_histDureeHtml', '_histExoHtml'].map(fd).join('\n') + '\nvar _histExos = { pid:"x", map:null, durees:null, enCours:false };', c);
   c._histExos.map = c._extractExoLoads(SEANCES, 1);
   c._histExos.durees = c._extractExoDurations(SEANCES, 1);
@@ -67,7 +67,7 @@ ok('la ligne ouvre la carte de DURÉE', /_histVoirCourbe\(this, \\'duree\\'\)/.t
 {
   let ouvert = 0; const sd = new Set(); const c2 = vm.createContext({ _progPatient: { id: 'p1' }, _pevoFocusCle: null,
     _pevoGetSel: () => new Set(), _pevoSaveSel: () => {}, _pevoGetDureeSel: () => sd, _pevoSaveDureeSel: () => {}, openChargesEvo: () => { ouvert++; } });
-  try { vm.runInContext(fd('_norm') + fd('_histVoirCourbe'), c2); c2._histVoirCourbe({ closest: () => ({ getAttribute: () => 'Chaise Isométrique' }) }, 'duree'); } catch (e) { ok('_histVoirCourbe se charge', false, e.message); }
+  try { vm.runInContext(fd('_norm') + fd('_cleExo') + fd('_histVoirCourbe'), c2); c2._histVoirCourbe({ closest: () => ({ getAttribute: () => 'Chaise Isométrique' }) }, 'duree'); } catch (e) { ok('_histVoirCourbe se charge', false, e.message); }
   ok('… ajoutée à la sélection des durées, et amenée à l\'écran', sd.has(c._norm('Chaise Isométrique') + '__duree') && c2._pevoFocusCle === c._norm('Chaise Isométrique') + '__duree' && ouvert === 1, JSON.stringify([...sd]) + ' ' + c2._pevoFocusCle);
 }
 ok('… les cartes de durée portent leur clé', /dureeChartsHtml \+= '<div class="pevo-card" data-cle="'\+escH\(key\)\+'">'/.test(fd('_renderPevoCharts')));

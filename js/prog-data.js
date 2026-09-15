@@ -581,6 +581,10 @@ function applyFilters(){
 }
 
 function _norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+/* La clé d'un exercice : minuscules, sans accent, sans espace en trop. Des noms
+   de la bibliothèque finissent par une espace (« Cycliste squat␣ ») : cherchés
+   tels quels, ils ne retrouvaient jamais leur historique (qualite/nom-exo-espaces-cas.js). */
+function _cleExo(nom){ return _norm(String(nom || '').trim()).replace(/\s+/g, ' '); }
 
 function renderLib(q, typeFilter, subFilter, subFilter2){
   q = (q||'').toLowerCase();
@@ -3240,7 +3244,7 @@ function _loadSupaLibrary(){
       return !supaIds.has(e.id) && !_deletedDefaultIds.has(e.id);
     });
     var supaExos = realData.map(function(e){
-      return { id: e.id, name: e.name, zone: e.zone||'', type: e.type||'',
+      return { id: e.id, name: String(e.name||'').trim(), zone: e.zone||'', type: e.type||'',
                url: e.url||'', obj: e.obj||'',
                patterns: Array.isArray(e.patterns) ? e.patterns : [],
                _fromSupa: true };
@@ -3305,7 +3309,7 @@ function openEditor(){
           return !supaIds2.has(e.id) && !_deletedDefaultIds.has(e.id);
         });
         var supaExos2 = realData2.map(function(e){
-          return { id:e.id, name:e.name, zone:e.zone||'', type:e.type||'', url:e.url||'', obj:e.obj||'', patterns:Array.isArray(e.patterns)?e.patterns:[], _fromSupa:true };
+          return { id:e.id, name:String(e.name||'').trim(), zone:e.zone||'', type:e.type||'', url:e.url||'', obj:e.obj||'', patterns:Array.isArray(e.patterns)?e.patterns:[], _fromSupa:true };
         });
         LIBRARY = filteredDefs.concat(supaExos2);
       }
@@ -3352,7 +3356,7 @@ function saveEditor(){
     LIBRARY.forEach(function(ex){
       if(defaultIds.has(ex.id) && !ex._modified) return; // hardcodé non modifié, on ignore
       var payload = {
-        id: ex.id, name: ex.name, zone: ex.zone||null, type: ex.type||null,
+        id: ex.id, name: String(ex.name||'').trim(), zone: ex.zone||null, type: ex.type||null,   // pas d'espace en trop (nom-exo-espaces-cas)
         url: ex.url||null, obj: ex.obj||null,
         patterns: ex.patterns||[],
         created_by: _progUid
@@ -4244,10 +4248,10 @@ function _histDureeHtml(hd, e){
 function _histExoHtml(nom, e){
   if(!_histExos.map || !nom) return '';
   if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return '';   // un modele n'est a personne
-  var h = _histExos.map[_norm(nom).replace(/\s+/g, ' ')];
+  var h = _histExos.map[_cleExo(nom)];
   /* Un exercice en DURÉE (sans répétitions) a sa propre ligne : la dernière
      durée, comparée à ce qu'on prescrit (qualite/historique-duree-cas.js). */
-  var hd = _histExos.durees ? _histExos.durees[_norm(nom).replace(/\s+/g, ' ') + '__duree'] : null;
+  var hd = _histExos.durees ? _histExos.durees[_cleExo(nom) + '__duree'] : null;
   if(hd && (!h || (e && !(parseFloat(e.reps) > 0) && _parseDuree(e.duree || '')))) return _histDureeHtml(hd, e);
   if(!h) return '';
   var ref = _builderDate || _pevoAujourdhuiIso();
@@ -4287,7 +4291,7 @@ function _histExoHtml(nom, e){
 function _rm1Ref(nom){
   if(!_histExos.map || !nom) return null;
   if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return null;
-  var h = _histExos.map[_norm(nom).replace(/\s+/g, ' ')];
+  var h = _histExos.map[_cleExo(nom)];
   if(!h) return null;
   var ref = _builderDate || _pevoAujourdhuiIso(), der = null;
   h.points.forEach(function(p){ if(p.date && p.date < ref && !p.bw && p.rm1 > 0) der = p; });
@@ -4334,7 +4338,7 @@ function _histVoirCourbe(el, genre){
   var bloc = el && el.closest ? el.closest('.exo-hist') : null;
   var nom = bloc ? bloc.getAttribute('data-hist') : '';
   if(!nom || !_progPatient) return;
-  var cle = _norm(nom).replace(/\s+/g, ' ');
+  var cle = _cleExo(nom);
   if(genre === 'duree'){   // la carte de DURÉE de l'exercice (qualite/historique-duree-cas.js)
     cle += '__duree';
     var sd = _pevoGetDureeSel(_progPatient.id);
@@ -4389,7 +4393,7 @@ function _extractExoLoads(seances, minPoints) {
         var bw  = !kgCible || kg <= 0;                // poids de corps / sans charge
         var rm1 = _1rm(kg, reps);
         if(!rm1) return;
-        var key = _norm(name).replace(/\s+/g,' ');
+        var key = _cleExo(name);
         if(!map[key]) map[key] = { label: name, points: [] };
         map[key].points.push({ date: prog.date, kg: bw?0:kg, reps: reps, series: exo.series || '', rm1: rm1, bw: bw, progNom: prog.nom });
       });
@@ -4455,7 +4459,7 @@ function _extractExoNRS(seances) {
 
   var map = {};
   function _addPt(name, date, nrs, fromAthlete) {
-    var key = _norm(name).replace(/\s+/g,' ');
+    var key = _cleExo(name);
     if(!map[key]) map[key] = { nom: name, pts: {} };
     var existing = map[key].pts[date];
     // Athlète prioritaire : n'écrase pas un point athlète par un NRS praticien
@@ -4557,7 +4561,7 @@ function _extractExoDurations(seances, minPoints) {
         if(!isNaN(reps) && reps > 0) return; // skip si reps définies
         var secs = _parseDuree(exo.duree || '');
         if(!secs || secs <= 0) return;
-        var key = _norm(name).replace(/\s+/g,' ') + '__duree';
+        var key = _cleExo(name) + '__duree';
         if(!map[key]) map[key] = { label: name + ' (durée)', points: [] };
         map[key].points.push({ date: prog.date, secs: secs, series: exo.series || '', progNom: prog.nom });
       });
@@ -6095,7 +6099,7 @@ function _pevoZoneIndex(){
        cela le meme exercice apparaitrait dans deux groupes. */
     var z = String(e.zone).split(',')[0].trim();
     if(!z) return;
-    idx[_norm(e.name).replace(/\s+/g,' ')] = z;
+    idx[_cleExo(e.name)] = z;   // un nom suivi d'une espace tombait en « Non classé »
   });
   return idx;
 }

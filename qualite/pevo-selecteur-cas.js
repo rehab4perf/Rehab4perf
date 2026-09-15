@@ -50,7 +50,11 @@ function tranche(deb, fin) {
    doublure : c'est le classement qu'on teste, pas le contenu de LIBRARY. */
 var d0 = pdata.indexOf('function _pevoZoneIndex(');
 if (d0 < 0) { console.log('  ✗ `_pevoZoneIndex` introuvable dans js/prog-data.js'); process.exit(1); }
-var code = tranche('function _pevoZoneIndex(', 'function _pevoToggle(');
+/* _pevoZoneIndex range par _cleExo (qualite/nom-exo-espaces-cas.js) : la VRAIE,
+   posée avant, sur le _norm de ce banc. */
+var dCle = pdata.indexOf('\nfunction _cleExo(');
+var cleExo = dCle < 0 ? '' : pdata.slice(dCle, pdata.indexOf('\n', dCle + 1));
+var code = cleExo + '\n' + tranche('function _pevoZoneIndex(', 'function _pevoToggle(');
 
 function api(bibli) {
   return new Function('LIBRARY', '_norm', 'escH',
