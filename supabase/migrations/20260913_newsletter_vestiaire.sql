@@ -10,9 +10,12 @@
 --      2. inscrire le praticien (voir « APRÈS », en fin de fichier) ;
 --      3. déployer la fonction : supabase functions deploy newsletter-export --no-verify-jwt
 --      4. node qualite/rls-cas.js && node qualite/newsletter-cas.js
---    Indépendante de 20260912 : elle recrée à l'identique r4p_lien_patient(),
---    dont sa politique anonyme a besoin. Appliquer 20260912 ensuite ne
---    change rien ici.
+--    Dépend de 20260912 (appliquée le 2026-09-10) pour r4p_lien_patient(),
+--    dont sa politique anonyme a besoin, et NE LA REDÉFINIT PAS. Une
+--    première version la recréait « à l'identique » : réexécutée après
+--    20260914_lien_jeton, elle aurait ramené le lien athlète à l'uuid seul
+--    et rouvert les liens que le jeton a fermés. Retiré le 2026-09-15 ;
+--    garde-fou : qualite/newsletter-cas.js.
 --
 -- LE DISPOSITIF :
 --   Chaque dimanche, une tâche du praticien rédige un numéro par athlète :
@@ -49,21 +52,6 @@
 -- ═══════════════════════════════════════════════════════════════════
 
 BEGIN;
-
--- ── Ce que désigne le lien (identique à 20260912) ─────────────────
-CREATE OR REPLACE FUNCTION public.r4p_lien_patient()
-RETURNS uuid LANGUAGE plpgsql STABLE SET search_path = ''
-AS $$
-DECLARE v text;
-BEGIN
-  v := NULLIF(current_setting('request.headers', true), '')::json ->> 'x-r4p-patient';
-  IF v IS NULL OR v !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
-    RETURN NULL;
-  END IF;
-  RETURN v::uuid;
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.r4p_lien_patient() TO anon, authenticated;
 
 -- ── Praticiens inscrits ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.newsletter_praticiens (

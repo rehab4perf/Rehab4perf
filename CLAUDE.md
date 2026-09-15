@@ -368,7 +368,12 @@ publique pouvait allumer `active`. Conséquences à ne pas défaire :
 - l'export ne sort que prénom, sport, niveau, tranche d'âge, sexe, échéances
   et volume Strava **agrégé** — ni nom, ni date de naissance, ni bilan, ni
   l'uuid du patient (secret du lien athlète), remplacé par une référence
-  dérivée.
+  dérivée ;
+- aucune migration de la newsletter ne **redéfinit** `r4p_lien_*()` : ces
+  fonctions appartiennent au jeton par patient. La première version de
+  `20260913` recréait l'ancienne `r4p_lien_patient()` ; rejouée après
+  `20260914_lien_jeton`, elle aurait rouvert les liens par l'uuid. Retiré le
+  2026-09-15.
 
 ## Barre du haut — le nom du patient est la variable d'ajustement
 

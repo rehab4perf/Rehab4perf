@@ -73,6 +73,13 @@ ok('aucune écriture de newsletter_praticiens depuis l\'application',
    !/GRANT\s+[^;]*\b(INSERT|UPDATE|DELETE|ALL)\b[^;]*ON\s+public\.newsletter_praticiens/i.test(sql));
 ok('créer ou modifier une ligne exige d\'être inscrit',
    /CREATE POLICY athlete_newsletter_praticiens?\b[\s\S]*?WITH CHECK[\s\S]*?newsletter_praticiens/i.test(sql));
+/* Les fonctions r4p_lien_*() appartiennent au jeton par patient
+   (20260914_lien_jeton). Une migration de la newsletter qui les recrée,
+   même « à l'identique » de 20260912, les ramène à l'uuid seul si on la
+   rejoue après le jeton : les liens fermés se rouvrent, sans aucune erreur. */
+ok('aucune migration de la newsletter ne redéfinit une fonction r4p_lien_*',
+   !/CREATE\s+(OR\s+REPLACE\s+)?FUNCTION\s+(public\.)?"?r4p_lien_/i.test(sql),
+   'la rejouer après 20260914_lien_jeton rouvrirait les liens athlète par l\'uuid');
 
 /* ═══ 2. L'espace athlète ════════════════════════════════════════════════ */
 
