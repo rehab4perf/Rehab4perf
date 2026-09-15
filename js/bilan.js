@@ -4397,7 +4397,10 @@ function _renderDeltas(prevData){
       if(!prev) return;
       var row = document.querySelector('#ct-rows-'+pk+' .ct-row[data-idx="'+idx+'"]');
       if(!row) return;
-      var cells = row.querySelectorAll('.ct-cell');
+      /* Chaque écart dans SA case, cherchée par le nom de sa valeur. Placés par
+         POSITION, ils tombaient sous le mauvais côté : le formulaire mettait valB
+         dans la première case (qualite/ct-cotes-cas.js). */
+      var cellDe = function(ch){ return row.querySelector('.ct-cell[data-champ="'+ch+'"]'); };
       function _ctDeltaBadge(curV, prevV, cell){
         var cur = parseFloat(curV), prv = parseFloat(prevV);
         if(isNaN(cur)||isNaN(prv)||cur===prv) return;
@@ -4410,8 +4413,8 @@ function _renderDeltas(prevData){
         badge.title = 'Bilan précédent : '+prv.toFixed(0);
         cell.appendChild(badge);
       }
-      if(cells[0]) _ctDeltaBadge(t.valA, prev.valA, cells[0]);
-      if(t.type !== 'perf' && cells[1]) _ctDeltaBadge(t.valB, prev.valB, cells[1]);
+      if(cellDe('valA')) _ctDeltaBadge(t.valA, prev.valA, cellDe('valA'));
+      if(t.type !== 'perf' && cellDe('valB')) _ctDeltaBadge(t.valB, prev.valB, cellDe('valB'));
     });
   });
 }
@@ -12601,6 +12604,18 @@ window.addEventListener('load', function(){
     return _ctIsBilat() ? {a:'Gauche', b:'Droit'} : {a:'Atteint', b:'Sain'};
   }
 
+  /* Ordre d'AFFICHAGE des deux côtés : Gauche avant Droit, Sain avant Atteint —
+     la règle des tableaux du bilan et du CR (_crMesTab). Le formulaire posait
+     B puis A : « Droit | Gauche » en bilatéral, seul endroit de l'application.
+     valA / valB ne bougent pas : en-têtes et valeurs changent de place ENSEMBLE
+     (qualite/ct-cotes-cas.js). */
+  function _ctOrdre(){
+    var l = _ctLabels();
+    return _ctIsBilat()
+      ? [{champ:'valA', obs:'obsA', lbl:l.a}, {champ:'valB', obs:'obsB', lbl:l.b}]
+      : [{champ:'valB', obs:'obsB', lbl:l.b}, {champ:'valA', obs:'obsA', lbl:l.a}];
+  }
+
   function _ctLsiCalc(va, vb){
     var a = parseFloat(va), b = parseFloat(vb);
     if(isNaN(a)||isNaN(b)||b===0) return NaN;
@@ -12671,7 +12686,7 @@ window.addEventListener('load', function(){
       obs.style.display='grid';
       obs.style.gridTemplateColumns='1fr 1fr';
       obs.style.gap='8px';
-      [['obsB',lbl.b],['obsA',lbl.a]].forEach(function(pair){
+      _ctOrdre().map(function(c){ return [c.obs, c.lbl]; }).forEach(function(pair){   // même ordre que les valeurs
         var field=pair[0], label=pair[1];
         var wrap = document.createElement('div');
         var lb = document.createElement('div');
@@ -12735,7 +12750,7 @@ window.addEventListener('load', function(){
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-          '<div class="ct-cell"><input class="ct-val-inp'+hA.cls+'" type="number" step="any" placeholder="'+hA.ph+'"'+hA.titre+' value="'+_esc(t.valA)+'" '+
+          '<div class="ct-cell" data-champ="valA"><input class="ct-val-inp'+hA.cls+'" type="number" step="any" placeholder="'+hA.ph+'"'+hA.titre+' value="'+_esc(t.valA)+'" '+
             'oninput="'+hA.rm+'_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'comparison\')" title="Passer en comparaison G/D">⇄</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
@@ -12747,22 +12762,23 @@ window.addEventListener('load', function(){
     if(compItems.length){
       var ch = document.createElement('div');
       ch.className = 'ct-sub-hdr ct-sub-hdr-comp';
-      ch.innerHTML = '<span class="sh-left">Comparaison</span><span>'+lbl.b+'</span><span>'+lbl.a+'</span><span>Asym.</span>';
+      var o = _ctOrdre();   // Gauche avant Droit, Sain avant Atteint
+      ch.innerHTML = '<span class="sh-left">Comparaison</span><span>'+o[0].lbl+'</span><span>'+o[1].lbl+'</span><span>Asym.</span>';
       container.appendChild(ch);
       compItems.forEach(function(item){
         var t = item.t, idx = item.i;
         var lsi = _ctLsiCalc(t.valA, t.valB);
-        var hB = _ctAttrsVal(pk, t, 'valB'), hA = _ctAttrsVal(pk, t, 'valA');
         var row = document.createElement('div');
         row.className = 'ct-row';
         row.setAttribute('data-idx', idx);
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-          '<div class="ct-cell"><input class="ct-val-inp'+hB.cls+'" type="number" step="any" placeholder="'+hB.ph+'"'+hB.titre+' value="'+_esc(t.valB)+'" '+
-            'oninput="'+hB.rm+'_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)"></div>'+
-          '<div class="ct-cell"><input class="ct-val-inp'+hA.cls+'" type="number" step="any" placeholder="'+hA.ph+'"'+hA.titre+' value="'+_esc(t.valA)+'" '+
-            'oninput="'+hA.rm+'_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
+          o.map(function(c){
+            var h = _ctAttrsVal(pk, t, c.champ);
+            return '<div class="ct-cell" data-champ="'+c.champ+'"><input class="ct-val-inp'+h.cls+'" type="number" step="any" placeholder="'+h.ph+'"'+h.titre+' value="'+_esc(t[c.champ])+'" '+
+              'oninput="'+h.rm+'_ctUpdate(\''+pk+'\','+idx+',\''+c.champ+'\',this.value)"></div>';
+          }).join('')+
           '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'perf\')" title="Passer en performance unique">↑</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
@@ -12901,14 +12917,15 @@ window.addEventListener('load', function(){
     };
     var bilat = _ctIsBilat();
     var lbl = _ctLabels();
+    var o = _ctOrdre();   // Gauche avant Droit, Sain avant Atteint (qualite/ct-cotes-cas.js)
     _CT_PAGES.forEach(function(pk){
       var data = (_ctData[pk]||[]).filter(function(t){ return t.name||t.valA||t.valB; });
       if(!data.length) return;
       var html = '<table style="width:100%;border-collapse:collapse;font-size:.82rem">'+
         '<thead><tr style="border-bottom:1px solid var(--border)">'+
         '<th style="text-align:left;padding:3px 8px;font-weight:600">Test</th>'+
-        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+lbl.a+'</th>'+
-        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+lbl.b+'</th>'+
+        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+o[0].lbl+'</th>'+
+        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+o[1].lbl+'</th>'+
         '<th style="text-align:center;padding:3px 8px;font-weight:600">Asym.</th>'+
         '</tr></thead><tbody>';
       data.forEach(function(t){
@@ -12923,8 +12940,8 @@ window.addEventListener('load', function(){
           var clr = isNaN(lsi)?'':lsi>=90?'color:#16a34a':lsi>=75?'color:#d97706':'color:#dc2626';
           html += '<tr style="border-bottom:1px solid var(--border)">'+
             '<td style="padding:3px 8px">'+(t.name||'—')+'</td>'+
-            '<td style="text-align:center;padding:3px 8px">'+(t.valA!==''?t.valA:'—')+'</td>'+
-            '<td style="text-align:center;padding:3px 8px">'+(t.valB!==''?t.valB:'—')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px">'+(t[o[0].champ]!=null&&t[o[0].champ]!==''?t[o[0].champ]:'—')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px">'+(t[o[1].champ]!=null&&t[o[1].champ]!==''?t[o[1].champ]:'—')+'</td>'+
             '<td style="text-align:center;padding:3px 8px;font-weight:700;'+clr+'">'+(isNaN(lsi)?'—':asymTxt(lsi, 0))+'</td>'+
             '</tr>';
         }
