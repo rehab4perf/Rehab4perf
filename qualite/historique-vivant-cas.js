@@ -67,7 +67,9 @@ ok('au poids du corps : les répétitions', /→ aujourd’hui 12 reps ↗ \+2 r
 
 console.log('\nSans prescription : la ligne d\'avant');
 ok('répétitions vides : l\'écart entre les deux séances précédentes, inchangé', ligne('Pistol squat box', exo('Pistol squat box', '')) === 'Dernière séance (7 sept.) : 3 × 10 poids du corps ↗ +2 reps', ligne('Pistol squat box', exo('Pistol squat box', '')));
-ok('une charge posée sur un exercice fait au poids du corps : pas de comparaison inventée', ligne('Pistol squat box', exo('Pistol squat box', 10, [{ type: 'kg', min: '10', max: '' }])) === 'Dernière séance (7 sept.) : 3 × 10 poids du corps ↗ +2 reps');
+/* Changé le 2026-09-15 (historique-mode-cas) : une charge posée se compare à la
+   dernière séance chargée ; s'il n'y en a pas, la ligne le dit. */
+ok('une première charge sur un exercice fait au poids du corps : dite « première charge »', ligne('Pistol squat box', exo('Pistol squat box', 10, [{ type: 'kg', min: '10', max: '' }])) === 'Dernière séance (7 sept.) : 3 × 10 poids du corps → aujourd’hui 1RM est. 13,3 kg (première charge)', ligne('Pistol squat box', exo('Pistol squat box', 10, [{ type: 'kg', min: '10', max: '' }])));
 ok('sans exercice passé (appel d\'avant) : identique', ligne('Back squat') === 'Dernière séance (7 sept.) : 4 × 8 à 75 kg · 1RM est. 93,1 kg ↗ +5 kg' || /Dernière séance \(7 sept\.\) : 4 × 8 à 75 kg · 1RM est\. 93,1 kg ↗ \+/.test(ligne('Back squat')), ligne('Back squat'));
 
 console.log('\nEn place, à la frappe');

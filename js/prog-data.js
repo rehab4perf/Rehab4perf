@@ -4260,8 +4260,19 @@ function _histExoHtml(nom, e){
   var der = avant[avant.length - 1], prec = avant.length > 1 ? avant[avant.length - 2] : null;
   var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
   var kgFr = function(v){ return String(Math.round(v * 10) / 10).replace('.', ',') + ' kg'; };
+  /* On prescrit une CHARGE alors que la dernière séance était au poids du
+     corps : la comparaison se fait avec la dernière séance CHARGÉE — sinon la
+     ligne se taisait (qualite/historique-mode-cas.js). */
+  var cur = _histExoCourant(e), titre = 'Dernière séance';
+  if(cur && cur.rm1 && !cur.bw && der.bw){
+    var chargees = avant.filter(function(p){ return !p.bw; });
+    if(chargees.length){
+      der = chargees[chargees.length - 1]; prec = chargees.length > 1 ? chargees[chargees.length - 2] : null;
+      titre = 'Dernière séance chargée';
+    }
+  }
   var d = der.date.split('-');
-  var txt = 'Dernière séance (' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ') : '
+  var txt = titre + ' (' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ') : '
     + (der.series ? escH(String(der.series)) + ' × ' : '') + der.reps
     + (der.bw ? ' poids du corps' : ' à ' + kgFr(der.kg) + ' · 1RM est. ' + kgFr(der.rm1));
   var fleche = function(dv, bw){
@@ -4271,11 +4282,12 @@ function _histExoHtml(nom, e){
   /* Dès qu'on prescrit (reps, et une charge si la dernière en avait une),
      la ligne compare CETTE séance à la dernière. Sinon, l'écart entre les deux
      séances précédentes, comme avant (qualite/historique-vivant-cas.js). */
-  var cur = _histExoCourant(e);
   if(cur && cur.rm1 && cur.bw === !!der.bw){
     var dc = der.bw ? cur.reps - der.reps : Math.round((cur.rm1 - der.rm1) * 10) / 10;
     txt += ' → aujourd’hui' + (!dc ? ' : même charge'
       : (der.bw ? ' ' + cur.reps + ' reps' : ' 1RM est. ' + kgFr(cur.rm1)) + fleche(dc, der.bw));
+  } else if(cur && cur.rm1 && !cur.bw){
+    txt += ' → aujourd’hui 1RM est. ' + kgFr(cur.rm1) + ' (première charge)';   // jamais chargé avant
   } else if(prec && !!prec.bw === !!der.bw){
     var dv = der.bw ? der.reps - prec.reps : Math.round((der.rm1 - prec.rm1) * 10) / 10;
     if(dv) txt += fleche(dv, der.bw);
