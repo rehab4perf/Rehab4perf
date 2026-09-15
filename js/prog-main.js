@@ -10749,11 +10749,10 @@ function _toggleMoreMenu(e){
   if(!menu) return;
   var isOpen=menu.style.display==='block';
   if(isOpen){ menu.style.display='none'; return; }
-  /* « Evolution » ne se montre que dans le builder : sur l'agenda, la carte
-     Charge y mene. Provisoire, le temps de juger l'historique sous chaque
-     exercice (qualite/historique-exo-cas.js). */
-  var _evo = document.getElementById('moreMenuEvo'), _bp = document.getElementById('builderPanel');
-  if(_evo) _evo.style.display = (_bp && _bp.classList.contains('open')) ? '' : 'none';
+  /* « Évolution » n'est plus dans ce menu (2026-09-15) : la ligne sous chaque
+     exercice ouvre sa courbe, la carte Charge de l'agenda ouvre le reste
+     (qualite/historique-duree-cas.js). */
+  var _bp = document.getElementById('builderPanel');
   /* « Programmes du patient » : sorti de la barre du builder, il y reste a un
      clic — le praticien s'en sert pour importer une ancienne seance. */
   var _prog = document.getElementById('moreMenuProg');

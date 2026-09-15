@@ -354,9 +354,9 @@ sections: [
       { t:'Consignes et douleur EVA', x:'Une consigne spécifique par exercice, et un badge « EVA » pour noter la douleur observée (0–10) — elle rejoint les courbes de douleur.', img:true },
       { t:'Le bloc où atterrit le prochain exercice', x:'C\'est celui qui est mis en avant, et que rappelle le menu « Ajouter au bloc ». Cliquer n\'importe où dans un bloc le choisit. Retirer un exercice le choisit aussi : on vient d\'y travailler, et le remplaçant s\'y ajoute directement — y compris lorsqu\'on vide le bloc pour le regarnir.' },
       { t:'Enregistrez la séance', x:'Elle est sauvegardée pour le patient et apparaît dans son historique de programmes.' },
-      { t:'Ce que l\'exercice a fait la dernière fois', x:'Sous le nom de chaque exercice déjà prescrit à ce patient : « Dernière séance (7 sept.) : 4 × 8 à 75 kg · 1RM est. 93,1 kg ↗ +6,2 kg ». Ce sont les charges prescrites des séances passées, avant celle que vous composez — rien sur un modèle. Un clic sur la ligne ouvre la courbe de l\'exercice dans l\'Évolution.' },
+      { t:'Ce que l\'exercice a fait la dernière fois', x:'Sous le nom de chaque exercice déjà prescrit à ce patient : « Dernière séance (7 sept.) : 4 × 8 à 75 kg · 1RM est. 93,1 kg ↗ +6,2 kg ». Ce sont les charges prescrites des séances passées, avant celle que vous composez — rien sur un modèle. Un clic sur la ligne ouvre la courbe de l\'exercice dans l\'Évolution. Dès que vous prescrivez, elle compare : « → aujourd’hui 1RM est. 99,3 kg ↗ +6,2 kg ». Les exercices en durée ont la leur : « 3 × 45s → aujourd’hui 1min ↗ +15s ».' },
       { t:'Une cible en %1RM donne son poids', x:'Sous la cible, « ≈ 74,5 kg » : le pourcentage appliqué au 1RM estimé de la dernière séance chargée, arrondi au demi-kilo et recalculé à chaque chiffre tapé. Survolez-le pour voir d\'où vient le 1RM. Rien ne s\'affiche sans séance chargée auparavant.' },
-      { t:'La barre du builder', x:'← revient à l\'agenda. Puis Feedback (sur une séance enregistrée), Planifier, et Sauvegarder, le geste principal. Le menu ··· regroupe Protocoles, Évolution, Programmes du patient — pour reprendre une ancienne séance —, générateurs et calculateurs.' }
+      { t:'La barre du builder', x:'← revient à l\'agenda. Puis Feedback (sur une séance enregistrée), Planifier, et Sauvegarder, le geste principal. Le menu ··· regroupe Protocoles, Programmes du patient — pour reprendre une ancienne séance —, générateurs et calculateurs.' }
     ]},
   { id:'etapes', titre:'Regrouper des blocs en étapes',
     intro:'Pour que l\'athlète distingue clairement l\'échauffement du corps de séance (ou toute autre organisation), regroupez plusieurs blocs sous une étape nommée et colorée.',
@@ -445,7 +445,7 @@ sections: [
       { t:'Charge globale (UA)', x:'La charge d\'entraînement totale, par séance ou par semaine — les hausses hebdomadaires de plus de 30 % sont signalées en orange.' },
       { t:'L’unité Cycle', x:'Si le patient a des cycles datés, « Cycle » apparaît : les flèches passent d’un cycle au suivant. Un cycle à critères court de son début à la validation de son dernier critère. Deux cycles n’ayant pas la même durée, l’écart est ramené à la même durée.' },
       { t:'Bilan de charge sous l\'agenda', x:'Charge 7 jours, semaine à jour égal, monotonie, les deux dernières semaines sur une même échelle, et l\'ACWR avec sa tendance sur 8 semaines.' },
-      { t:'Où les ouvrir', x:'Dans la colonne Patient, à gauche de l\'agenda : « Journal » en tête de la carte Derniers retours, « Évolution » en tête de la carte Charge. Dans le builder, le menu ··· garde « Évolution », et la ligne « Dernière séance… » sous un exercice ouvre directement sa courbe.' }
+      { t:'Où les ouvrir', x:'Dans la colonne Patient, à gauche de l\'agenda : « Journal » en tête de la carte Derniers retours, « Évolution » en tête de la carte Charge. Dans le builder, la ligne « Dernière séance… » sous un exercice ouvre directement sa courbe.' }
     ]},
   { id:'feedback', titre:'Lire le retour d\'un athlète',
     intro:'Quand l\'athlète a rempli son ressenti, tout remonte dans le builder.',

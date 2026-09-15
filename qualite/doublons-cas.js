@@ -44,9 +44,9 @@ ok('l\'en-tête de l\'agenda perd « Modèles » et « Journal » (sur ordinateu
    /\.cal-central-header #topbarBiblioBtn, \.cal-central-header #topbarJournalBtn, \.builder-header #topbarBiblioBtn \{ display:none; \}/.test(html));
 ok('… le builder perd « Bibliothèque » : ses onglets se replient', /\.builder-header #topbarBiblioBtn/.test(html));
 const menu = html.slice(html.indexOf('id="more-menu"'), html.indexOf('id="more-menu"') + 6000);
-/* Évolution revient dans le menu, BUILDER seulement, le temps que le praticien
-   juge l'historique sous chaque exercice (qualite/historique-exo-cas.js). */
-ok('le menu ··· ne porte plus Cycles ; Évolution n\'y est plus que dans le builder', !/openCycles\(\)/.test(menu) && /id="moreMenuEvo"/.test(menu));
+/* Évolution est revenue un temps dans le menu du builder, puis en est repartie
+   (2026-09-15) : la ligne sous chaque exercice ouvre sa courbe. */
+ok('le menu ··· ne porte plus ni Cycles ni Évolution', !/openCycles\(\)/.test(menu) && !/openChargesEvo\(\)/.test(menu));
 ok('… Évolution s\'ouvre depuis la carte Charge', /onclick="openChargesEvo\(\)">Évolution<\/button>/.test(fm('_panneauPatientHtml')));
 ok('la vue Semaine n\'a plus son « + Séance » au survol (le clic sur le jour suffit)', !/cal-week-add/.test(pmain) && !/\.cal-week-add \{/.test(html));
 

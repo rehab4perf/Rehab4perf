@@ -2100,7 +2100,7 @@ function updateField(blocId, exoId, field, val){
   if(!bloc) return;
   var exo = bloc.exos.find(function(e){ return e.id===exoId; });
   if(exo) exo[field] = val;
-  if(field === 'reps'){ try { _histExoMaj(blocId, exoId); } catch(ex){} }   // la ligne compare ce qu'on prescrit
+  if(field === 'reps' || field === 'duree'){ try { _histExoMaj(blocId, exoId); } catch(ex){} }   // la ligne compare ce qu'on prescrit
   _draftSaveLazy();
 }
 
@@ -4169,7 +4169,7 @@ function _1rm(kg, reps) {
    — les charges PRESCRITES des seances passees — chargees une fois par
    patient a l'ouverture du builder. Les lignes se remplissent EN PLACE :
    redessiner la seance ferait perdre la saisie en cours. */
-var _histExos = { pid:null, map:null, enCours:false };
+var _histExos = { pid:null, map:null, durees:null, enCours:false };
 function _histExosCharger(forcer){
   if(!_progPatient || !_progToken) return;
   var pid = String(_progPatient.id);
@@ -4177,7 +4177,7 @@ function _histExosCharger(forcer){
   /* Rechargé à chaque ouverture du builder : une séance enregistrée y entre
      sans attendre un changement de patient. L'ancien historique reste affiché
      le temps du chargement (qualite/historique-vivant-cas.js). */
-  _histExos = { pid:pid, map: (_histExos.pid === pid ? _histExos.map : null), enCours:true };
+  _histExos = { pid:pid, map: (_histExos.pid === pid ? _histExos.map : null), durees: (_histExos.pid === pid ? _histExos.durees : null), enCours:true };
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + encodeURIComponent(pid)
     + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
   _fetchRetry(url, { method:'GET', headers:_sbHeaders() })
@@ -4185,6 +4185,7 @@ function _histExosCharger(forcer){
     .then(function(data){
       if(_histExos.pid !== pid) return;
       _histExos.map = Array.isArray(data) ? _extractExoLoads(data, 1) : {};
+      _histExos.durees = Array.isArray(data) ? _extractExoDurations(data, 1) : {};   // gainage, isométrie (qualite/historique-duree-cas.js)
       _histExos.enCours = false;
       _histExosRemplir();
     })
@@ -4218,10 +4219,36 @@ function _histExoCourant(e){
   var bw = kg <= 0;
   return { reps: reps, kg: bw ? 0 : kg, bw: bw, rm1: _1rm(kg, reps) };
 }
+function _histDureeHtml(hd, e){
+  var ref = _builderDate || _pevoAujourdhuiIso();
+  var avant = hd.points.filter(function(p){ return p.date && p.date < ref; });
+  if(!avant.length) return '';
+  var der = avant[avant.length - 1], prec = avant.length > 1 ? avant[avant.length - 2] : null;
+  var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var d = der.date.split('-');
+  var txt = 'Dernière séance (' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ') : '
+    + (der.series ? escH(String(der.series)) + ' × ' : '') + _formatDuree(der.secs);
+  var fleche = function(dv){
+    return ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −') + _formatDuree(Math.abs(dv)) + '</span>';
+  };
+  var cs = (e && !(parseFloat(e.reps) > 0)) ? _parseDuree(e.duree || '') : null;
+  if(cs){
+    var dc = cs - der.secs;
+    txt += ' → aujourd’hui' + (!dc ? ' : même durée' : ' ' + _formatDuree(cs) + fleche(dc));
+  } else if(prec){
+    var dv = der.secs - prec.secs;
+    if(dv) txt += fleche(dv);
+  }
+  return '<button type="button" class="exo-hist-lien" onclick="_histVoirCourbe(this, \'duree\')" title="Voir la courbe de l’exercice">' + txt + '</button>';
+}
 function _histExoHtml(nom, e){
   if(!_histExos.map || !nom) return '';
   if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) return '';   // un modele n'est a personne
   var h = _histExos.map[_norm(nom).replace(/\s+/g, ' ')];
+  /* Un exercice en DURÉE (sans répétitions) a sa propre ligne : la dernière
+     durée, comparée à ce qu'on prescrit (qualite/historique-duree-cas.js). */
+  var hd = _histExos.durees ? _histExos.durees[_norm(nom).replace(/\s+/g, ' ') + '__duree'] : null;
+  if(hd && (!h || (e && !(parseFloat(e.reps) > 0) && _parseDuree(e.duree || '')))) return _histDureeHtml(hd, e);
   if(!h) return '';
   var ref = _builderDate || _pevoAujourdhuiIso();
   var avant = h.points.filter(function(p){ return p.date && p.date < ref; });
@@ -4303,14 +4330,21 @@ function _cibleKgMaj(bid, eid, ci, el){
 /* La courbe de l'exercice : ajoute a la selection d'Evolution (sans retirer
    les autres), ouvre le panneau, amene la carte a l'ecran. */
 var _pevoFocusCle = null;
-function _histVoirCourbe(el){
+function _histVoirCourbe(el, genre){
   var bloc = el && el.closest ? el.closest('.exo-hist') : null;
   var nom = bloc ? bloc.getAttribute('data-hist') : '';
   if(!nom || !_progPatient) return;
   var cle = _norm(nom).replace(/\s+/g, ' ');
-  var sel = _pevoGetSel(_progPatient.id);
-  sel.add(cle);
-  _pevoSaveSel(_progPatient.id, sel);
+  if(genre === 'duree'){   // la carte de DURÉE de l'exercice (qualite/historique-duree-cas.js)
+    cle += '__duree';
+    var sd = _pevoGetDureeSel(_progPatient.id);
+    sd.add(cle);
+    _pevoSaveDureeSel(_progPatient.id, sd);
+  } else {
+    var sel = _pevoGetSel(_progPatient.id);
+    sel.add(cle);
+    _pevoSaveSel(_progPatient.id, sel);
+  }
   _pevoFocusCle = cle;
   openChargesEvo();
 }
@@ -4496,7 +4530,7 @@ function _formatDuree(secs) {
 }
 
 /* Extrait les durées par exercice (exos sans reps mais avec duree parseable). */
-function _extractExoDurations(seances) {
+function _extractExoDurations(seances, minPoints) {
   var seenKeys = {};
   var progList = [];
   seances.forEach(function(s) {
@@ -4525,7 +4559,7 @@ function _extractExoDurations(seances) {
         if(!secs || secs <= 0) return;
         var key = _norm(name).replace(/\s+/g,' ') + '__duree';
         if(!map[key]) map[key] = { label: name + ' (durée)', points: [] };
-        map[key].points.push({ date: prog.date, secs: secs, progNom: prog.nom });
+        map[key].points.push({ date: prog.date, secs: secs, series: exo.series || '', progNom: prog.nom });
       });
     });
   });
@@ -4533,7 +4567,8 @@ function _extractExoDurations(seances) {
   var result = {};
   Object.keys(map).forEach(function(key) {
     var pts = map[key].points.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
-    if(pts.length >= 2) result[key] = { label: map[key].label, points: pts };
+    /* Deux passages pour une courbe (Évolution) ; le builder en veut un seul. */
+    if(pts.length >= (minPoints || 2)) result[key] = { label: map[key].label, points: pts };
   });
   return result;
 }
@@ -5813,7 +5848,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
           +'<button class="pevo-line-pill active" style="color:#7C3AED;border-color:#7C3AED" onclick="togglePevoPill(this,\'pevo'+_dctr+'\',\'nrs\')">● Douleur</button>'
           +'</div>';
       }
-      dureeChartsHtml += '<div class="pevo-card">'
+      dureeChartsHtml += '<div class="pevo-card" data-cle="'+escH(key)+'">'
         +'<div class="pevo-card-header">'
         +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
         +'<div class="pevo-card-kpis">'

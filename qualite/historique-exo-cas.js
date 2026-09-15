@@ -37,8 +37,10 @@ const fd = fnDe(pdata), fm = fnDe(pmain);
 /* ── A : Évolution dans le menu ···, builder seulement ───────────────────── */
 console.log('\nA — Évolution dans le builder');
 const menu = html.slice(html.indexOf('id="more-menu"'), html.indexOf('id="more-menu"') + 7000);
-ok('le menu ··· porte de nouveau « Évolution »', /<button id="moreMenuEvo" onclick="openChargesEvo\(\);_closeMoreMenu\(\)"/.test(menu));
-ok('… visible seulement quand le builder est ouvert', /_evo\.style\.display = \(_bp && _bp\.classList\.contains\('open'\)\) \? '' : 'none'/.test(fm('_toggleMoreMenu')));
+/* Retiré le 2026-09-15 (« 3 + 5 ») : la ligne sous chaque exercice suffit, et
+   un clic dessus ouvre la courbe (historique-vivant-cas, historique-duree-cas). */
+ok('A retiré : le menu ··· ne porte plus « Évolution »', !/moreMenuEvo/.test(menu) && !/openChargesEvo\(\)/.test(menu));
+ok('… ni sa règle d\'affichage', !/_evo\.style/.test(fm('_toggleMoreMenu')));
 
 /* ── B : la ligne d'historique ───────────────────────────────────────────── */
 console.log('\nB — la dernière séance, sous l\'exercice');
