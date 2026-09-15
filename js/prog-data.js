@@ -585,6 +585,14 @@ function _norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ
    de la bibliothèque finissent par une espace (« Cycliste squat␣ ») : cherchés
    tels quels, ils ne retrouvaient jamais leur historique (qualite/nom-exo-espaces-cas.js). */
 function _cleExo(nom){ return _norm(String(nom || '').trim()).replace(/\s+/g, ' '); }
+/* L'unité d'un champ Reps : « 5m », « 30 s », « 1min », « 2' ». Vide pour un
+   nombre de répétitions (« 12 », « 8-12 », « 10/côté ») — qualite/historique-unite-cas.js. */
+function _repsUnite(r){
+  var m = String(r || '').trim().match(/^\d+(?:[.,]\d+)?\s*(km|min|mn|m|sec|s|kcal|cal|'|")(?![a-z])/i);
+  if(!m) return '';
+  var u = m[1].toLowerCase();
+  return (u === 'mn' || u === "'") ? 'min' : (u === 'sec' || u === '"') ? 's' : u;
+}
 
 function renderLib(q, typeFilter, subFilter, subFilter2){
   q = (q||'').toLowerCase();
@@ -4221,7 +4229,7 @@ function _histExoCourant(e){
   });
   if(!kg && pct){ var r = _rm1Ref(e.name); if(r) kg = Math.round(r.rm1 * pct / 100 * 2) / 2; }
   var bw = kg <= 0;
-  return { reps: reps, kg: bw ? 0 : kg, bw: bw, rm1: _1rm(kg, reps) };
+  return { reps: reps, unite: _repsUnite(e.reps), kg: bw ? 0 : kg, bw: bw, rm1: _1rm(kg, reps) };
 }
 function _histDureeHtml(hd, e){
   var ref = _builderDate || _pevoAujourdhuiIso();
@@ -4263,9 +4271,17 @@ function _histExoHtml(nom, e){
   /* On prescrit une CHARGE alors que la dernière séance était au poids du
      corps : la comparaison se fait avec la dernière séance CHARGÉE — sinon la
      ligne se taisait (qualite/historique-mode-cas.js). */
+  /* L'unité d'un champ Reps (« 5m ») est GARDÉE : affichée, et comparée à unité
+     égale seulement. En charge sur une distance, pas de 1RM : il n'y a pas de
+     sens (qualite/historique-unite-cas.js). Sans unité, rien ne change. */
+  var un = function(p){ return (p && p.unite) || ''; };
+  var nb = function(v){ return String(Math.round(v * 10) / 10).replace('.', ','); };
+  /* On prescrit une CHARGE alors que la dernière séance était au poids du
+     corps : la comparaison se fait avec la dernière séance CHARGÉE — sinon la
+     ligne se taisait (qualite/historique-mode-cas.js). */
   var cur = _histExoCourant(e), titre = 'Dernière séance';
-  if(cur && cur.rm1 && !cur.bw && der.bw){
-    var chargees = avant.filter(function(p){ return !p.bw; });
+  if(cur && cur.rm1 && !cur.bw && der.bw && un(cur) === un(der)){
+    var chargees = avant.filter(function(p){ return !p.bw && un(p) === un(cur); });
     if(chargees.length){
       der = chargees[chargees.length - 1]; prec = chargees.length > 1 ? chargees[chargees.length - 2] : null;
       titre = 'Dernière séance chargée';
@@ -4273,24 +4289,32 @@ function _histExoHtml(nom, e){
   }
   var d = der.date.split('-');
   var txt = titre + ' (' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ') : '
-    + (der.series ? escH(String(der.series)) + ' × ' : '') + der.reps
-    + (der.bw ? ' poids du corps' : ' à ' + kgFr(der.kg) + ' · 1RM est. ' + kgFr(der.rm1));
-  var fleche = function(dv, bw){
+    + (der.series ? escH(String(der.series)) + ' × ' : '') + der.reps + un(der)
+    + (der.bw ? (un(der) ? '' : ' poids du corps') : ' à ' + kgFr(der.kg) + (un(der) ? '' : ' · 1RM est. ' + kgFr(der.rm1)));
+  var fleche = function(dv, bw, u){
     return ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −')
-      + (bw ? Math.abs(dv) + ' reps' : kgFr(Math.abs(dv))) + '</span>';
+      + (bw ? nb(Math.abs(dv)) + (u || ' reps') : kgFr(Math.abs(dv))) + '</span>';
   };
   /* Dès qu'on prescrit (reps, et une charge si la dernière en avait une),
      la ligne compare CETTE séance à la dernière. Sinon, l'écart entre les deux
      séances précédentes, comme avant (qualite/historique-vivant-cas.js). */
-  if(cur && cur.rm1 && cur.bw === !!der.bw){
-    var dc = der.bw ? cur.reps - der.reps : Math.round((cur.rm1 - der.rm1) * 10) / 10;
-    txt += ' → aujourd’hui' + (!dc ? ' : même charge'
-      : (der.bw ? ' ' + cur.reps + ' reps' : ' 1RM est. ' + kgFr(cur.rm1)) + fleche(dc, der.bw));
-  } else if(cur && cur.rm1 && !cur.bw){
-    txt += ' → aujourd’hui 1RM est. ' + kgFr(cur.rm1) + ' (première charge)';   // jamais chargé avant
-  } else if(prec && !!prec.bw === !!der.bw){
-    var dv = der.bw ? der.reps - prec.reps : Math.round((der.rm1 - prec.rm1) * 10) / 10;
-    if(dv) txt += fleche(dv, der.bw);
+  var memeUnite = !!cur && un(cur) === un(der);
+  if(cur && cur.rm1 && memeUnite && cur.bw === !!der.bw){
+    if(un(der) && !der.bw){   // en charge sur une distance : les kilos, puis la quantité
+      var dk = Math.round((cur.kg - der.kg) * 10) / 10, dq = Math.round((cur.reps - der.reps) * 10) / 10;
+      txt += ' → aujourd’hui' + (dk ? ' ' + kgFr(cur.kg) + fleche(dk, false)
+        : dq ? ' ' + nb(cur.reps) + un(der) + fleche(dq, true, un(der)) : ' : identique');
+    } else {
+      var dc = der.bw ? Math.round((cur.reps - der.reps) * 10) / 10 : Math.round((cur.rm1 - der.rm1) * 10) / 10;
+      txt += ' → aujourd’hui' + (!dc ? (un(der) ? ' : identique' : ' : même charge')
+        : (der.bw ? ' ' + nb(cur.reps) + (un(der) || ' reps') : ' 1RM est. ' + kgFr(cur.rm1)) + fleche(dc, der.bw, un(der)));
+    }
+  } else if(cur && cur.rm1 && !cur.bw && memeUnite){
+    txt += ' → aujourd’hui ' + (un(cur) ? kgFr(cur.kg) : '1RM est. ' + kgFr(cur.rm1)) + ' (première charge)';   // jamais chargé avant
+  } else if(prec && !!prec.bw === !!der.bw && un(prec) === un(der)){
+    var dv = der.bw ? Math.round((der.reps - prec.reps) * 10) / 10
+      : un(der) ? Math.round((der.kg - prec.kg) * 10) / 10 : Math.round((der.rm1 - prec.rm1) * 10) / 10;
+    if(dv) txt += fleche(dv, der.bw, un(der));
   }
   /* Un clic ouvre la courbe de l'exercice (qualite/cible-1rm-cas.js). */
   return '<button type="button" class="exo-hist-lien" onclick="_histVoirCourbe(this)" title="Voir la courbe de l’exercice">' + txt + '</button>';
@@ -4407,7 +4431,7 @@ function _extractExoLoads(seances, minPoints) {
         if(!rm1) return;
         var key = _cleExo(name);
         if(!map[key]) map[key] = { label: name, points: [] };
-        map[key].points.push({ date: prog.date, kg: bw?0:kg, reps: reps, series: exo.series || '', rm1: rm1, bw: bw, progNom: prog.nom });
+        map[key].points.push({ date: prog.date, kg: bw?0:kg, reps: reps, unite: _repsUnite(exo.reps), series: exo.series || '', rm1: rm1, bw: bw, progNom: prog.nom });
       });
     });
   });
