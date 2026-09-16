@@ -54,7 +54,7 @@ function ok(nom, cond, detail) {
 var TABLES_PATIENT = ['programmes', 'seances_planifiees', 'patient_settings',
   'patient_protocols', 'protocol_criteria_checks', 'patient_messages',
   'clinical_notes', 'strava_activities', 'athlete_feedback', 'athlete_objectifs',
-  'athlete_newsletter', 'patient_liens'];
+  'athlete_newsletter', 'patient_liens', 'prescriptions'];
 /* Bibliothèque : ses lignes publiques sont faites pour être partagées. */
 var TABLES_BIBLIO = ['templates', 'template_groups'];
 /* Ce que l'athlète écrit réellement depuis athlete.html. Tout le reste lui est
@@ -67,7 +67,7 @@ var ECRITURES_ATHLETE = {
   athlete_newsletter: ['UPDATE']
 };
 /* Jamais par un lien, quel qu'il soit. */
-var JAMAIS_ANONYME = ['clinical_notes', 'template_groups', 'patient_liens'];   // les jetons : jamais lus par un lien
+var JAMAIS_ANONYME = ['clinical_notes', 'template_groups', 'patient_liens', 'prescriptions'];   // les jetons : jamais lus par un lien
 var COMMANDES = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
 
 /* ── Lecture du SQL ─────────────────────────────────────────────────────── */

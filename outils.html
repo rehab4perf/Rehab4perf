@@ -758,6 +758,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </style>
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
   <script src="js/r4p-confirmer.js?v=20260913f"></script>
+  <script src="js/presc-catalogue.js?v=20260916b"></script>
 </head>
 <body>
 
@@ -1044,6 +1045,31 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 .presc-card-body {
   padding: 16px;
 }
+/* Catalogue de l'arrêté du 14 septembre 2026 (qualite/presc-catalogue-cas.js) */
+.presc-cat-q { width:100%; font-family:var(--font-sans); font-size:.9rem; color:var(--text); border:1.5px solid var(--border2); border-radius:5px; padding:7px 10px; margin-bottom:6px; background:var(--surface); }
+.presc-cat-q:focus { border-color:var(--accent); }
+.presc-cat-sec { font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text2); margin:12px 0 2px; }
+.presc-cat-grp { border-top:1px solid var(--border); }
+.presc-cat-grp-h { display:flex; align-items:center; gap:8px; width:100%; background:none; border:none; padding:9px 2px; font-family:inherit; font-size:.88rem; font-weight:600; color:var(--text); cursor:pointer; text-align:left; }
+.presc-cat-grp-h .n { margin-left:auto; font-weight:400; color:var(--text3); font-size:.75rem; }
+.presc-item { display:flex; align-items:center; gap:6px; padding:5px 2px 5px 16px; font-size:.85rem; color:var(--text); }
+.presc-item-txt { flex:1; min-width:0; }
+.presc-item-note { display:block; font-size:.72rem; color:var(--text3); }
+.presc-nr { font-size:.62rem; font-weight:700; color:var(--orange-d); background:var(--orange-l); border-radius:4px; padding:0 4px; margin-left:4px; }
+.presc-ex { display:flex; align-items:center; gap:6px; padding:3px 2px 3px 44px; font-size:.8rem; color:var(--text2); }
+.presc-ex .presc-item-txt::before { content:'↳ '; color:var(--text3); }
+.presc-plus { flex-shrink:0; width:26px; height:26px; border-radius:50%; border:1px solid var(--border2); background:var(--surface); color:var(--accent); font-size:1.05rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+.presc-plus:hover { background:var(--accent-l); border-color:var(--accent); }
+.presc-plus.ok { background:var(--green-l); color:var(--green-d); border-color:var(--green-b); }
+.presc-fav { flex-shrink:0; width:26px; height:26px; border:none; background:none; color:var(--text3); font-size:1rem; cursor:pointer; padding:0; }
+.presc-fav.on { color:var(--orange); }
+.presc-cat-legal { font-size:.72rem; color:var(--text3); margin-top:10px; line-height:1.45; }
+.presc-hist-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--border); font-size:.85rem; }
+.presc-hist-row:first-child { border-top:none; }
+.presc-hist-date { flex-shrink:0; width:88px; color:var(--text2); font-variant-numeric:tabular-nums; }
+.presc-hist-obj { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+.presc-hist-row button { flex-shrink:0; font-family:inherit; font-size:.78rem; border:1px solid var(--border2); background:var(--surface); color:var(--accent); border-radius:5px; padding:4px 10px; cursor:pointer; }
+.presc-vide { font-size:.82rem; color:var(--text3); margin:0; }
 .presc-field-row {
   display: flex;
   gap: 10px;
@@ -1219,13 +1245,23 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <div class="presc-field-row">
           <div class="presc-field">
             <label>Objet de la prescription</label>
-            <textarea id="presc-objet" rows="2" oninput="updatePrescDoc()">2 BAS DE CONTENTION CLASSE 2 DES MEMBRES INFÉRIEURS</textarea>
+            <textarea id="presc-objet" rows="5" oninput="updatePrescDoc()">2 BAS DE CONTENTION CLASSE 2 DES MEMBRES INFÉRIEURS</textarea>
           </div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
           <button class="presc-print-btn" onclick="printPrescription()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>Imprimer / Exporter PDF</button>
           <button class="presc-print-btn" onclick="resetPrescription()" style="background:#6B6860;">↺ Réinitialiser</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Catalogue : ce que le kinésithérapeute peut prescrire (qualite/presc-catalogue-cas.js) -->
+    <div class="presc-card">
+      <div class="presc-card-header">Catalogue — arrêté du 14 septembre 2026</div>
+      <div class="presc-card-body">
+        <input type="search" id="presc-cat-q" class="presc-cat-q" placeholder="Rechercher : attelle, TENS, paracétamol…" oninput="_prescRenderCatalogue()">
+        <div id="presc-cat"></div>
+        <p class="presc-cat-legal">Dans le cadre de vos compétences et hors contre-indication médicale. Le « + » ajoute un gabarit à compléter (« … »). Médicaments en DCI ; posologies adultes usuelles, à adapter au patient. ☆ épingle un produit en favori.</p>
       </div>
     </div>
 
@@ -1255,6 +1291,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       </div>
     </div>
 
+
+    <!-- Historique des ordonnances du patient -->
+    <div class="presc-card">
+      <div class="presc-card-header">Ordonnances de ce patient</div>
+      <div class="presc-card-body"><div id="presc-hist"><p class="presc-vide">Sélectionnez un patient pour voir ses ordonnances.</p></div></div>
+    </div>
   </div>
 </div>
 
@@ -1807,6 +1849,164 @@ function _prescFillFromPatient(force) {
     else if (sexe.charAt(0) === 'M') civ.value = 'M.';
   }
   updatePrescDoc();
+  try { _prescRenderCatalogue(); _prescHistCharger(); } catch(e){}   // suggestions et historique suivent le patient
+}
+
+/* ── Catalogue, favoris, suggestions, historique (qualite/presc-catalogue-cas.js) ── */
+var _PRESC_DEFAUT = '2 BAS DE CONTENTION CLASSE 2 DES MEMBRES INFÉRIEURS';
+var _prescOuverts = {};
+var _prescHistListe = [];
+function _prescEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _prescUid(){ try { _ppRefreshToken(); } catch(e){} return _ppUid || ''; }
+function _prescFavsCle(){ return 'r4p-presc-favs-' + (_prescUid() || 'local'); }
+function _prescFavs(){ try { return JSON.parse(localStorage.getItem(_prescFavsCle()) || '[]') || []; } catch(e){ return []; } }
+function _prescToggleFav(id){
+  var f = _prescFavs(), i = f.indexOf(id);
+  if(i < 0) f.push(id); else f.splice(i, 1);
+  try { localStorage.setItem(_prescFavsCle(), JSON.stringify(f)); } catch(e){}
+  _prescRenderCatalogue();
+}
+function _prescToggleCat(id){ _prescOuverts[id] = !_prescOuverts[id]; _prescRenderCatalogue(); }
+
+/* Le « + » AJOUTE une ligne en fin de texte — rien n'est effacé — puis
+   sélectionne le premier « … » à compléter. */
+function _prescAjouter(ligne){
+  var ta = document.getElementById('presc-objet');
+  if(!ta || !ligne) return;
+  var v = ta.value.replace(/\s+$/, '');
+  ta.value = (v ? v + '\n' : '') + ligne;
+  updatePrescDoc();
+  var debut = ta.value.length - ligne.length, k = ligne.indexOf('…');
+  try { ta.focus(); if(k >= 0) ta.setSelectionRange(debut + k, debut + k + 1); else ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
+}
+function _prescAjouterId(id, ex, btn){
+  var e = (typeof PRESC_INDEX !== 'undefined') ? PRESC_INDEX[id] : null;
+  if(!e) return;
+  var ligne = (ex >= 0 && e.item.exemples && e.item.exemples[ex]) ? e.item.exemples[ex].ligne : _prescLigne(e.item);
+  _prescAjouter(ligne);
+  if(btn){ btn.classList.add('ok'); btn.textContent = '✓'; }
+}
+
+function _prescSuggestionsCourantes(){
+  if(typeof _prescSuggestions !== 'function') return [];
+  var bilan = {};
+  try { bilan = JSON.parse(localStorage.getItem('athletik-bilan') || '{}') || {}; } catch(e){}
+  return _prescSuggestions(bilan, _prescLirePatient() || {});
+}
+function _prescItemHtml(it, favs){
+  var fav = favs.indexOf(it.id) >= 0;
+  var h = '<div class="presc-item">'
+    + '<button type="button" class="presc-fav' + (fav ? ' on' : '') + '" onclick="_prescToggleFav(\'' + it.id + '\')" title="' + (fav ? 'Retirer des favoris' : 'Épingler en favori') + '" aria-label="Favori">' + (fav ? '★' : '☆') + '</button>'
+    + '<span class="presc-item-txt">' + _prescEsc(it.libelle) + (it.nr ? '<span class="presc-nr">NR</span>' : '')
+    + (it.note ? '<span class="presc-item-note">' + _prescEsc(it.note) + '</span>' : '') + '</span>'
+    + '<button type="button" class="presc-plus" onclick="_prescAjouterId(\'' + it.id + '\', -1, this)" title="' + (it.dci ? 'Ajouter un gabarit DCI à compléter' : 'Ajouter à la prescription') + '" aria-label="Ajouter">+</button></div>';
+  (it.exemples || []).forEach(function(ex, i){
+    h += '<div class="presc-ex"><span class="presc-item-txt">' + _prescEsc(ex.libelle) + '</span>'
+      + '<button type="button" class="presc-plus" onclick="_prescAjouterId(\'' + it.id + '\', ' + i + ', this)" title="Ajouter avec la posologie courante" aria-label="Ajouter">+</button></div>';
+  });
+  return h;
+}
+function _prescRenderCatalogue(){
+  var box = document.getElementById('presc-cat');
+  if(!box || typeof PRESC_CATALOGUE === 'undefined') return;
+  var q = _prescNormTexte((document.getElementById('presc-cat-q') || {}).value);
+  var favs = _prescFavs(), h = '';
+  var trouve = function(it, cat){
+    if(!q) return true;
+    var t = _prescNormTexte(it.libelle + ' ' + (it.note || '') + ' ' + cat.titre + ' ' + (it.exemples || []).map(function(e){ return e.libelle; }).join(' '));
+    return t.indexOf(q) >= 0;
+  };
+  if(!q){
+    var f = favs.filter(function(id){ return PRESC_INDEX[id]; });
+    if(f.length){ h += '<div class="presc-cat-sec">Favoris</div>'; f.forEach(function(id){ h += _prescItemHtml(PRESC_INDEX[id].item, favs); }); }
+    var sg = _prescSuggestionsCourantes();
+    if(sg.length){ h += '<div class="presc-cat-sec">Suggestions d’après le bilan</div>'; sg.forEach(function(id){ h += _prescItemHtml(PRESC_INDEX[id].item, favs); }); }
+    if(f.length || sg.length) h += '<div class="presc-cat-sec">Toutes les rubriques</div>';
+  }
+  var n = 0;
+  PRESC_CATALOGUE.forEach(function(cat){
+    var its = cat.items.filter(function(it){ return trouve(it, cat); });
+    if(!its.length) return;
+    n += its.length;
+    var ouvert = !!q || !!_prescOuverts[cat.id];
+    h += '<div class="presc-cat-grp"><button type="button" class="presc-cat-grp-h" onclick="_prescToggleCat(\'' + cat.id + '\')" aria-expanded="' + ouvert + '">'
+      + (ouvert ? '▾' : '▸') + ' ' + _prescEsc(cat.titre) + '<span class="n">' + cat.items.length + '</span></button>';
+    if(ouvert) its.forEach(function(it){ h += _prescItemHtml(it, favs); });
+    h += '</div>';
+  });
+  if(q && !n) h += '<p class="presc-vide">Aucun produit ne correspond — le texte libre reste disponible.</p>';
+  box.innerHTML = h;
+}
+
+/* Historique : en base (table prescriptions), et dans le navigateur tant que
+   la migration 20260916 n'est pas appliquée. */
+function _prescPatientId(){ var p = _prescLirePatient(); return p && p.id ? String(p.id) : ''; }
+function _prescHistCleLocale(pid){ return 'r4p-presc-hist-' + (_prescUid() || 'local') + '-' + pid; }
+function _prescHistLocal(pid){ try { return JSON.parse(localStorage.getItem(_prescHistCleLocale(pid)) || '[]') || []; } catch(e){ return []; } }
+function _prescHistCharger(){
+  var box = document.getElementById('presc-hist');
+  if(!box) return;
+  var pid = _prescPatientId();
+  if(!pid){ box.innerHTML = '<p class="presc-vide">Sélectionnez un patient pour voir ses ordonnances.</p>'; return; }
+  var local = _prescHistLocal(pid);
+  _prescUid();
+  if(!_ppToken){ _prescHistRender(local); return; }
+  fetch(PP_SUPA_URL + '/rest/v1/prescriptions?patient_id=eq.' + encodeURIComponent(pid) + '&select=id,date,objet,cree_at&order=cree_at.desc&limit=30',
+        { headers: { 'Authorization': 'Bearer ' + _ppToken, 'apikey': PP_SUPA_KEY } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){ if(_prescPatientId() !== pid) return; _prescHistRender((Array.isArray(rows) ? rows : []).concat(local)); })
+    .catch(function(){ _prescHistRender(local); });
+}
+function _prescHistRender(liste){
+  var box = document.getElementById('presc-hist');
+  if(!box) return;
+  _prescHistListe = liste.slice().sort(function(a, b){ return String(b.cree_at || b.date).localeCompare(String(a.cree_at || a.date)); }).slice(0, 20);
+  if(!_prescHistListe.length){ box.innerHTML = '<p class="presc-vide">Aucune ordonnance imprimée pour ce patient.</p>'; return; }
+  box.innerHTML = _prescHistListe.map(function(h, i){
+    var lignes = String(h.objet || '').split('\n').filter(function(l){ return l.trim(); });
+    return '<div class="presc-hist-row"><span class="presc-hist-date">' + _prescEsc(_prescFormatDate(h.date)) + '</span>'
+      + '<span class="presc-hist-obj" title="' + _prescEsc(h.objet) + '">' + _prescEsc(lignes[0] || '') + (lignes.length > 1 ? ' (+' + (lignes.length - 1) + ')' : '') + '</span>'
+      + '<button type="button" onclick="_prescRefaire(' + i + ')">Refaire</button></div>';
+  }).join('');
+}
+function _prescRefaire(i){
+  var h = _prescHistListe[i], ta = document.getElementById('presc-objet');
+  if(!h || !ta) return;
+  var faire = function(){
+    ta.value = h.objet;
+    var d = new Date(), dt = document.getElementById('presc-date');
+    if(dt) dt.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    updatePrescDoc();
+  };
+  var courant = ta.value.trim();
+  if(courant && courant !== String(h.objet).trim() && courant !== _PRESC_DEFAUT){
+    r4pConfirmer({ titre: 'Remplacer le texte en cours ?', message: 'L’objet de la prescription sera remplacé par celui du ' + _prescFormatDate(h.date) + '.', ok: 'Remplacer' })
+      .then(function(ok){ if(ok) faire(); });
+  } else faire();
+}
+function _prescHistEnregistrer(objet, date){
+  var pid = _prescPatientId();
+  if(!pid || !objet) return;
+  var ligne = { date: date || new Date().toISOString().slice(0, 10), objet: objet };
+  var local = function(){
+    var l = _prescHistLocal(pid);
+    if(l[0] && l[0].date === ligne.date && l[0].objet === ligne.objet) return _prescHistCharger();   // réimpression
+    l.unshift({ date: ligne.date, objet: ligne.objet, cree_at: new Date().toISOString(), _local: true });
+    try { localStorage.setItem(_prescHistCleLocale(pid), JSON.stringify(l.slice(0, 50))); } catch(e){}
+    _prescHistCharger();
+  };
+  var dernier = _prescHistListe[0];
+  if(dernier && dernier.date === ligne.date && dernier.objet === ligne.objet) return;   // déjà enregistrée aujourd'hui
+  _prescUid();
+  if(!_ppToken) return local();
+  fetch(PP_SUPA_URL + '/rest/v1/prescriptions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + _ppToken, 'apikey': PP_SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify({ patient_id: pid, date: ligne.date, objet: ligne.objet })
+  })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){ if(Array.isArray(rows) && rows.length) _prescHistCharger(); else local(); })   // [] : rien d'écrit
+    .catch(local);
 }
 
 /* Relit le profil le plus frais et redessine tout ce qui en depend. */
@@ -1816,6 +2016,7 @@ function _prescRefresh() {
   _updatePrescHeader(prof);
   _updatePrescAssets(prof);
   _prescFillFromPatient(false);
+  try { _prescRenderCatalogue(); _prescHistCharger(); } catch(e){}
 }
 
 function updatePrescDoc() {
@@ -1879,6 +2080,7 @@ function printPrescription() {
   // l'empêche une fois qu'on est passé par un .then()).
   var win = window.open('', '_blank', 'width=850,height=1100');
   win.document.write('Préparation du document…');
+  try { _prescHistEnregistrer((document.getElementById('presc-objet').value||'').trim(), date); } catch(e){}   // l'ordonnance entre dans l'historique
 
   // L'URL signée affichée dans l'aperçu (120s) a de bonnes chances d'avoir expiré au
   // moment où le praticien clique sur Imprimer — on en régénère des fraîches, valables

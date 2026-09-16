@@ -32,6 +32,7 @@ var CHAINE = {
                            ['athlete.html', 'js/volume-sport.js']],
   'programme.html':     [['index.html', 'programme.html']],
   'outils.html':        [['index.html', 'outils.html']],
+  'js/presc-catalogue.js': [['outils.html', 'js/presc-catalogue.js'], ['index.html', 'outils.html']],
   'js/patients-data.js':[['patients.html', 'js/patients-data.js'], ['index.html', 'patients.html']],
   'patients.html':      [['index.html', 'patients.html']],
   'account.html':       [['index.html', 'account.html']],
