@@ -1169,12 +1169,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   margin-bottom: 32px;
 }
 .presc-doc-objet {
-  text-align: center;
-  font-size: 1.15rem;
+  text-align: left;
+  font-size: 1.05rem;
   font-weight: 700;
   margin-bottom: 32px;
   line-height: 1.4;
 }
+/* Une prescription par ligne : tiret, retour à la ligne aligné sous le texte */
+.presc-liste { list-style: none; margin: 0 auto; padding: 0; max-width: 92%; }
+.presc-liste li { position: relative; padding-left: 1.3em; margin-bottom: .55em; }
+.presc-liste li::before { content: '–'; position: absolute; left: 0; top: 0; }
 .presc-doc-logos {
   display: flex;
   justify-content: center;
@@ -1857,6 +1861,13 @@ var _PRESC_DEFAUT = '2 BAS DE CONTENTION CLASSE 2 DES MEMBRES INFÉRIEURS';
 var _prescOuverts = {};
 var _prescHistListe = [];
 function _prescEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+/* Une prescription par ligne, précédée d'un tiret — aperçu ET impression
+   (qualite/presc-liste-cas.js). Un tiret déjà tapé n'est pas doublé. */
+function _prescObjetHtml(texte){
+  var lignes = String(texte || '').split('\n').map(function(l){ return l.replace(/^\s*[-–—•*]\s*/, '').trim(); }).filter(Boolean);
+  if(!lignes.length) return '—';
+  return '<ul class="presc-liste">' + lignes.map(function(l){ return '<li>' + _prescEsc(l) + '</li>'; }).join('') + '</ul>';
+}
 function _prescUid(){ try { _ppRefreshToken(); } catch(e){} return _ppUid || ''; }
 function _prescFavsCle(){ return 'r4p-presc-favs-' + (_prescUid() || 'local'); }
 function _prescFavs(){ try { return JSON.parse(localStorage.getItem(_prescFavsCle()) || '[]') || []; } catch(e){ return []; } }
@@ -2039,7 +2050,7 @@ function updatePrescDoc() {
   document.getElementById('presc-doc-patient').textContent = patStr;
 
   // Objet
-  document.getElementById('presc-doc-objet').textContent = obj || '—';
+  document.getElementById('presc-doc-objet').innerHTML = _prescObjetHtml(obj);
 }
 
 function resetPrescription() {
@@ -2062,7 +2073,7 @@ function printPrescription() {
   var pren = (document.getElementById('presc-prenom').value||'').trim();
   var ddn  = document.getElementById('presc-ddn').value;
   var date = document.getElementById('presc-date').value;
-  var obj  = (document.getElementById('presc-objet').value||'').trim().replace(/\n/g,'<br>');
+  var obj  = _prescObjetHtml((document.getElementById('presc-objet').value||'').trim());   // une ligne, un tiret
 
   var dateStr = _prescFormatDate(date);
   var genStr  = civ === 'Mme.' ? 'née le' : 'né le';
@@ -2111,7 +2122,7 @@ function printPrescription() {
       : '';
 
     win.document.open();
-    win.document.write('<!DOCTYPE html>\n<html lang="fr"><head>\n<meta charset="UTF-8">\n<title>Prescription ' + nom + ' ' + pren + '</title>\n<style>\n*{margin:0;padding:0;box-sizing:border-box;}\n@page{size:A4 portrait;margin:28mm 24mm;}\nbody{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#111;line-height:1.55;}\n.pp-header{display:flex;justify-content:space-between;margin-bottom:22pt;}\n.pp-header-left{font-size:9pt;}\n.pp-header-right{font-size:9pt;text-align:right;}\n.pp-header strong{font-size:10pt;}\n.pp-date{font-size:9.5pt;margin-bottom:22pt;}\n.pp-title{text-align:center;font-size:11pt;font-weight:700;text-decoration:underline;margin-bottom:20pt;letter-spacing:.03em;}\n.pp-patient-label{font-size:9.5pt;font-weight:700;text-decoration:underline;margin-bottom:6pt;}\n.pp-patient-name{font-size:10pt;font-weight:700;margin-bottom:26pt;}\n.pp-objet{text-align:center;font-size:12pt;font-weight:700;margin-bottom:26pt;line-height:1.4;}\n.pp-logos{display:flex;justify-content:center;margin-bottom:22pt;}\n.pp-logos img{max-height:90pt;object-fit:contain;}\n.pp-sig-label{font-size:9pt;text-decoration:underline;margin-bottom:4pt;}\n.pp-sig-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;}\n.pp-sig-img{max-height:60pt;margin-top:3pt;}\n.pp-tampon{max-height:68pt;}\n</style>\n</head><body>\n<div class="pp-header">\n  <div class="pp-header-left">' + headerLeftHtml + '</div>\n  <div class="pp-header-right">' + headerRightHtml + '</div>\n</div>\n<div class="pp-date">Paris, le ' + dateStr + '</div>\n<div class="pp-title">PRESCRIPTION</div>\n<div class="pp-patient-label">PATIENT :</div>\n<div class="pp-patient-name">' + patStr + '</div>\n<div class="pp-objet">' + obj + '</div>\n' + logosHtml + '\n' + sigRowHtml + '\n<script>window.addEventListener(\'load\',function(){window.print();});<\/script>\n</body></html>');
+    win.document.write('<!DOCTYPE html>\n<html lang="fr"><head>\n<meta charset="UTF-8">\n<title>Prescription ' + nom + ' ' + pren + '</title>\n<style>\n*{margin:0;padding:0;box-sizing:border-box;}\n@page{size:A4 portrait;margin:28mm 24mm;}\nbody{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#111;line-height:1.55;}\n.pp-header{display:flex;justify-content:space-between;margin-bottom:22pt;}\n.pp-header-left{font-size:9pt;}\n.pp-header-right{font-size:9pt;text-align:right;}\n.pp-header strong{font-size:10pt;}\n.pp-date{font-size:9.5pt;margin-bottom:22pt;}\n.pp-title{text-align:center;font-size:11pt;font-weight:700;text-decoration:underline;margin-bottom:20pt;letter-spacing:.03em;}\n.pp-patient-label{font-size:9.5pt;font-weight:700;text-decoration:underline;margin-bottom:6pt;}\n.pp-patient-name{font-size:10pt;font-weight:700;margin-bottom:26pt;}\n.pp-objet{text-align:left;font-size:11.5pt;font-weight:700;margin-bottom:26pt;line-height:1.4;}.pp-objet .presc-liste{list-style:none;margin:0 auto;padding:0;max-width:92%;}.pp-objet .presc-liste li{position:relative;padding-left:1.3em;margin-bottom:6pt;page-break-inside:avoid;}.pp-objet .presc-liste li::before{content:\'–\';position:absolute;left:0;top:0;}\n.pp-logos{display:flex;justify-content:center;margin-bottom:22pt;}\n.pp-logos img{max-height:90pt;object-fit:contain;}\n.pp-sig-label{font-size:9pt;text-decoration:underline;margin-bottom:4pt;}\n.pp-sig-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;}\n.pp-sig-img{max-height:60pt;margin-top:3pt;}\n.pp-tampon{max-height:68pt;}\n</style>\n</head><body>\n<div class="pp-header">\n  <div class="pp-header-left">' + headerLeftHtml + '</div>\n  <div class="pp-header-right">' + headerRightHtml + '</div>\n</div>\n<div class="pp-date">Paris, le ' + dateStr + '</div>\n<div class="pp-title">PRESCRIPTION</div>\n<div class="pp-patient-label">PATIENT :</div>\n<div class="pp-patient-name">' + patStr + '</div>\n<div class="pp-objet">' + obj + '</div>\n' + logosHtml + '\n' + sigRowHtml + '\n<script>window.addEventListener(\'load\',function(){window.print();});<\/script>\n</body></html>');
     win.document.close();
   });
 }
