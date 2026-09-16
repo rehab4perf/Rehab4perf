@@ -758,7 +758,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </style>
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
   <script src="js/r4p-confirmer.js?v=20260913f"></script>
-  <script src="js/presc-catalogue.js?v=20260916b"></script>
+  <script src="js/presc-catalogue.js?v=20260916c"></script>
 </head>
 <body>
 
@@ -1902,7 +1902,7 @@ function _prescItemHtml(it, favs){
     + '<button type="button" class="presc-plus" onclick="_prescAjouterId(\'' + it.id + '\', -1, this)" title="' + (it.dci ? 'Ajouter un gabarit DCI à compléter' : 'Ajouter à la prescription') + '" aria-label="Ajouter">+</button></div>';
   (it.exemples || []).forEach(function(ex, i){
     h += '<div class="presc-ex"><span class="presc-item-txt">' + _prescEsc(ex.libelle) + '</span>'
-      + '<button type="button" class="presc-plus" onclick="_prescAjouterId(\'' + it.id + '\', ' + i + ', this)" title="Ajouter avec la posologie courante" aria-label="Ajouter">+</button></div>';
+      + '<button type="button" class="presc-plus" onclick="_prescAjouterId(\'' + it.id + '\', ' + i + ', this)" title="Ajouter cet exemple à la prescription" aria-label="Ajouter">+</button></div>';
   });
   return h;
 }

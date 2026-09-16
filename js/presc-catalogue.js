@@ -131,6 +131,60 @@ var PRESC_CATALOGUE = [
   ]}
 ];
 
+/* Exemples de désignations pour les dispositifs (demande du praticien,
+   2026-09-16) : l'équivalent des exemples en DCI des médicaments — une ligne
+   précise et prescriptible, SANS marque ni référence commerciale (le
+   remboursement porte sur la désignation générique). « … » reste à compléter.
+   « (NR) » est ajouté d'office sur les produits non remboursables. */
+var PRESC_EXEMPLES_DM = {
+  'cannes':            [['Canne anglaise réglable', '1 CANNE ANGLAISE RÉGLABLE'], ['Canne tripode', '1 CANNE TRIPODE'], ['Canne simple en T', '1 CANNE SIMPLE EN T']],
+  'bequilles':         [['Paire de cannes anglaises', '1 PAIRE DE CANNES ANGLAISES RÉGLABLES']],
+  'deambulateur':      [['Déambulateur fixe', '1 DÉAMBULATEUR FIXE'], ['Déambulateur à 2 roues', '1 DÉAMBULATEUR À 2 ROUES'], ['Rollator 4 roues avec siège', '1 DÉAMBULATEUR À 4 ROUES AVEC SIÈGE ET FREINS']],
+  'embouts':           [['Embouts antidérapants', '2 EMBOUTS DE CANNE ANTIDÉRAPANTS']],
+  'fauteuil':          [['Fauteuil manuel non modulaire', '1 FAUTEUIL ROULANT MANUEL NON MODULAIRE — EN LOCATION, DURÉE : … SEMAINES (MOINS DE 3 MOIS)'], ['Fauteuil manuel modulaire', '1 FAUTEUIL ROULANT MANUEL MODULAIRE — EN LOCATION, DURÉE : … SEMAINES (MOINS DE 3 MOIS)']],
+  'lit':               [['Lit à hauteur variable électrique', '1 LIT MÉDICALISÉ À HAUTEUR VARIABLE ÉLECTRIQUE — EN LOCATION, DURÉE : …']],
+  'soulevement':       [['Potence de lit', '1 POTENCE DE LIT'], ['Soulève-malade électrique et harnais', '1 SOULÈVE-MALADE ÉLECTRIQUE AVEC HARNAIS — TAILLE DU HARNAIS : …']],
+  'redressement':      [['Barre d’appui de redressement', '1 BARRE D’APPUI DE REDRESSEMENT']],
+  'transfert':         [['Planche de transfert', '1 PLANCHE DE TRANSFERT'], ['Drap de glisse', '1 DRAP DE GLISSE']],
+  'douche':            [['Rehausseur de WC', '1 REHAUSSEUR DE WC'], ['Barre d’appui de douche', '1 BARRE D’APPUI POUR DOUCHE']],
+  'matelas-hr':        [['Matelas gaufrier', '1 MATELAS EN MOUSSE HAUTE RÉSILIENCE DE TYPE GAUFRIER']],
+  'coussin':           [['Coussin d’assise en fibres siliconées', '1 COUSSIN D’ASSISE EN FIBRES SILICONÉES']],
+  'attelle-serie':     [['Orthèse de stabilisation de cheville', '1 ORTHÈSE DE STABILISATION DE CHEVILLE DE SÉRIE — CÔTÉ : … — TAILLE : …'], ['Attelle d’immobilisation du genou en extension', '1 ATTELLE D’IMMOBILISATION DU GENOU EN EXTENSION DE SÉRIE — TAILLE : …'], ['Orthèse articulée de genou', '1 ORTHÈSE ARTICULÉE DE GENOU DE SÉRIE — CÔTÉ : … — TAILLE : …']],
+  'attelle-posture':   [['Attelle de repos poignet-main', '1 ATTELLE SOUPLE DE REPOS POIGNET-MAIN DE SÉRIE — CÔTÉ : … — TAILLE : …'], ['Attelle de posture de cheville', '1 ATTELLE SOUPLE DE POSTURE DE CHEVILLE DE SÉRIE — CÔTÉ : … — TAILLE : …']],
+  'ceinture':          [['Ceinture lombaire de soutien', '1 CEINTURE LOMBAIRE DE SOUTIEN DE SÉRIE — TAILLE : …']],
+  'collier':           [['Collier cervical souple', '1 COLLIER CERVICAL SOUPLE DE REPOS DE SÉRIE — TAILLE : …']],
+  'talonnettes':       [['Talonnettes en silicone', '1 PAIRE DE TALONNETTES AMORTISSANTES EN SILICONE — POINTURE : …']],
+  'chaussures':        [['Chaussure de décharge de l’avant-pied', '1 CHAUSSURE THÉRAPEUTIQUE DE DÉCHARGE DE L’AVANT-PIED, USAGE TEMPORAIRE — CÔTÉ : … — POINTURE : …'], ['Chaussures à usage prolongé', '1 PAIRE DE CHAUSSURES THÉRAPEUTIQUES À USAGE PROLONGÉ — POINTURE : …']],
+  'bas':               [['Chaussettes de contention classe 2', '2 PAIRES DE CHAUSSETTES DE CONTENTION CLASSE 2 — TAILLE : …'], ['Bas-cuisses de contention classe 2', '2 PAIRES DE BAS-CUISSES DE CONTENTION CLASSE 2 — TAILLE : …'], ['Collants de contention classe 2', '2 COLLANTS DE CONTENTION CLASSE 2 — TAILLE : …']],
+  'manchon':           [['Manchon de contention du membre supérieur', '1 MANCHON DE CONTENTION DU MEMBRE SUPÉRIEUR CLASSE … — CÔTÉ : … — TAILLE : …']],
+  'strapping':         [['Bande adhésive élastique 6 cm', '… BANDES ADHÉSIVES ÉLASTIQUES DE CONTENTION 6 CM'], ['Bande adhésive inextensible 3,8 cm', '… BANDES ADHÉSIVES INEXTENSIBLES 3,8 CM (CONTENTION RIGIDE)']],
+  'tens':              [['TENS avec électrodes', '1 NEUROSTIMULATEUR TRANSCUTANÉ (TENS) AVEC ÉLECTRODES — EN LOCATION, DURÉE : … SEMAINES']],
+  'excitomoteur':      [['Électrostimulateur 2 canaux', '1 ÉLECTROSTIMULATEUR EXCITOMOTEUR 2 CANAUX AVEC ÉLECTRODES — EN LOCATION, DURÉE : … SEMAINES']],
+  'arthromoteur':      [['Arthromoteur de genou', '1 ARTHROMOTEUR DE GENOU — EN LOCATION, DURÉE : … SEMAINES']],
+  'cryocompression':   [['Cryocompression, manchon genou', '1 APPAREIL DE CRYOCOMPRESSION AVEC MANCHON GENOU — EN LOCATION, DURÉE : … SEMAINES'], ['Cryocompression, manchon épaule', '1 APPAREIL DE CRYOCOMPRESSION AVEC MANCHON ÉPAULE — EN LOCATION, DURÉE : … SEMAINES']],
+  'cryotherapie':      [['Compresses froides réutilisables', '… COMPRESSES DE CRYOTHÉRAPIE RÉUTILISABLES']],
+  'chaud':             [['Patchs chauffants', '… PATCHS CHAUFFANTS']],
+  'stimulateur-perineal': [['Stimulateur et sonde vaginale', '1 STIMULATEUR DE RÉÉDUCATION PÉRINÉALE AVEC SONDE VAGINALE — EN LOCATION, DURÉE : …'], ['Stimulateur et sonde anale', '1 STIMULATEUR DE RÉÉDUCATION PÉRINÉALE AVEC SONDE ANALE — EN LOCATION, DURÉE : …']],
+  'sonde':             [['Sonde vaginale', '1 SONDE VAGINALE DE RÉÉDUCATION PÉRINÉALE'], ['Sonde anale', '1 SONDE ANALE DE RÉÉDUCATION PÉRINÉALE']],
+  'debitmetre':        [['Débitmètre de pointe', '1 DÉBITMÈTRE DE POINTE (PEAK-FLOW)']],
+  'chambre':           [['Chambre d’inhalation avec masque', '1 CHAMBRE D’INHALATION AVEC MASQUE — ADULTE / ENFANT']],
+  'lavage-nez':        [['Dispositif de lavage à grand volume', '1 DISPOSITIF DE LAVAGE DE NEZ À GRAND VOLUME']],
+  'serum-physio':      [['Unidoses de 5 ml', '… BOÎTES DE SÉRUM PHYSIOLOGIQUE EN UNIDOSES DE 5 ML']],
+  'serum-hyper':       [['Hypertonique 7 % pour nébulisation', 'SÉRUM SALÉ HYPERTONIQUE À 7 % POUR NÉBULISATION — QUANTITÉ : … (RENOUVELLEMENT)']],
+  'oxymetre':          [['Oxymètre de doigt', '1 OXYMÈTRE DE POULS DE DOIGT']],
+  'tensiometre':       [['Tensiomètre électronique au bras', '1 TENSIOMÈTRE ÉLECTRONIQUE AU BRAS']],
+  'pansement-balneo':  [['Pansements étanches de balnéothérapie', '… PANSEMENTS ÉTANCHES POUR LA BALNÉOTHÉRAPIE — TAILLE : …']],
+  'hydrocolloide':     [['Pansements hydrocolloïdes', '… PANSEMENTS HYDROCOLLOÏDES — TAILLE : …']],
+  'emolliente':        [['Crème émolliente', '1 TUBE DE CRÈME ÉMOLLIENTE (GLYCÉRINE, VASELINE, PARAFFINE)']]
+};
+PRESC_CATALOGUE.forEach(function(cat){
+  cat.items.forEach(function(it){
+    var ex = PRESC_EXEMPLES_DM[it.id];
+    if(!ex || it.dci) return;
+    it.exemples = ex.map(function(e){ return { libelle: e[0], ligne: e[1] + (it.nr ? ' (NR)' : '') }; });
+  });
+});
+
 /* Un identifiant → son produit (et sa rubrique). */
 var PRESC_INDEX = {};
 PRESC_CATALOGUE.forEach(function(cat){
