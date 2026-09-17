@@ -436,9 +436,20 @@ function _fetchFavsFromSupabase(callback){
 }
 
 var _favFilter = false;
+var _dejaFaitFilter = false;
 function toggleFavFilter(){
   _favFilter = !_favFilter;
+  _dejaFaitFilter = false;   // les deux listes s'excluent
+  document.getElementById('filterDejaFait').classList.remove('active');
   document.getElementById('filterFav').classList.toggle('active', _favFilter);
+  renderLib(document.getElementById('searchInput').value.toLowerCase());
+}
+function toggleDejaFaitFilter(){
+  _dejaFaitFilter = !_dejaFaitFilter;
+  _favFilter = false;
+  document.getElementById('filterFav').classList.remove('active');
+  document.getElementById('filterDejaFait').classList.toggle('active', _dejaFaitFilter);
+  document.getElementById('filterAll').classList.toggle('active', !_dejaFaitFilter);
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
 
@@ -560,7 +571,9 @@ function setFilterAll(){
   }
   if(subWrap2) subWrap2.style.display = 'none';
   _favFilter = false;
+  _dejaFaitFilter = false;
   document.getElementById('filterFav').classList.remove('active');
+  document.getElementById('filterDejaFait').classList.remove('active');
   document.getElementById('filterAll').classList.add('active');
   document.getElementById('filterType').classList.remove('active-filter');
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
@@ -574,6 +587,12 @@ function applyFilters(){
   var subVal   = subSel  ? subSel.value  : '';
   var subVal2  = subSel2 ? subSel2.value : '';
   var allBtn   = document.getElementById('filterAll');
+  if(typeVal || subVal || subVal2){
+    /* Choisir un objectif sort de « Déjà fait » : sinon le menu resterait
+       sans effet visible. */
+    _dejaFaitFilter = false;
+    document.getElementById('filterDejaFait').classList.remove('active');
+  }
   if(typeVal || subVal || subVal2){ allBtn.classList.remove('active'); } else { allBtn.classList.add('active'); }
   document.getElementById('filterType').classList.toggle('active-filter', !!typeVal);
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
@@ -593,9 +612,82 @@ function _repsUnite(r){
   var u = m[1].toLowerCase();
   return (u === 'mn' || u === "'") ? 'min' : (u === 'sec' || u === '"') ? 's' : u;
 }
+function _dateCourteFr(iso){
+  var MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var d = String(iso || '').split('-');
+  if(d.length < 3) return '';
+  return parseInt(d[2], 10) + ' ' + (MOIS[parseInt(d[1], 10) - 1] || '');
+}
+/* ── Bibliothèque : « Déjà fait » ────────────────────────────────────────────
+   Demandé par le praticien (2026-09-18) : « lorsque je veux mettre un exo
+   réalisé sur une ancienne séance, et que je ne me souviens plus du nom, je
+   suis bloqué ».
+   La liste vient des SÉANCES du patient, jamais de LIBRARY ni de _histExos.map
+   (qualite/biblio-deja-fait-cas.js). Deux raisons, et chacune suffit :
+   - un exercice tapé À LA MAIN n'a pas d'entrée de catalogue, et c'est
+     justement celui qu'aucune recherche ne retrouve ;
+   - _extractExoLoads écarte tout exercice sans répétitions chiffrées ni 1RM
+     calculable — étirement, mobilité, exercice fait une seule fois. Bâtie
+     dessus, la liste aurait l'air complète sans l'être, et rien ne l'aurait
+     dit. */
+function _dejaFaitListe(seances){
+  var map = {};
+  (Array.isArray(seances) ? seances : []).forEach(function(s){
+    var prog = s && s.programmes;
+    if(!prog) return;
+    var raw = prog.donnees || {};
+    var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+    (blocs || []).forEach(function(bloc){
+      (((bloc || {}).exos) || []).forEach(function(exo){
+        var nom = String((exo && exo.name) || '').trim();
+        var cle = _cleExo(nom);
+        if(!cle) return;
+        var date = s.date || '';
+        var e = map[cle];
+        /* Le libellé retenu est celui de la DERNIÈRE fois : c'est
+           l'orthographe que le praticien a sous les yeux. */
+        if(!e) map[cle] = { cle:cle, label:nom, date:date, libId:(exo.libId || null) };
+        else if(date >= e.date){ e.label = nom; e.date = date; e.libId = exo.libId || e.libId; }
+      });
+    });
+  });
+  return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a, b){
+    return a.date === b.date ? (a.label.localeCompare(b.label)) : (a.date < b.date ? 1 : -1);
+  });
+}
+function _dejaFaitHtml(q){
+  var vide = function(t){ return '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;">' + t + '</div>'; };
+  /* Un modèle n'est à personne — même règle que la ligne sous l'exercice. */
+  if(_builderMode === 'template') return vide('Un modèle n\'est rattaché à aucun patient.');
+  if(!_progPatient) return vide('Aucun patient sélectionné.');
+  if(!_histExos.faits) return vide('Chargement…');
+  var mots = _norm(q || '').split(/\s+/).filter(Boolean);
+  var items = _histExos.faits.filter(function(it){
+    return mots.every(function(w){ return it.cle.indexOf(w) > -1; });
+  });
+  if(!items.length) return vide(_histExos.faits.length ? 'Aucun exercice trouvé' : 'Aucun exercice déjà prescrit à ce patient.');
+  var dejaMis = {};
+  blocs.forEach(function(b){ (b.exos || []).forEach(function(e){ dejaMis[_cleExo(e.name)] = true; }); });
+  return items.map(function(it){
+    var h = '<div class="lib-item' + (dejaMis[it.cle] ? ' added' : '') + '">';
+    h += '<div class="lib-item-info">';
+    h += '<div class="lib-item-name">' + escH(it.label) + '</div>';
+    h += '<div class="lib-sub"><span class="lib-date">' + escH(_dateCourteFr(it.date)) + '</span></div>';
+    h += '</div>';
+    h += '<button class="lib-add-btn" onclick="addExoDejaFait(\'' + escJS(it.cle) + '\')" title="Ajouter"></button>';
+    return h + '</div>';
+  }).join('');
+}
 
 function renderLib(q, typeFilter, subFilter, subFilter2){
   q = (q||'').toLowerCase();
+  /* « Déjà fait » ne filtre pas LIBRARY : il liste ce que CE patient a déjà
+     reçu, exercices tapés à la main compris (qualite/biblio-deja-fait-cas.js). */
+  if(_dejaFaitFilter){
+    var _sc = document.getElementById('libScroll');
+    if(_sc) _sc.innerHTML = _dejaFaitHtml(q);
+    return;
+  }
   typeFilter  = typeFilter  !== undefined ? typeFilter  : document.getElementById('filterType').value;
   var subSel  = document.getElementById('filterSub');
   var subSel2 = document.getElementById('filterSub2');
@@ -1986,26 +2078,58 @@ function moveEtape(etapeId, dir){
   if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
 
+/* Le bloc qui reçoit un ajout : celui du sélecteur, sinon le bloc actif,
+   sinon le dernier. Partagé par la bibliothèque et par « Déjà fait » — deux
+   copies dériveraient. */
+function _blocCibleAjout(){
+  if(!_blocsReels().length) addBloc();
+  var targetBlocSel = document.getElementById('target-bloc-select');
+  var selectedBlocId = targetBlocSel ? targetBlocSel.value : '';
+  var _reels = _blocsReels();
+  if(!_reels.length) return null;
+  var targetId = selectedBlocId || activeBloc || _reels[_reels.length-1].id;
+  var bloc = blocs.find(function(b){ return b.id===targetId; });
+  if(!bloc || _estMarqueur(bloc)) bloc = _reels[_reels.length-1];
+  return bloc || null;
+}
 function addExoFromLib(libId){
   _hideLibPreview();
   var ex = LIBRARY.find(function(e){ return e.id===libId; });
   if(!ex) return;
-  // If no bloc, create one
-  if(!_blocsReels().length) addBloc();
-  // Use target-bloc-select, activeBloc, or last bloc
-  var targetBlocSel = document.getElementById('target-bloc-select');
-  var selectedBlocId = targetBlocSel ? targetBlocSel.value : '';
-  var _reels = _blocsReels();
-  var targetId = selectedBlocId || activeBloc || _reels[_reels.length-1].id;
-  var bloc = blocs.find(function(b){ return b.id===targetId; });
-  if(!bloc || _estMarqueur(bloc)) { bloc = _reels[_reels.length-1]; targetId = bloc ? bloc.id : null; }
+  var bloc = _blocCibleAjout();
   if(!bloc) return;
+  var targetId = bloc.id;
   var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'kg', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null};
   bloc.exos.push(row);
   renderSession();
-  renderLib(document.getElementById('searchInput').value.toLowerCase());
+  var _si = document.getElementById('searchInput');
+  renderLib(_si ? _si.value.toLowerCase() : '');
   // Scroll to bloc
   var el = document.getElementById('bloc-'+targetId);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* Le « + » de « Déjà fait ». addExoFromLib sort sans rien faire sur un
+   identifiant absent de LIBRARY : un exercice tapé à la main n'en a pas. */
+function addExoDejaFait(cle){
+  _hideLibPreview();
+  var ex = LIBRARY.find(function(e){ return _cleExo(e.name) === cle; });
+  if(ex) return addExoFromLib(ex.id);   // vidéo et objectif viennent avec
+  var it = (_histExos.faits || []).filter(function(x){ return x.cle === cle; })[0];
+  if(!it) return;
+  var bloc = _blocCibleAjout();
+  if(!bloc) return;
+  /* Aucune entrée de catalogue : exercice libre, NOM déjà rempli — le
+     praticien n'a pas à le retaper, c'est tout l'objet du filtre. */
+  bloc.exos.push({ id:genId(), free:true, name:it.label, url:'',
+    reps:'', duree:'', series:'',
+    cibles:[{type:'kg', min:'', max:''}],
+    tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null });
+  activeBloc = bloc.id;
+  renderSession();
+  var _si = document.getElementById('searchInput');
+  renderLib(_si ? _si.value.toLowerCase() : '');
+  var el = document.getElementById('bloc-'+bloc.id);
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
@@ -4181,7 +4305,7 @@ function _1rm(kg, reps) {
    — les charges PRESCRITES des seances passees — chargees une fois par
    patient a l'ouverture du builder. Les lignes se remplissent EN PLACE :
    redessiner la seance ferait perdre la saisie en cours. */
-var _histExos = { pid:null, map:null, durees:null, enCours:false };
+var _histExos = { pid:null, map:null, durees:null, faits:null, enCours:false };
 function _histExosCharger(forcer){
   if(!_progPatient || !_progToken) return;
   var pid = String(_progPatient.id);
@@ -4189,7 +4313,7 @@ function _histExosCharger(forcer){
   /* Rechargé à chaque ouverture du builder : une séance enregistrée y entre
      sans attendre un changement de patient. L'ancien historique reste affiché
      le temps du chargement (qualite/historique-vivant-cas.js). */
-  _histExos = { pid:pid, map: (_histExos.pid === pid ? _histExos.map : null), durees: (_histExos.pid === pid ? _histExos.durees : null), enCours:true };
+  _histExos = { pid:pid, map: (_histExos.pid === pid ? _histExos.map : null), durees: (_histExos.pid === pid ? _histExos.durees : null), faits: (_histExos.pid === pid ? _histExos.faits : null), enCours:true };
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + encodeURIComponent(pid)
     + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
   _fetchRetry(url, { method:'GET', headers:_sbHeaders() })
@@ -4198,12 +4322,19 @@ function _histExosCharger(forcer){
       if(_histExos.pid !== pid) return;
       _histExos.map = Array.isArray(data) ? _extractExoLoads(data, 1) : {};
       _histExos.durees = Array.isArray(data) ? _extractExoDurations(data, 1) : {};   // gainage, isométrie (qualite/historique-duree-cas.js)
+      _histExos.faits = Array.isArray(data) ? _dejaFaitListe(data) : [];             // « Déjà fait » (qualite/biblio-deja-fait-cas.js)
       _histExos.enCours = false;
       _histExosRemplir();
     })
     .catch(function(){ if(_histExos.pid === pid) _histExos.enCours = false; });
 }
 function _histExosRemplir(){
+  /* La liste « Déjà fait » arrive avec ces données : si elle est affichée, la
+     redessiner — sinon elle resterait sur « Chargement… ». */
+  if(_dejaFaitFilter){
+    var _si = document.getElementById('searchInput');
+    renderLib(_si ? _si.value.toLowerCase() : '');
+  }
   document.querySelectorAll('.exo-hist[data-hist]').forEach(function(el){
     var p = (el.getAttribute('data-exo') || '').split('|');
     var e = p[1] ? _getExo(p[0], p[1]) : null;

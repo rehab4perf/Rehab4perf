@@ -37,10 +37,13 @@ const fd = fnDe(pdata), fm = fnDe(pmain);
 /* ── A : Évolution dans le menu ···, builder seulement ───────────────────── */
 console.log('\nA — Évolution dans le builder');
 const menu = html.slice(html.indexOf('id="more-menu"'), html.indexOf('id="more-menu"') + 7000);
-/* Retiré le 2026-09-15 (« 3 + 5 ») : la ligne sous chaque exercice suffit, et
-   un clic dessus ouvre la courbe (historique-vivant-cas, historique-duree-cas). */
-ok('A retiré : le menu ··· ne porte plus « Évolution »', !/moreMenuEvo/.test(menu) && !/openChargesEvo\(\)/.test(menu));
-ok('… ni sa règle d\'affichage', !/_evo\.style/.test(fm('_toggleMoreMenu')));
+/* Retiré le 2026-09-15 (« 3 + 5 »), puis rétabli le 2026-09-18.
+   « Évolution » est revenue dans le menu ··· le 2026-09-18 (demande du
+   praticien) : elle y est, et seulement quand le builder est ouvert
+   — c'est qualite/biblio-deja-fait-cas.js qui le contrôle. Ce qui compte
+   ici reste la ligne sous l'exercice, testée plus bas. */
+ok('A : le menu ··· porte « Évolution », builder ouvert seulement', /moreMenuEvo/.test(menu) && /openChargesEvo\(\)/.test(menu));
+ok('… et sa règle d\'affichage', /_evo\.style\.display/.test(fm('_toggleMoreMenu')));
 
 /* ── B : la ligne d'historique ───────────────────────────────────────────── */
 console.log('\nB — la dernière séance, sous l\'exercice');

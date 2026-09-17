@@ -10749,10 +10749,13 @@ function _toggleMoreMenu(e){
   if(!menu) return;
   var isOpen=menu.style.display==='block';
   if(isOpen){ menu.style.display='none'; return; }
-  /* « Évolution » n'est plus dans ce menu (2026-09-15) : la ligne sous chaque
-     exercice ouvre sa courbe, la carte Charge de l'agenda ouvre le reste
-     (qualite/historique-duree-cas.js). */
+  /* « Évolution » est revenue dans ce menu (2026-09-18, décision du 2026-09-15
+     inversée par le praticien) : depuis le builder, aucun autre chemin n'y
+     menait. C'est une MODALE — elle s'ouvre par-dessus, sans rien fermer
+     (qualite/biblio-deja-fait-cas.js). */
   var _bp = document.getElementById('builderPanel');
+  var _evo = document.getElementById('moreMenuEvo');
+  if(_evo) _evo.style.display = (_bp && _bp.classList.contains('open')) ? '' : 'none';
   /* « Programmes du patient » : sorti de la barre du builder, il y reste a un
      clic — le praticien s'en sert pour importer une ancienne seance. */
   var _prog = document.getElementById('moreMenuProg');

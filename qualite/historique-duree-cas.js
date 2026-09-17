@@ -74,10 +74,13 @@ ok('… les cartes de durée portent leur clé', /dureeChartsHtml \+= '<div clas
 ok('l\'historique charge aussi les durées, un passage suffisant', /_histExos\.durees = Array\.isArray\(data\) \? _extractExoDurations\(data, 1\) : \{\};/.test(fd('_histExosCharger')));
 ok('taper une durée recalcule la ligne', /field === 'reps' \|\| field === 'duree'/.test(fd('updateField')));
 
-console.log('\n5 — « Évolution » quitte le menu ··· du builder');
-const menu = html.slice(html.indexOf('id="more-menu"'), html.indexOf('id="more-menu"') + 9000);
-ok('le bouton est parti', !/id="moreMenuEvo"/.test(html) && !/openChargesEvo\(\)/.test(menu));
-ok('… et sa règle d\'affichage', !/moreMenuEvo/.test(fm('_toggleMoreMenu')));
+/* 5 — « Évolution » avait quitté ce menu le 2026-09-15. Le praticien l'y a
+   fait revenir le 2026-09-18 : depuis le builder, aucun autre chemin n'y
+   menait (qualite/biblio-deja-fait-cas.js, qui le contrôle désormais). Ce qui
+   reste vrai ici : la LIGNE sous l'exercice ouvre la courbe directement — la
+   raison d'être du point 3, et elle ne dépend pas du menu. */
+console.log('\n5 — la ligne ouvre la courbe sans passer par le menu');
+ok('… un clic sur la ligne suffit', /_histVoirCourbe\(this\)/.test(fd('_histExoHtml')));
 ok('« Programmes du patient » reste, builder seulement', /_prog\.style\.display = \(_bp && _bp\.classList\.contains\('open'\)\) \? '' : 'none'/.test(fm('_toggleMoreMenu')));
 
 console.log('');
