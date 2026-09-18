@@ -9376,8 +9376,8 @@ function _buildAllTestsHtml() {
     isoHtml += crItem('Rapport ischio-jambiers / quadriceps',
       _crMesTab([{ l:'Concentrique 60°/s', a:_isoNb(_isoRat.ratioCS) + ' %', b:_isoNb(_isoRat.ratioCA) + ' %' }],
         _lblMI.cs, _lblMI.ca,
-        { lbl:true, note:'Cible 60 à 70 %.' + (_isoCr.total ? ' Asymétrie dans la norme attendue sur '
-          + _isoCr.atteints + ' mesure' + (_isoCr.atteints > 1 ? 's' : '') + ' sur ' + _isoCr.total + '.' : '') }),
+        { lbl:true, note:'Cible 60 à 70 %.' + (_isoCr.total ? ' ' + _isoCr.atteints + ' mesure'
+          + (_isoCr.atteints > 1 ? 's' : '') + ' sur ' + _isoCr.total + ' dans la norme d\'asymétrie attendue.' : '') }),
       '', '', []);
   }
   addSec('4. Tests Isocinetiques', isoHtml);
