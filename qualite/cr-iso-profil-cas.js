@@ -120,6 +120,21 @@ ok('appelé partout où le panneau d\'évolution l\'est',
    (outils.match(/_crUpdateIsoPanel\(\)/g) || []).length >= 4,
    (outils.match(/_crUpdateIsoPanel\(\)/g) || []).length + ' appels');
 
+console.log('\nLa note d\'un mini-tableau respire');
+/* Mesure en ligne, 2026-09-18 : la note sortait a 1 px de marge. La regle
+   `table.lt-t tr.lt-af-sub td{padding:1px 8px}` est PLUS SPECIFIQUE qu'un
+   `table.lt-t td.lt-af-sy`, et son raccourci `padding` ecrasait le
+   `padding-top`. La regle existait depuis toujours et n'avait jamais rien
+   fait — une regle ecrasee ne previent pas plus qu'une regle invalide. */
+ok('son selecteur porte tr.lt-af-sub, sinon le raccourci voisin l\'ecrase',
+   /tr\.lt-af-sub td\.lt-af-sy\{[^}]*padding-top:\dpx/.test(outils),
+   (outils.match(/[^']*td\.lt-af-sy\{[^}]*\}/g) || []).slice(0, 2).join(' | '));
+ok('… et la derniere note d\'une suite respire aussi par le bas',
+   /tr\.lt-af-sub\.lt-af-obs:not\(:has\(\+ tr\.lt-af-obs\)\) td\.lt-af-sy\{padding-bottom:\dpx\}/.test(outils));
+ok('les trois feuilles disent la meme chose', /\.cr-mt-note \{[^}]*margin-top: 7px/.test(
+     require('fs').readFileSync(require('path').join(R, 'bilan.html'), 'utf8'))
+   && /\.cr-mt-note\{[^}]*margin-top:7px/.test(src));
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('CR : le profil isocinétique se joint au courrier, avec ses styles.');
