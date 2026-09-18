@@ -133,6 +133,19 @@ ok('… et le lexique ne les traduit plus', !/'Quadriceps deficit'/.test(bloc('v
   ok('les ratios et les pics rejoignent la section', /ratio-ca|ratioCA/.test(iso) && /pic/i.test(iso));
 }
 
+/* Retirer les deux anciennes lignes a retire AVEC elles les variables qfCA,
+   qfCS, ijfCA et ijfCS — que « Points à travailler » lisait deux cents lignes
+   plus bas. Le CR complet levait alors une ReferenceError et ne s'affichait
+   plus du tout. Les cas contrôlaient la section NEUVE, pas ce qui lisait
+   encore l'ancienne : pris en ligne, sur la démo, pas ici. */
+console.log('\nCe que la suppression emportait');
+ok('plus aucune trace des variables retirées', !/\bqfCA\b|\bqfCS\b|\bijfCA\b|\bijfCS\b/.test(src),
+   (src.match(/\b(qfCA|qfCS|ijfCA|ijfCS)\b/g) || []).join(','));
+{
+  const pts = bloc('function pointsATravailler', 'addSec(\'8. Points a Travailler\'') || bloc('var toWork = []', 'addSec(\'8. Points a Travailler\'');
+  ok('« Points à travailler » lit la même source que tout le reste', /_isoMes/.test(pts) && /Renforcement quadriceps/.test(pts), pts ? 'bloc trouvé' : 'bloc introuvable');
+}
+
 console.log('\nC — le graphique de l\'examen');
 {
   const p = monter(Object.assign({ 'f-poids': 55 }, DONNEES));

@@ -9867,7 +9867,11 @@ function _buildAllTestsHtml() {
   })();
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Déficit de flexion dorsale de cheville (Lunge ' + luCA + 'cm — < 10 cm ou asymétrie > 1,5 cm)');
   if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (Asym. ' + asymTxt(hrLsi2) + ')');
-  if (!isNaN(qfCA) && !isNaN(qfCS) && qfCS>0 && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (déficit ' + ((1-qfCA/qfCS)*100).toFixed(1) + '%)');
+  /* Même lecture que la section isocinétique et que l'onglet : ces lignes
+     déclaraient leurs propres variables, retirées avec les deux anciennes
+     lignes de CR (qualite/iso-cas.js). */
+  var _isoQF = _isoMes.filter(function(m){ return m.cle === 'q-f'; })[0] || {};
+  if (!isNaN(_isoQF.asym) && _isoQF.asym > 10) toWork.push('Renforcement quadriceps (déficit ' + _isoQF.asym.toFixed(1) + '%)');
   // Flash Isométrique 20s (cf-q-ca / cf-q-cs) — distinct de l'isokinétique
   (function(){
     var cfqCA = parseFloat((document.getElementById('cf-q-ca')||{}).value||'');
@@ -9877,7 +9881,8 @@ function _buildAllTestsHtml() {
       if (cfqLsi < 90) toWork.push('Renforcement quadriceps isométrique (Flash 20s — Asym. ' + asymTxt(cfqLsi) + ')');
     }
   })();
-  if (!isNaN(ijfCA) && !isNaN(ijfCS) && ijfCS>0 && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement ischio-jambiers — Nordic Hamstring, excentrique (déficit ' + ((1-ijfCA/ijfCS)*100).toFixed(1) + '%)');
+  var _isoIJF = _isoMes.filter(function(m){ return m.cle === 'ij-f'; })[0] || {};
+  if (!isNaN(_isoIJF.asym) && _isoIJF.asym > 10) toWork.push('Renforcement ischio-jambiers — Nordic Hamstring, excentrique (déficit ' + _isoIJF.asym.toFixed(1) + '%)');
   // Drop Jump H
   var djLsiTW = (!isNaN(djHca)&&djHcs>0)?djHca/djHcs*100:NaN;
   if (!isNaN(djLsiTW) && djLsiTW<90) toWork.push('Travail pliométrique — explosivité verticale (DJ Asym. ' + asymTxt(djLsiTW) + ')');
