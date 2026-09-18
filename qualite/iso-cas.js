@@ -58,7 +58,7 @@ function page(vals) {
 }
 const DONNEES = { 'q-f-cs':155, 'q-f-ca':131, 'q-p-cs':66, 'q-p-ca':60, 'q-r-cs':146, 'q-r-ca':162,
                   'ij-f-cs':56, 'ij-f-ca':58, 'ij-p-cs':34, 'ij-p-ca':35, 'ij-r-cs':136, 'ij-r-ca':134 };
-const CHARGER = ['ISO_MESURES','_isoVal','_isoLire','_isoRatios','_isoCriteres','_isoNb','_blEsc','_isoChartSvg','asymPct','asymTxt','lsiInverse','_statForce','LSI_INVERSE_TXT','calcMusc'];
+const CHARGER = ['ISO_MESURES','_isoVal','_isoLire','_isoRatios','_isoCriteres','_isoNb','_blEsc','_isoProfilHtml','_isoStatutGroupe','asymPct','asymTxt','lsiInverse','_statForce','LSI_INVERSE_TXT','calcMusc'];
 function monter(vals) {
   const p = page(vals);
   const code = CHARGER.map(n => (n === 'ISO_MESURES' || n === 'LSI_INVERSE_TXT')
@@ -128,7 +128,7 @@ ok('… et le lexique ne les traduit plus', !/'Quadriceps deficit'/.test(bloc('v
   const iso = bloc("var isoHtml = ''", "addSec('4. Tests Isocinetiques'");
   ok('les six mesures y passent, pas seulement la force', /_isoLire\(\)/.test(iso) && /forEach/.test(iso), iso.slice(0, 160));
   ok('les valeurs en Nm sont données, en mini-tableau', /_crMesTab\(/.test(iso) && /' Nm'/.test(iso), iso.slice(0, 400));
-  ok('le statut suit les trois paliers du produit', /_statForce\(/.test(iso));
+  ok('le statut suit les trois paliers du produit, seuil absolu compris', /_isoStatutGroupe\(/.test(iso) && /_statForce\(/.test(fn('_isoStatutGroupe')));
   ok('les colonnes prennent les libellés du membre inférieur', /_lblMI/.test(iso), iso.slice(0, 400));
   ok('les ratios et les pics rejoignent la section', /ratio-ca|ratioCA/.test(iso) && /pic/i.test(iso));
 }
@@ -147,33 +147,59 @@ ok('plus aucune trace des variables retirées', !/\bqfCA\b|\bqfCS\b|\bijfCA\b|\b
 }
 
 const ISO_L = ['Force — concentrique 60°/s', 'Puissance — concentrique 240°/s', 'Résistance — excentrique 30°/s'];
-console.log('\nC — le graphique de l\'examen');
+console.log('\nC — le profil de l\'examen');
 {
   const p = monter(Object.assign({ 'f-poids': 55 }, DONNEES));
-  let svg = ''; try { svg = p.ctx._isoChartSvg(p.ctx._isoLire()); } catch (e) { ok('_isoChartSvg tourne', false, e.message); }
-  ok('un SVG, six paires de barres', /^<svg/.test(svg) && (svg.match(/<rect/g) || []).length >= 12, (svg.match(/<rect/g) || []).length + ' rect');
-  ok('aucun NaN ni undefined n\'atteint le tracé', !/NaN|undefined/.test(svg), (svg.match(/NaN|undefined/g) || []).join(','));
-  ok('les six libellés sont nommés', ['Force', 'Puissance', 'Résistance'].every(t => svg.indexOf(t) > -1));
-  /* Vu sur la démo : « Puissance — concentrique 240°/s » mordait sur les
-     barres. La gouttière doit tenir le plus long libellé — largeur estimée à
-     0,55 em par caractère pour la police de l'application, à 11 px. */
-  ok('… et ils tiennent dans leur gouttière, sans mordre sur les barres', (() => {
-    const x = parseInt((svg.match(/<rect x="(\d+)"/) || [0, 0])[1], 10);
-    const plus = ISO_L.reduce((a, t) => t.length > a.length ? t : a, '');
-    return x > 0 && plus.length * 11 * 0.55 < x - 6;
-  })(), 'gouttière ' + (svg.match(/<rect x="(\d+)"/) || [])[1] + ' px');
-  ok('aucun dégradé — l\'export PDF les perd', !/linearGradient|<defs/.test(svg));
-  ok('les couleurs passent par les jetons', /var\(--/.test(svg) && !/#[0-9a-f]{3,6}/i.test(svg), (svg.match(/#[0-9a-f]{3,6}/ig) || []).join(','));
+  let h = ''; try { h = p.ctx._isoProfilHtml(p.ctx._isoLire()); } catch (e) { ok('_isoProfilHtml tourne', false, e.message); }
+  ok('douze barres, six lignes, deux groupes', (h.match(/class="iso-b"/g) || []).length === 12
+     && (h.match(/class="iso-ligne"/g) || []).length === 6 && (h.match(/class="iso-grp"/g) || []).length === 2,
+     (h.match(/class="iso-b"/g) || []).length + ' barres');
+  ok('aucun NaN ni undefined n\'atteint le tracé', !/NaN|undefined/.test(h), (h.match(/NaN|undefined/g) || []).join(','));
+  ok('les six libellés sont nommés', ['Force', 'Puissance', 'Résistance'].every(t => h.indexOf(t) > -1));
+  /* En HTML, pas en SVG : un SVG en width:100% étirait le texte avec le cadre —
+     11 px rendus à 26 sur un écran large (vu sur la démo). Ici le texte garde
+     les tailles de l'application, seules les barres suivent la largeur. */
+  ok('pas de SVG : le texte ne se met plus à l\'échelle du conteneur', !/<svg/.test(h) && !/font-size/.test(h), h.slice(0, 120));
+  ok('… et les largeurs sont relatives', /width:100%/.test(h) && /width:[\d,.]+%/.test(h));
+  ok('les couleurs passent par les jetons', /var\(--/.test(h) && !/#[0-9a-f]{3,6}/i.test(h), (h.match(/#[0-9a-f]{3,6}/ig) || []).join(','));
   ok('rien à tracer : rien n\'est tracé (pas de cadre vide)', (() => {
-    try { const v = monter({}); return v.ctx._isoChartSvg(v.ctx._isoLire()) === ''; } catch (e) { return false; }
+    try { const v = monter({}); return v.ctx._isoProfilHtml(v.ctx._isoLire()) === ''; } catch (e) { return false; }
   })());
   try { p.ctx.calcMusc(); } catch (e) {}
-  ok('calcMusc le pose dans la page', /^<svg/.test(p.els['iso-chart'].innerHTML), p.els['iso-chart'].innerHTML.slice(0, 40));
+  ok('calcMusc le pose dans la page', /class="iso-profil"/.test(p.els['iso-chart'].innerHTML), p.els['iso-chart'].innerHTML.slice(0, 40));
+  ok('la page porte les tailles du profil, en rem', /\.iso-profil \.iso-nom \{ font-size:\.7\drem/.test(html) && /\.iso-profil \.iso-b \{ height:\drpx|\.iso-profil \.iso-b \{ height:\dpx/.test(html), 'CSS du profil');
 }
-ok('la page porte ses trois nouveaux emplacements', /id="iso-chart"/.test(html) && /id="iso-criteres"/.test(html) && /id="iso-poids-rappel"/.test(html));
-ok('aucun champ chiffré n\'a été ajouté à la page (chacun devrait sa courbe)',
-   (html.slice(html.indexOf('id="page-musculaires"'), html.indexOf('id="page-force-ms"')).match(/<input type="number"/g) || []).length === 12,
-   (html.slice(html.indexOf('id="page-musculaires"'), html.indexOf('id="page-force-ms"')).match(/<input type="number"/g) || []).length + ' champs');
+
+console.log('\nLe seuil ABSOLU prime sur la symétrie');
+{
+  const p = monter(Object.assign({ 'f-poids': 55 }, DONNEES));
+  const M = p.ctx._isoLire(), r = p.ctx._isoRatios(M);
+  const ij = M.filter(m => m.grp === 'Ischio-jambiers');
+  const q = M.filter(m => m.grp === 'Quadriceps');
+  /* Des ischios symétriques à 1,05 pour une cible de 1,7 sortaient
+     « Symétrique » EN VERT dans le courrier du médecin. */
+  const sIJ = p.ctx._isoStatutGroupe(ij, r.picIJca, 1.7);
+  ok('des ischios symétriques mais faibles ne sortent plus en vert', sIJ.cls === 'bad' && /Force insuffisante/.test(sIJ.txt), JSON.stringify(sIJ));
+  ok('… et l\'asymétrie n\'est pas perdue quand il y en a une', (() => {
+    const sQ = p.ctx._isoStatutGroupe(q, r.picQca, 2.4);
+    return sQ.cls === 'bad' && / — asymétrie modérée$/.test(sQ.txt);
+  })(), JSON.stringify(p.ctx._isoStatutGroupe(q, r.picQca, 2.4)));
+  ok('force suffisante : le verdict redevient celui de la symétrie', (() => {
+    const s2 = p.ctx._isoStatutGroupe(ij, 2.0, 1.7); return s2.cls === 'ok' && s2.txt === 'Symétrique';
+  })());
+  ok('sans poids, aucun seuil absolu n\'est appliqué', (() => {
+    const s3 = p.ctx._isoStatutGroupe(ij, NaN, 1.7); return s3.cls === 'ok' && s3.txt === 'Symétrique';
+  })());
+  ok('la section du CR s\'en sert', /_isoStatutGroupe\(mesGrp, g\[1\], g\[3\]\)/.test(src));
+  ok('… et la force rapportée au poids entre DANS le tableau', /l:'Force rapportée au poids'/.test(src));
+}
+
+console.log('\nLa synthèse se lit');
+{
+  const syn = bloc("if(isoHtml && (!isNaN(_isoRat.ratioCA)", "addSec('4. Tests Isocinetiques'");
+  ok('un tableau, plus un paragraphe de quatre phrases', /_crMesTab\(/.test(syn) && !/_isoNotes/.test(src), syn.slice(0, 120));
+  ok('… et une seule note dessous', (syn.match(/note:/g) || []).length === 1, (syn.match(/note:/g) || []).length + ' notes');
+}
 
 console.log('\nLe ratio fonctionnel reste dehors');
 ok('aucun rapport excentrique/concentrique n\'est affiché', !/ratio.{0,2}fonctionnel/i.test(src) && !/ratio.{0,2}fonctionnel/i.test(html));

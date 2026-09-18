@@ -7740,37 +7740,50 @@ function _isoCriteres(mes){
 function _isoNb(v, d){ return isNaN(v) ? '—' : v.toFixed(d === undefined ? 1 : d).replace('.', ','); }
 /* Le profil de l'examen, en BARRES. Pas en radar : trois des six mesures sont
    des Nm à des vitesses différentes, un même rayon les rendrait comparables
-   alors qu'elles ne le sont pas. Aplat plein, aucun dégradé — l'export PDF
-   d'un iPad perd les stop-opacity (voir les graphiques d'Évolution). */
-function _isoChartSvg(mes){
+   alors qu'elles ne le sont pas.
+
+   En HTML, pas en SVG. Un SVG en `width:100%` met tout à l'échelle du
+   conteneur : sur un écran large, le viewBox de 620 était étiré à 1470 px et
+   un texte de 11 px s'affichait à 26 — deux fois la taille du reste de la
+   page (vu sur la démo, 2026-09-18). En HTML, le texte garde les tailles de
+   l'application et seules les BARRES suivent la largeur. */
+function _isoProfilHtml(mes){
   var faites = mes.filter(function(m){ return !isNaN(m.nCs) || !isNaN(m.nCa); });
   if(!faites.length) return '';
   var max = 0;
   faites.forEach(function(m){ [m.nCs, m.nCa].forEach(function(v){ if(!isNaN(v) && v > max) max = v; }); });
   if(!(max > 0)) return '';
-  /* La gouttière de gauche tient le PLUS LONG libellé — « Puissance —
-     concentrique 240°/s », 31 caractères à 11 px. À 168 elle mordait sur les
-     barres (vu sur la démo, 2026-09-18) : le contrôle borne la largeur. */
-  var LG = 620, GAUCHE = 210, DROITE = 62, H = 30, y = 8, h = '';
-  var larg = LG - GAUCHE - DROITE;
-  var dernierGrp = '';
+  var pc = function(v){ return isNaN(v) ? 0 : Math.max(1, Math.round(v / max * 1000) / 10); };
+  var h = '', dernierGrp = '';
   faites.forEach(function(m){
-    if(m.grp !== dernierGrp){
-      h += '<text x="0" y="' + (y + 8) + '" class="iso-g">' + _blEsc(m.grp) + '</text>';
-      dernierGrp = m.grp; y += 16;
-    }
+    if(m.grp !== dernierGrp){ h += '<div class="iso-grp">' + _blEsc(m.grp) + '</div>'; dernierGrp = m.grp; }
     var col = isNaN(m.asym) ? 'var(--border2)' : (m.asym <= m.norme ? 'var(--green)' : 'var(--orange)');
-    var w = function(v){ return isNaN(v) ? 0 : Math.max(1, Math.round(v / max * larg)); };
-    h += '<text x="0" y="' + (y + 13) + '" class="iso-l">' + _blEsc(m.l) + '</text>'
-       + '<rect x="' + GAUCHE + '" y="' + y + '" width="' + w(m.nCs) + '" height="8" rx="2" fill="var(--border2)"/>'
-       + '<rect x="' + GAUCHE + '" y="' + (y + 11) + '" width="' + w(m.nCa) + '" height="8" rx="2" fill="' + col + '"/>'
-       + '<text x="' + LG + '" y="' + (y + 13) + '" class="iso-v" text-anchor="end" fill="' + col + '">'
+    h += '<div class="iso-ligne">'
+       + '<div class="iso-nom">' + _blEsc(m.l) + '</div>'
+       + '<div class="iso-barres">'
+       + '<div class="iso-b" style="width:' + pc(m.nCs) + '%;background:var(--border2)"></div>'
+       + '<div class="iso-b" style="width:' + pc(m.nCa) + '%;background:' + col + '"></div>'
+       + '</div>'
+       + '<div class="iso-pct" style="color:' + col + '">'
        + (isNaN(m.asym) ? '—' : (m.asym < 0 ? '−' : '') + Math.abs(m.asym).toFixed(1).replace('.', ',') + ' %')
-       + '</text>';
-    y += H;
+       + '</div></div>';
   });
-  return '<svg viewBox="0 0 ' + LG + ' ' + (y + 4) + '" width="100%" role="img" aria-label="Profil isocinétique : côté sain et côté atteint pour chaque mesure">'
-    + h + '</svg>';
+  return '<div class="iso-profil">' + h + '</div>';
+}
+/* Le statut d'un groupe musculaire. Le SEUIL ABSOLU prime sur la symétrie —
+   même règle que le dentelé antérieur : deux côtés égaux mais tous deux sous
+   la norme sont symétriques ET insuffisants, et c'est l'insuffisance qui
+   compte. Sans elle, des ischios à 1,05 pour une cible de 1,7 sortaient
+   « Symétrique » en vert dans le courrier du médecin.
+   L'asymétrie ne disparaît pas : elle passe en nuance derrière le tiret, que
+   _crVerdictNuance range dans les notes de la ligne. */
+function _isoStatutGroupe(mesGrp, picCA, seuil){
+  var faites = (mesGrp || []).filter(function(m){ return !isNaN(m.lsi); });
+  if(!faites.length) return { txt:'', cls:'' };
+  var pire = faites.reduce(function(a, m){ return (a === null || m.lsi < a.lsi) ? m : a; }, null);
+  var st = _statForce(pire.lsi);
+  if(isNaN(picCA) || picCA >= seuil) return st;
+  return { txt: 'Force insuffisante' + (st.cls !== 'ok' ? ' — ' + st.txt.toLowerCase() : ''), cls: 'bad' };
 }
 function calcMusc() {
   var mes = _isoLire(), rat = _isoRatios(mes), cr = _isoCriteres(mes);
@@ -7810,7 +7823,7 @@ function calcMusc() {
     ? 'Poids : <b>' + String(Math.round(rat.poids * 10) / 10).replace('.', ',') + ' kg</b>'
     : 'Poids non renseigné — les pics rapportés au poids ne peuvent pas se calculer. Il se saisit sur la page Informations patient.');
 
-  poser('iso-chart', _isoChartSvg(mes));
+  poser('iso-chart', _isoProfilHtml(mes));
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----
@@ -9340,34 +9353,32 @@ function _buildAllTestsHtml() {
      zone plus haut (qualite/iso-cas.js). */
   var isoHtml = '';
   var _isoMes = _isoLire(), _isoRat = _isoRatios(_isoMes), _isoCr = _isoCriteres(_isoMes);
-  ['Quadriceps', 'Ischio-jambiers'].forEach(function(grp){
-    var rows = _isoMes.filter(function(m){ return m.grp === grp && !isNaN(m.lsi); }).map(function(m){
-      return { l: m.l, a: m.cs + ' Nm', b: m.ca + ' Nm', asym: asymTxt(m.lsi) };
-    });
-    if(!rows.length) return;
-    var pire = _isoMes.filter(function(m){ return m.grp === grp && !isNaN(m.lsi); })
-      .reduce(function(a, m){ return (a === null || m.lsi < a.lsi) ? m : a; }, null);
-    var st = _statForce(pire.lsi);
-    isoHtml += crItem(grp, _crMesTab(rows, _lblMI.cs, _lblMI.ca, { lbl:true }), st.txt, st.cls,
+  /* La force rapportée au poids entre DANS le tableau : c'est la valeur la
+     plus importante à lire, et elle était noyée en fin de synthèse. */
+  [['Quadriceps', _isoRat.picQca, _isoRat.picQcs, 2.4], ['Ischio-jambiers', _isoRat.picIJca, _isoRat.picIJcs, 1.7]].forEach(function(g){
+    var grp = g[0], mesGrp = _isoMes.filter(function(m){ return m.grp === grp && !isNaN(m.lsi); });
+    if(!mesGrp.length) return;
+    var rows = mesGrp.map(function(m){ return { l: m.l, a: m.cs + ' Nm', b: m.ca + ' Nm', asym: asymTxt(m.lsi) }; });
+    var note = '';
+    if(!isNaN(g[1])){
+      rows.push({ l:'Force rapportée au poids', a:_isoNb(g[2], 2), b:_isoNb(g[1], 2) });
+      note = 'Force rapportée au poids : cible supérieure à ' + String(g[3]).replace('.', ',') + '.';
+    }
+    var st = _isoStatutGroupe(mesGrp, g[1], g[3]);
+    isoHtml += crItem(grp, _crMesTab(rows, _lblMI.cs, _lblMI.ca, { lbl:true, note:note }), st.txt, st.cls,
       ISO_MESURES.filter(function(x){ return x.grp === grp; })
         .reduce(function(a, x){ return a.concat([x.cle + '-cs', x.cle + '-ca']); }, []));
   });
-  if(isoHtml){
-    var _isoNotes = [];
-    if(!isNaN(_isoRat.ratioCA) || !isNaN(_isoRat.ratioCS))
-      _isoNotes.push('Ratio ischio-jambiers / quadriceps en concentrique à 60°/s — '
-        + _lblMI.ca.toLowerCase() + ' : ' + _isoNb(_isoRat.ratioCA) + ' %, '
-        + _lblMI.cs.toLowerCase() + ' : ' + _isoNb(_isoRat.ratioCS) + ' % (cible 60 à 70 %).');
-    if(!isNaN(_isoRat.picQca))
-      _isoNotes.push('Pic de force du quadriceps rapporté au poids : ' + _isoNb(_isoRat.picQca, 2)
-        + ' ' + _lblMI.ca.toLowerCase() + ', ' + _isoNb(_isoRat.picQcs, 2) + ' ' + _lblMI.cs.toLowerCase() + ' (cible supérieure à 2,4).');
-    if(!isNaN(_isoRat.picIJca))
-      _isoNotes.push('Pic de force des ischio-jambiers rapporté au poids : ' + _isoNb(_isoRat.picIJca, 2)
-        + ' ' + _lblMI.ca.toLowerCase() + ', ' + _isoNb(_isoRat.picIJcs, 2) + ' ' + _lblMI.cs.toLowerCase() + ' (cible supérieure à 1,7).');
-    if(_isoCr.total)
-      _isoNotes.push(_isoCr.atteints + ' mesure' + (_isoCr.atteints > 1 ? 's' : '') + ' sur ' + _isoCr.total
-        + ' dans la norme d\'asymétrie attendue.');
-    if(_isoNotes.length) isoHtml += crItem('Synthèse', _isoNotes.join('<br>'), '', '', []);
+  /* Une synthèse SE LIT, elle ne se déchiffre pas : quatre phrases pleines de
+     chiffres se relisaient deux fois. Le même tableau que les mesures, et une
+     seule note dessous (demande du praticien, 2026-09-18). */
+  if(isoHtml && (!isNaN(_isoRat.ratioCA) || !isNaN(_isoRat.ratioCS))){
+    isoHtml += crItem('Rapport ischio-jambiers / quadriceps',
+      _crMesTab([{ l:'Concentrique 60°/s', a:_isoNb(_isoRat.ratioCS) + ' %', b:_isoNb(_isoRat.ratioCA) + ' %' }],
+        _lblMI.cs, _lblMI.ca,
+        { lbl:true, note:'Cible 60 à 70 %.' + (_isoCr.total ? ' Asymétrie dans la norme attendue sur '
+          + _isoCr.atteints + ' mesure' + (_isoCr.atteints > 1 ? 's' : '') + ' sur ' + _isoCr.total + '.' : '') }),
+      '', '', []);
   }
   addSec('4. Tests Isocinetiques', isoHtml);
   // Restaurer les variables globales pour les sections MS et suivantes

@@ -2305,9 +2305,20 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 .iso-synth { margin-top:10px; font-size:.78rem; color:var(--text2); }
 .iso-synth.good { color:var(--green); }
 .iso-synth.warn { color:var(--orange); }
-#iso-chart .iso-g { font-size:9px; fill:var(--text3); text-transform:uppercase; letter-spacing:.06em; }
-#iso-chart .iso-l { font-size:11px; fill:var(--text2); }
-#iso-chart .iso-v { font-size:11px; font-weight:600; }
+/* Le profil : le texte aux tailles de l'application, seules les barres suivent
+   la largeur. Un SVG en width:100% etirait le texte avec le cadre. */
+.iso-profil { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; }
+.iso-profil .iso-grp { font-size:.66rem; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-top:3px; }
+.iso-profil .iso-grp:first-child { margin-top:0; }
+.iso-profil .iso-ligne { display:grid; grid-template-columns:minmax(0,15.5rem) minmax(0,1fr) 3.4rem; align-items:center; gap:12px; }
+.iso-profil .iso-nom { font-size:.76rem; color:var(--text2); }
+.iso-profil .iso-barres { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.iso-profil .iso-b { height:7px; border-radius:2px; }
+.iso-profil .iso-pct { font-size:.76rem; font-weight:600; text-align:right; font-variant-numeric:tabular-nums; }
+@media (max-width:760px){
+  .iso-profil .iso-ligne { grid-template-columns:minmax(0,1fr) 3.2rem; grid-template-areas:'nom pct' 'barres barres'; row-gap:4px; }
+  .iso-profil .iso-nom { grid-area:nom; } .iso-profil .iso-pct { grid-area:pct; } .iso-profil .iso-barres { grid-area:barres; }
+}
 </style>
 
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
@@ -6223,7 +6234,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260918d"></script>
+<script src="js/bilan.js?v=20260918e"></script>
 
 </body>
 </html>
