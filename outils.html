@@ -7372,7 +7372,11 @@ _updateOutilsPatientBtns();
        designe comme un propos rapporte, et un retrait plus profond que celui
        des criteres. Aucune n'occupe de ligne de tableau — la mise en page ne
        bouge pas. */
-    'table.lt-t td.lt-af-sy{font-style:italic;color:#9D9B96;font-size:.72rem;padding-top:6px}',
+    'table.lt-t td.lt-af-sy{font-style:italic;color:#9D9B96;font-size:.72rem;padding-top:8px}',
+    /* La DERNIERE note d'une suite respire aussi par le bas : sans elle, la
+       ligne suivante lui collait (2026-09-18). Les notes consecutives, elles,
+       restent groupees — c'est la regle voisine. */
+    'table.lt-t tr.lt-af-obs:not(:has(+ tr.lt-af-obs)) td.lt-af-sy{padding-bottom:8px}',
     'table.lt-t tr.lt-af-obs + tr.lt-af-obs td.lt-af-sy{padding-top:2px}',
     'table.lt-t td.lt-af-sy > span{display:inline-block;border-left:2px solid #DCD9D2;padding-left:8px}',
     'table.lt-t tr.lt-af-sub + tr:not(.lt-af-sub) td{border-top:1px solid #E8E6E1}',

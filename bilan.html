@@ -1627,7 +1627,9 @@ textarea.mob-note-inp {
 .cr-mt tr + tr td { border-top: 1px solid var(--border); }
 .cr-mt .num { font-weight: 700; color: var(--text); }
 .cr-mt .der { font-weight: 800; color: var(--accent); }
-.cr-mt-note { font-size: .74rem; color: var(--text2); margin-top: 4px; }
+/* La note respire des deux côtés : collée sous le tableau, elle se lisait
+   comme une quatrième ligne de mesure (2026-09-18). */
+.cr-mt-note { font-size: .74rem; color: var(--text2); margin-top: 7px; margin-bottom: 2px; }
 @media (max-width: 640px) {
   .cr-mt th, .cr-mt td { padding-left: 9px; }
   .cr-mt th:not(.lbl), .cr-mt td:not(.lbl) { width: 76px; }
@@ -6234,7 +6236,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260918h"></script>
+<script src="js/bilan.js?v=20260918i"></script>
 
 </body>
 </html>
