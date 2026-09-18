@@ -58,10 +58,10 @@ function page(vals) {
 }
 const DONNEES = { 'q-f-cs':155, 'q-f-ca':131, 'q-p-cs':66, 'q-p-ca':60, 'q-r-cs':146, 'q-r-ca':162,
                   'ij-f-cs':56, 'ij-f-ca':58, 'ij-p-cs':34, 'ij-p-ca':35, 'ij-r-cs':136, 'ij-r-ca':134 };
-const CHARGER = ['ISO_MESURES','_isoVal','_isoLire','_isoRatios','_isoCriteres','_isoNb','_blEsc','_isoProfilHtml','_isoStatutGroupe','asymPct','asymTxt','lsiInverse','_statForce','LSI_INVERSE_TXT','calcMusc'];
+const CHARGER = ['ISO_MESURES','_isoVal','_isoLire','_isoRatios','_isoCriteres','_isoNb','_blEsc','_isoProfilHtml','ISO_APPROCHE','_isoStatutGroupe','asymPct','asymTxt','lsiInverse','_statForce','LSI_INVERSE_TXT','calcMusc'];
 function monter(vals) {
   const p = page(vals);
-  const code = CHARGER.map(n => (n === 'ISO_MESURES' || n === 'LSI_INVERSE_TXT')
+  const code = CHARGER.map(n => (n === 'ISO_MESURES' || n === 'LSI_INVERSE_TXT' || n === 'ISO_APPROCHE')
     ? bloc('var ' + n + ' =', ';\n') + ';' : fn(n)).join('\n');
   try { vm.runInContext(code, p.ctx); } catch (e) { ok('le code isocinétique se charge', false, e.message); }
   return p;
@@ -179,11 +179,17 @@ console.log('\nLe seuil ABSOLU prime sur la symétrie');
   /* Des ischios symétriques à 1,05 pour une cible de 1,7 sortaient
      « Symétrique » EN VERT dans le courrier du médecin. */
   const sIJ = p.ctx._isoStatutGroupe(ij, r.picIJca, 1.7);
-  ok('des ischios symétriques mais faibles ne sortent plus en vert', sIJ.cls === 'bad' && /Force insuffisante/.test(sIJ.txt), JSON.stringify(sIJ));
-  ok('… et l\'asymétrie n\'est pas perdue quand il y en a une', (() => {
-    const sQ = p.ctx._isoStatutGroupe(q, r.picQca, 2.4);
-    return sQ.cls === 'bad' && / — asymétrie modérée$/.test(sQ.txt);
-  })(), JSON.stringify(p.ctx._isoStatutGroupe(q, r.picQca, 2.4)));
+  ok('des ischios symétriques mais faibles ne sortent plus en vert', sIJ.cls === 'bad' && /^Force insuffisante/.test(sIJ.txt), JSON.stringify(sIJ));
+  /* Tout ou rien était trop dur : 2,38 pour une cible de 2,4 sortait au même
+     rouge que 1,05 pour 1,7. La bande d'approche est à 10 % du seuil — la
+     tolérance que le produit emploie déjà partout (palier de symétrie à 90 %
+     du LSI, « Légèrement diminuée » de l'appréciation de force). */
+  const sQ = p.ctx._isoStatutGroupe(q, r.picQca, 2.4);
+  ok('à 10 % du seuil : ambre, et le mot le dit', sQ.cls === 'warn' && /^Force légèrement insuffisante/.test(sQ.txt), JSON.stringify(sQ));
+  ok('… et l\'asymétrie n\'est pas perdue quand il y en a une', / — asymétrie modérée$/.test(sQ.txt), sQ.txt);
+  ok('la bande est bien de 10 %', p.ctx.ISO_APPROCHE === 0.9
+     && p.ctx._isoStatutGroupe(q, 2.4 * 0.9, 2.4).cls === 'warn'
+     && p.ctx._isoStatutGroupe(q, 2.4 * 0.9 - 0.001, 2.4).cls === 'bad', String(p.ctx.ISO_APPROCHE));
   ok('force suffisante : le verdict redevient celui de la symétrie', (() => {
     const s2 = p.ctx._isoStatutGroupe(ij, 2.0, 1.7); return s2.cls === 'ok' && s2.txt === 'Symétrique';
   })());
@@ -191,6 +197,10 @@ console.log('\nLe seuil ABSOLU prime sur la symétrie');
     const s3 = p.ctx._isoStatutGroupe(ij, NaN, 1.7); return s3.cls === 'ok' && s3.txt === 'Symétrique';
   })());
   ok('la section du CR s\'en sert', /_isoStatutGroupe\(mesGrp, g\[1\], g\[3\]\)/.test(src));
+  ok('la pastille de l\'onglet suit les mêmes trois bandes', (() => {
+    try { p.ctx.calcMusc(); } catch (e) { return false; }
+    return /\bwarn\b/.test(p.els['pic-q'].className) && /\bbad\b/.test(p.els['pic-ij'].className);
+  })(), p.els['pic-q'].className + ' | ' + p.els['pic-ij'].className);
   ok('… et la force rapportée au poids entre DANS le tableau', /l:'Force rapportée au poids'/.test(src));
 }
 

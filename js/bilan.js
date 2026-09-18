@@ -7775,15 +7775,24 @@ function _isoProfilHtml(mes){
    la norme sont symétriques ET insuffisants, et c'est l'insuffisance qui
    compte. Sans elle, des ischios à 1,05 pour une cible de 1,7 sortaient
    « Symétrique » en vert dans le courrier du médecin.
+
+   Mais tout ou rien était trop dur : 2,38 pour une cible de 2,4 sortait au
+   même rouge que 1,05 pour 1,7. D'où la bande d'approche, à 10 % du seuil —
+   ce n'est pas un nombre choisi pour l'occasion, c'est DÉJÀ la tolérance du
+   produit : le palier de symétrie est à 90 % du LSI, et l'appréciation de
+   force dit « Légèrement diminuée » avant « Nettement diminuée ».
    L'asymétrie ne disparaît pas : elle passe en nuance derrière le tiret, que
    _crVerdictNuance range dans les notes de la ligne. */
+var ISO_APPROCHE = 0.9;
 function _isoStatutGroupe(mesGrp, picCA, seuil){
   var faites = (mesGrp || []).filter(function(m){ return !isNaN(m.lsi); });
   if(!faites.length) return { txt:'', cls:'' };
   var pire = faites.reduce(function(a, m){ return (a === null || m.lsi < a.lsi) ? m : a; }, null);
   var st = _statForce(pire.lsi);
   if(isNaN(picCA) || picCA >= seuil) return st;
-  return { txt: 'Force insuffisante' + (st.cls !== 'ok' ? ' — ' + st.txt.toLowerCase() : ''), cls: 'bad' };
+  var leger = picCA >= seuil * ISO_APPROCHE;
+  return { txt: (leger ? 'Force légèrement insuffisante' : 'Force insuffisante')
+    + (st.cls !== 'ok' ? ' — ' + st.txt.toLowerCase() : ''), cls: leger ? 'warn' : 'bad' };
 }
 function calcMusc() {
   var mes = _isoLire(), rat = _isoRatios(mes), cr = _isoCriteres(mes);
@@ -7806,8 +7815,10 @@ function calcMusc() {
   /* Les DEUX côtés. Le pic ne se lisait que du côté atteint : un 2,38 ne
      disait pas si le patient est faible des deux côtés ou du seul opéré. */
   var setPic = function(id, ca, cs, seuil){
+    /* Mêmes trois bandes que le courrier : une valeur rouge à l'écran et
+       ambre dans le CR se lirait comme une contradiction. */
     poser(id, isNaN(ca) ? '—' : _isoNb(ca, 2) + ' <span class="pic-sain">/ ' + _isoNb(cs, 2) + '</span>',
-      'val' + (isNaN(ca) ? '' : (ca >= seuil ? ' good' : ' bad')));
+      'val' + (isNaN(ca) ? '' : (ca >= seuil ? ' good' : ca >= seuil * ISO_APPROCHE ? ' warn' : ' bad')));
   };
   setPic('pic-q', rat.picQca, rat.picQcs, 2.4);
   setPic('pic-ij', rat.picIJca, rat.picIJcs, 1.7);
