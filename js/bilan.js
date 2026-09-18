@@ -7748,7 +7748,10 @@ function _isoChartSvg(mes){
   var max = 0;
   faites.forEach(function(m){ [m.nCs, m.nCa].forEach(function(v){ if(!isNaN(v) && v > max) max = v; }); });
   if(!(max > 0)) return '';
-  var LG = 560, GAUCHE = 168, DROITE = 62, H = 30, y = 8, h = '';
+  /* La gouttière de gauche tient le PLUS LONG libellé — « Puissance —
+     concentrique 240°/s », 31 caractères à 11 px. À 168 elle mordait sur les
+     barres (vu sur la démo, 2026-09-18) : le contrôle borne la largeur. */
+  var LG = 620, GAUCHE = 210, DROITE = 62, H = 30, y = 8, h = '';
   var larg = LG - GAUCHE - DROITE;
   var dernierGrp = '';
   faites.forEach(function(m){

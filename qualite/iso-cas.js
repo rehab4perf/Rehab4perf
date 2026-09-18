@@ -146,6 +146,7 @@ ok('plus aucune trace des variables retirées', !/\bqfCA\b|\bqfCS\b|\bijfCA\b|\b
   ok('« Points à travailler » lit la même source que tout le reste', /_isoMes/.test(pts) && /Renforcement quadriceps/.test(pts), pts ? 'bloc trouvé' : 'bloc introuvable');
 }
 
+const ISO_L = ['Force — concentrique 60°/s', 'Puissance — concentrique 240°/s', 'Résistance — excentrique 30°/s'];
 console.log('\nC — le graphique de l\'examen');
 {
   const p = monter(Object.assign({ 'f-poids': 55 }, DONNEES));
@@ -153,6 +154,14 @@ console.log('\nC — le graphique de l\'examen');
   ok('un SVG, six paires de barres', /^<svg/.test(svg) && (svg.match(/<rect/g) || []).length >= 12, (svg.match(/<rect/g) || []).length + ' rect');
   ok('aucun NaN ni undefined n\'atteint le tracé', !/NaN|undefined/.test(svg), (svg.match(/NaN|undefined/g) || []).join(','));
   ok('les six libellés sont nommés', ['Force', 'Puissance', 'Résistance'].every(t => svg.indexOf(t) > -1));
+  /* Vu sur la démo : « Puissance — concentrique 240°/s » mordait sur les
+     barres. La gouttière doit tenir le plus long libellé — largeur estimée à
+     0,55 em par caractère pour la police de l'application, à 11 px. */
+  ok('… et ils tiennent dans leur gouttière, sans mordre sur les barres', (() => {
+    const x = parseInt((svg.match(/<rect x="(\d+)"/) || [0, 0])[1], 10);
+    const plus = ISO_L.reduce((a, t) => t.length > a.length ? t : a, '');
+    return x > 0 && plus.length * 11 * 0.55 < x - 6;
+  })(), 'gouttière ' + (svg.match(/<rect x="(\d+)"/) || [])[1] + ' px');
   ok('aucun dégradé — l\'export PDF les perd', !/linearGradient|<defs/.test(svg));
   ok('les couleurs passent par les jetons', /var\(--/.test(svg) && !/#[0-9a-f]{3,6}/i.test(svg), (svg.match(/#[0-9a-f]{3,6}/ig) || []).join(','));
   ok('rien à tracer : rien n\'est tracé (pas de cadre vide)', (() => {
