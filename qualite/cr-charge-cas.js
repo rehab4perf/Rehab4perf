@@ -113,7 +113,7 @@ ok('dans le PDF, les sections de graphiques prennent la marge du texte (28 px)',
 ok('la section entre dans la lettre, après les courbes', /_crGetPevoSectionHtml\(\)\s*\n\s*\+ _crGetChargeSectionHtml\(\)/.test(outils));
 const refr = fnDe(outils)('_crRefreshGraphiques') || (outils.match(/function _crRefreshGraphiques\(\) \{[\s\S]*?\n  \}/) || [''])[0];
 ok('… et dans l\'aperçu', /_crGetChargeSectionHtml\(\)/.test(refr), refr.slice(0, 160));
-ok('cocher la case redessine (écoute déléguée sur le panneau)', /closest\('#cr-evo-panel, #cr-pevo-panel, #cr-charge-panel'\)/.test(outils));
+ok('cocher la case redessine (écoute déléguée sur le panneau)', /closest\('[^']*#cr-charge-panel[^']*'\)/.test(outils));
 ok('changer de patient la décoche et l\'oublie', /function _crViderPevo\(\)\{[\s\S]{0,700}_crChargeHTML = null[\s\S]{0,400}cr-charge-toggle/.test(outils));
 ok('la réponse est rangée', /_crChargeHTML = e\.data\.chargeHTML/.test(outils));
 ok('les courbes ne s\'affichent que si leur propre case est cochée', /if\s*\(\s*tog2 && tog2\.checked\s*\)\s*_crBuildPevoSelector\(\)/.test(outils));

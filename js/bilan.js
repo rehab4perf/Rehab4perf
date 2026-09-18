@@ -7747,13 +7747,39 @@ function _isoNb(v, d){ return isNaN(v) ? '—' : v.toFixed(d === undefined ? 1 :
    un texte de 11 px s'affichait à 26 — deux fois la taille du reste de la
    page (vu sur la démo, 2026-09-18). En HTML, le texte garde les tailles de
    l'application et seules les BARRES suivent la largeur. */
-function _isoProfilHtml(mes){
+/* La feuille que le fragment emporte à l'export. Les jetons n'existent pas
+   dans la fenêtre d'impression : une règle qui reste en var() n'y donne pas
+   une mauvaise couleur, elle rend la déclaration invalide et le navigateur
+   l'ignore en silence. Ils sont donc RÉSOLUS depuis la page (même parade que
+   _patchPevoCardForPdf, côté outils). */
+var ISO_EXPORT_CSS = ".iso-profil{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}"
+  + ".iso-profil .iso-grp{font-size:.66rem;font-weight:700;color:@--text3;text-transform:uppercase;letter-spacing:.08em;margin-top:6px}"
+  + ".iso-profil .iso-grp:first-child{margin-top:0}"
+  + ".iso-profil .iso-ligne{display:grid;grid-template-columns:minmax(0,14rem) minmax(0,1fr) 3.4rem;align-items:center;gap:12px;break-inside:avoid}"
+  + ".iso-profil .iso-nom{font-size:.76rem;color:@--text2}"
+  + ".iso-profil .iso-barres{display:flex;flex-direction:column;gap:3px;min-width:0}"
+  + ".iso-profil .iso-b{height:7px;border-radius:2px}"
+  + ".iso-profil .iso-pct{font-size:.76rem;font-weight:600;text-align:right}";
+function _isoJeton(nom){
+  try { return (getComputedStyle(document.documentElement).getPropertyValue(nom) || '').trim(); }
+  catch(e){ return ''; }
+}
+/* Le profil, prêt à être joint au courrier : styles compris, jetons résolus.
+   Le générateur le lit dans l'iframe du bilan (qualite/cr-iso-profil-cas.js). */
+function _isoProfilExport(){ return _isoProfilHtml(_isoLire(), true); }
+function _isoProfilHtml(mes, pourExport){
   var faites = mes.filter(function(m){ return !isNaN(m.nCs) || !isNaN(m.nCa); });
   if(!faites.length) return '';
   var max = 0;
   faites.forEach(function(m){ [m.nCs, m.nCa].forEach(function(v){ if(!isNaN(v) && v > max) max = v; }); });
   if(!(max > 0)) return '';
   var pc = function(v){ return isNaN(v) ? 0 : Math.max(1, Math.round(v / max * 1000) / 10); };
+  /* En export, « var(--green) » devient sa valeur ; à l'écran il ne bouge pas. */
+  var coul = function(v){
+    if(!pourExport) return v;
+    var m = String(v).match(/^var\((--[\w-]+)\)$/);
+    return (m && _isoJeton(m[1])) || v;
+  };
   var h = '', dernierGrp = '';
   faites.forEach(function(m){
     if(m.grp !== dernierGrp){ h += '<div class="iso-grp">' + _blEsc(m.grp) + '</div>'; dernierGrp = m.grp; }
@@ -7761,14 +7787,19 @@ function _isoProfilHtml(mes){
     h += '<div class="iso-ligne">'
        + '<div class="iso-nom">' + _blEsc(m.l) + '</div>'
        + '<div class="iso-barres">'
-       + '<div class="iso-b" style="width:' + pc(m.nCs) + '%;background:var(--border2)"></div>'
-       + '<div class="iso-b" style="width:' + pc(m.nCa) + '%;background:' + col + '"></div>'
+       + '<div class="iso-b" style="width:' + pc(m.nCs) + '%;background:' + coul('var(--border2)') + '"></div>'
+       + '<div class="iso-b" style="width:' + pc(m.nCa) + '%;background:' + coul(col) + '"></div>'
        + '</div>'
-       + '<div class="iso-pct" style="color:' + col + '">'
+       + '<div class="iso-pct" style="color:' + coul(col) + '">'
        + (isNaN(m.asym) ? '—' : (m.asym < 0 ? '−' : '') + Math.abs(m.asym).toFixed(1).replace('.', ',') + ' %')
        + '</div></div>';
   });
-  return '<div class="iso-profil">' + h + '</div>';
+  var css = '';
+  if(pourExport){
+    css = ISO_EXPORT_CSS.replace(/@(--[\w-]+)/g, function(_, j){ return _isoJeton(j) || 'inherit'; });
+    css = '<style>' + css + '</style>';
+  }
+  return css + '<div class="iso-profil">' + h + '</div>';
 }
 /* Le statut d'un groupe musculaire. Le SEUIL ABSOLU prime sur la symétrie —
    même règle que le dentelé antérieur : deux côtés égaux mais tous deux sous

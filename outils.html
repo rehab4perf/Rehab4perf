@@ -1623,6 +1623,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
             </div>
           </div>
         </div>
+        <!-- Profil isocinétique dans le PDF (qualite/cr-iso-profil-cas.js) -->
+        <!-- Sa propre case : « graphiques d'évolution » annonce une évolution
+             DANS LE TEMPS, et le profil est la photo d'UN examen. -->
+        <div id="cr-iso-panel" style="margin-top:10px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text,#1A1917)">
+            <input type="checkbox" id="cr-iso-toggle" onchange="crOnIsoToggle()">
+            🦵 Inclure le profil isocinétique
+          </label>
+          <div id="cr-iso-status" style="display:none;margin-top:8px;font-size:.78rem;color:#9D9B96;font-style:italic"></div>
+        </div>
         <!-- Graphiques de progression programme dans le PDF -->
         <div id="cr-pevo-panel" style="margin-top:10px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text,#1A1917)">
@@ -5182,6 +5192,7 @@ function _crTenterImport(){
   try { window._crMarquerPropre(); } catch(ex){}
   /* Les bilans du patient viennent d'arriver dans l'iframe du bilan. */
   try { window._crUpdateEvoPanel(); } catch(ex){}
+  try { window._crUpdateIsoPanel(); } catch(ex){}
 }
 
 window.addEventListener('storage', function(e){
@@ -5193,6 +5204,7 @@ window.addEventListener('storage', function(e){
       /* Les tests arrivent du bilan, pas d'une frappe ici. */
       try { window._crMajDifferee(); } catch(ex){}
       try { window._crUpdateEvoPanel(); } catch(ex){}
+  try { window._crUpdateIsoPanel(); } catch(ex){}
     }, 300);
     return;
   }
@@ -5243,6 +5255,7 @@ window.addEventListener('message', function(e){
            Une seconde tentative differee couvre le cas ou le bilan finit son
            chargement sans qu'aucun evenement `storage` ne nous parvienne. */
         try { window._crUpdateEvoPanel(); } catch(ex){}
+  try { window._crUpdateIsoPanel(); } catch(ex){}
         _crAttenteImport = !!_crNouveau;
         _crPatientAttendu = _crNouveau;
         clearTimeout(_crImportMaj);
@@ -5467,6 +5480,7 @@ showTab = function(id){
   _updateOutilsPatientBtns();
   if (id === 'cr' && typeof window._crUpdateEvoPanel === 'function') {
     window._crUpdateEvoPanel();
+    try { if (window._crUpdateIsoPanel) window._crUpdateIsoPanel(); } catch(ex){}
   }
 };
 
@@ -8463,6 +8477,7 @@ _updateOutilsPatientBtns();
       + _crGetEvoSectionHtml()
       + _crGetPevoSectionHtml()
       + _crGetChargeSectionHtml()
+      + _crGetIsoSectionHtml()
       + '</div>'
       + '<script>'
       /* La boucle d'ajustement reduit la police jusqu'a ce que le courrier
@@ -8858,8 +8873,9 @@ _updateOutilsPatientBtns();
     var evoHtml  = _crGetEvoSectionHtml();
     var pevoHtml = _crGetPevoSectionHtml();
     var chargeHtml = _crGetChargeSectionHtml();
-    if (evoHtml || pevoHtml || chargeHtml) {
-      graphsDiv.innerHTML = evoHtml + pevoHtml + chargeHtml;
+    var isoHtml = _crGetIsoSectionHtml();
+    if (evoHtml || pevoHtml || chargeHtml || isoHtml) {
+      graphsDiv.innerHTML = evoHtml + pevoHtml + chargeHtml + isoHtml;
       graphsDiv.style.display = '';
     } else {
       graphsDiv.innerHTML = '';
@@ -8904,7 +8920,7 @@ _updateOutilsPatientBtns();
          Delegation sur les deux panneaux entiers, pas sur deux identifiants :
          une case ajoutee au selecteur demain est couverte d'office — c'est la
          liste tenue a la main qui etait le defaut. */
-      var gp = e.target.closest && e.target.closest('#cr-evo-panel, #cr-pevo-panel, #cr-charge-panel');
+      var gp = e.target.closest && e.target.closest('#cr-evo-panel, #cr-pevo-panel, #cr-charge-panel, #cr-iso-panel');
       if (gp) { try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); } return; }
       _crMajDifferee();
     }, true);
@@ -9428,6 +9444,57 @@ _updateOutilsPatientBtns();
   }
   /* La charge d'entraînement, comme les courbes : une section du courrier,
      portée par sa propre case (qualite/cr-charge-cas.js). */
+  /* Le profil isocinétique, lu dans l'iframe du bilan — même chemin que les
+     courbes d'évolution. Il arrive avec ses styles et ses couleurs résolues :
+     les jetons n'existent pas dans la fenêtre d'impression. */
+  function _crIsoProfil() {
+    try {
+      var fr = window.parent && window.parent.document.getElementById('frame-bilan');
+      if (!fr || !fr.contentWindow || typeof fr.contentWindow._isoProfilExport !== 'function') return '';
+      return fr.contentWindow._isoProfilExport() || '';
+    } catch (e) { return ''; }
+  }
+
+  function _crGetIsoSectionHtml() {
+    var toggle = document.getElementById('cr-iso-toggle');
+    if (!toggle || !toggle.checked) return '';
+    var profil = _crIsoProfil();
+    if (!profil) return '';
+    return '<div class="cr-evo-section">'
+      + '<div class="cr-evo-section-title">Profil isocinétique</div>'
+      + profil
+      + '</div>';
+  }
+
+  window.crOnIsoToggle = function() {
+    var toggle = document.getElementById('cr-iso-toggle');
+    var status = document.getElementById('cr-iso-status');
+    if (toggle && toggle.checked && !_crIsoProfil()) {
+      if (status) { status.textContent = 'Aucune mesure isocinétique dans le bilan en cours.'; status.style.display = ''; }
+      toggle.checked = false;
+    } else if (status) { status.style.display = 'none'; }
+    try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
+  };
+
+  /* Comme le panneau d'évolution : il ne se MASQUE pas quand il n'y a rien à
+     joindre — masquer est indiscernable d'une panne. La case se désactive et
+     la raison s'écrit. */
+  window._crUpdateIsoPanel = function() {
+    var panel = document.getElementById('cr-iso-panel');
+    if (!panel) return;
+    var toggle = document.getElementById('cr-iso-toggle');
+    var status = document.getElementById('cr-iso-status');
+    var dispo = !!_crIsoProfil();
+    panel.style.display = '';
+    panel.style.opacity = dispo ? '' : '.65';
+    if (toggle) toggle.disabled = !dispo;
+    if (status) {
+      status.textContent = dispo ? '' : 'Aucune mesure isocinétique dans le bilan en cours.';
+      status.style.display = dispo ? 'none' : '';
+    }
+    if (!dispo && toggle) toggle.checked = false;
+  };
+
   function _crGetChargeSectionHtml() {
     var toggle = document.getElementById('cr-charge-toggle');
     if (!toggle || !toggle.checked || !_crChargeHTML) return '';
