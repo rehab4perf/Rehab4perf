@@ -53,8 +53,6 @@ var CR_MED_LEXIQUE = [
   ['Side Hop — Endurance',        'Endurance latérale',                                      'sauts latéraux sur une jambe'],
   ['Heel Rise',                   'Endurance du triceps sural',                              'montées sur la pointe du pied'],
   ['Lunge WBLT',                  'Mobilité de la cheville en flexion dorsale',              'fente au mur'],
-  ['Quadriceps deficit',          'Déficit de force du quadriceps',                          ''],
-  ['IJ deficit',                  'Déficit de force des ischio-jambiers',                    ''],
   ['SEBT — Score composite',      'Contrôle postural dynamique — score global',              'allonge du pied en équilibre sur une jambe'],
   ['SEBT — Antérieur',            'Contrôle postural dynamique — direction antérieure',      'allonge du pied en équilibre sur une jambe'],
   ['SEBT — Postéro-médial',       'Contrôle postural dynamique — direction postéro-médiale', 'allonge du pied en équilibre sur une jambe'],
@@ -7251,6 +7249,10 @@ function updateAll() {
   calcSHRT();
   calcULRT();
 
+  /* Le poids gouverne les pics/poids de l'isocinétique : sans cet appel, il
+     fallait ENREGISTRER le bilan pour les voir (qualite/iso-cas.js). */
+  try{ calcMusc(); }catch(ex){}
+
   // Tests Rachis
   try{ calcRachisStat(); }catch(ex){}
   try{ calcLNF(); }catch(ex){}
@@ -7691,53 +7693,121 @@ function calcSLST() {
   });
 }
 
+/* ── Tests isocinétiques ──────────────────────────────────────────────────────
+   UNE table et UNE lecture. Les six déficits étaient calculés deux fois — dans
+   calcMusc pour l'écran, et à nouveau dans le CR, où seule la FORCE passait.
+   Le CR ne sortait donc que deux chiffres sur vingt-deux (qualite/iso-cas.js).
+
+   `norme` est le seuil d'asymétrie déjà écrit dans la colonne « Norme » de la
+   page : on ne l'invente pas ici, on le déplace là où il sert. */
+var ISO_MESURES = [
+  { cle:'q-f',  grp:'Quadriceps',      l:'Force — concentrique 60°/s',     norme:10 },
+  { cle:'q-p',  grp:'Quadriceps',      l:'Puissance — concentrique 240°/s', norme:15 },
+  { cle:'q-r',  grp:'Quadriceps',      l:'Résistance — excentrique 30°/s',  norme:10 },
+  { cle:'ij-f', grp:'Ischio-jambiers', l:'Force — concentrique 60°/s',     norme:10 },
+  { cle:'ij-p', grp:'Ischio-jambiers', l:'Puissance — concentrique 240°/s', norme:15 },
+  { cle:'ij-r', grp:'Ischio-jambiers', l:'Résistance — excentrique 30°/s',  norme:10 }
+];
+function _isoVal(id){ var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
+function _isoLire(){
+  return ISO_MESURES.map(function(m){
+    var cs = _isoVal(m.cle + '-cs'), ca = _isoVal(m.cle + '-ca');
+    var nCs = parseFloat(cs), nCa = parseFloat(ca);
+    /* L'asymétrie est celle que la page affiche déjà ; le LSI est son inverse,
+       et c'est lui que lisent _statForce et les seuils partagés du produit. */
+    var asym = (nCs > 0 && !isNaN(nCa)) ? (1 - nCa / nCs) * 100 : NaN;
+    return { cle:m.cle, grp:m.grp, l:m.l, norme:m.norme, cs:cs, ca:ca,
+             nCs:nCs, nCa:nCa, asym:asym, lsi:(nCs > 0 && !isNaN(nCa)) ? nCa / nCs * 100 : NaN };
+  });
+}
+function _isoRatios(mes){
+  var de = function(c){ return mes.filter(function(m){ return m.cle === c; })[0] || {}; };
+  var qf = de('q-f'), ijf = de('ij-f');
+  var poids = parseFloat(_isoVal('f-poids'));
+  var div = function(a, b){ return (b > 0 && !isNaN(a)) ? a / b * 100 : NaN; };
+  var pic = function(v){ return (!isNaN(v) && poids > 0) ? v / poids : NaN; };
+  return { poids:poids,
+    ratioCA:div(ijf.nCa, qf.nCa), ratioCS:div(ijf.nCs, qf.nCs),
+    picQca:pic(qf.nCa), picQcs:pic(qf.nCs), picIJca:pic(ijf.nCa), picIJcs:pic(ijf.nCs) };
+}
+/* Un critère = une mesure dont l'asymétrie tient dans sa norme. Seules les
+   mesures RENSEIGNÉES comptent : un test non fait ne compte ni pour ni
+   contre — sinon « 5 sur 6 » dirait la même chose qu'un examen complet. */
+function _isoCriteres(mes){
+  var faites = mes.filter(function(m){ return !isNaN(m.asym); });
+  return { total:faites.length, atteints:faites.filter(function(m){ return m.asym <= m.norme; }).length };
+}
+function _isoNb(v, d){ return isNaN(v) ? '—' : v.toFixed(d === undefined ? 1 : d).replace('.', ','); }
+/* Le profil de l'examen, en BARRES. Pas en radar : trois des six mesures sont
+   des Nm à des vitesses différentes, un même rayon les rendrait comparables
+   alors qu'elles ne le sont pas. Aplat plein, aucun dégradé — l'export PDF
+   d'un iPad perd les stop-opacity (voir les graphiques d'Évolution). */
+function _isoChartSvg(mes){
+  var faites = mes.filter(function(m){ return !isNaN(m.nCs) || !isNaN(m.nCa); });
+  if(!faites.length) return '';
+  var max = 0;
+  faites.forEach(function(m){ [m.nCs, m.nCa].forEach(function(v){ if(!isNaN(v) && v > max) max = v; }); });
+  if(!(max > 0)) return '';
+  var LG = 560, GAUCHE = 168, DROITE = 62, H = 30, y = 8, h = '';
+  var larg = LG - GAUCHE - DROITE;
+  var dernierGrp = '';
+  faites.forEach(function(m){
+    if(m.grp !== dernierGrp){
+      h += '<text x="0" y="' + (y + 8) + '" class="iso-g">' + _blEsc(m.grp) + '</text>';
+      dernierGrp = m.grp; y += 16;
+    }
+    var col = isNaN(m.asym) ? 'var(--border2)' : (m.asym <= m.norme ? 'var(--green)' : 'var(--orange)');
+    var w = function(v){ return isNaN(v) ? 0 : Math.max(1, Math.round(v / max * larg)); };
+    h += '<text x="0" y="' + (y + 13) + '" class="iso-l">' + _blEsc(m.l) + '</text>'
+       + '<rect x="' + GAUCHE + '" y="' + y + '" width="' + w(m.nCs) + '" height="8" rx="2" fill="var(--border2)"/>'
+       + '<rect x="' + GAUCHE + '" y="' + (y + 11) + '" width="' + w(m.nCa) + '" height="8" rx="2" fill="' + col + '"/>'
+       + '<text x="' + LG + '" y="' + (y + 13) + '" class="iso-v" text-anchor="end" fill="' + col + '">'
+       + (isNaN(m.asym) ? '—' : (m.asym < 0 ? '−' : '') + Math.abs(m.asym).toFixed(1).replace('.', ',') + ' %')
+       + '</text>';
+    y += H;
+  });
+  return '<svg viewBox="0 0 ' + LG + ' ' + (y + 4) + '" width="100%" role="img" aria-label="Profil isocinétique : côté sain et côté atteint pour chaque mesure">'
+    + h + '</svg>';
+}
 function calcMusc() {
-  const calc = (ca, cs) => { const v = cs>0 ? (1-ca/cs)*100 : NaN; return v; };
-  const setDef = (id, v) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (isNaN(v)) { el.textContent='-'; el.className='measure-stat'; return; }
-    el.textContent = v.toFixed(1) + '%';
-    el.className = 'measure-stat ' + (v <= 10 ? 'good' : v <= 20 ? 'warn' : 'bad');
-  };
-  const qfca = parseFloat(document.getElementById('q-f-ca').value);
-  const qfcs = parseFloat(document.getElementById('q-f-cs').value);
-  const qpca = parseFloat(document.getElementById('q-p-ca').value);
-  const qpcs = parseFloat(document.getElementById('q-p-cs').value);
-  const qrca = parseFloat(document.getElementById('q-r-ca').value);
-  const ijfca = parseFloat(document.getElementById('ij-f-ca').value);
-  const ijfcs = parseFloat(document.getElementById('ij-f-cs').value);
-  const ijpca = parseFloat(document.getElementById('ij-p-ca').value);
-  const ijpcs = parseFloat(document.getElementById('ij-p-cs').value);
-  setDef('q-f-def', calc(qfca,qfcs));
-  setDef('q-p-def', calc(qpca,qpcs));
-  setDef('q-r-def', calc(qrca,parseFloat(document.getElementById('q-r-cs').value)));
-  setDef('ij-f-def', calc(ijfca,ijfcs));
-  setDef('ij-p-def', calc(ijpca,ijpcs));
-  setDef('ij-r-def', calc(parseFloat(document.getElementById('ij-r-ca').value),parseFloat(document.getElementById('ij-r-cs').value)));
+  var mes = _isoLire(), rat = _isoRatios(mes), cr = _isoCriteres(mes);
+  var poser = function(id, txt, cls){ var e = document.getElementById(id); if(!e) return;
+    e.innerHTML = txt; if(cls !== undefined) e.className = cls; };
 
-  const ratioCA = (qfca>0 && !isNaN(ijfca)) ? ijfca/qfca*100 : NaN;
-  const ratioCS = (qfcs>0 && !isNaN(ijfcs)) ? ijfcs/qfcs*100 : NaN;
-  const poids = parseFloat(document.getElementById('f-poids').value);
+  mes.forEach(function(m){
+    var e = document.getElementById(m.cle + '-def'); if(!e) return;
+    if(isNaN(m.asym)){ e.textContent = '—'; e.className = 'measure-stat'; return; }
+    e.textContent = (m.asym < 0 ? '−' : '') + Math.abs(m.asym).toFixed(1) + '%';
+    e.className = 'measure-stat ' + (m.asym <= 10 ? 'good' : m.asym <= 20 ? 'warn' : 'bad');
+  });
 
-  const setRatio = (id, v, min, max) => {
-    const el = document.getElementById(id); if (!el) return;
-    if (isNaN(v)) { el.textContent='-'; el.className='val'; return; }
-    el.textContent = v.toFixed(1)+'%';
-    el.className = 'val ' + (v>=min && v<=max ? 'good' : 'warn');
+  var setRatio = function(id, v, min, max){
+    poser(id, isNaN(v) ? '—' : _isoNb(v) + '%', 'val' + (isNaN(v) ? '' : (v >= min && v <= max ? ' good' : ' warn')));
   };
-  setRatio('ratio-ca', ratioCA, 60, 70);
-  setRatio('ratio-cs', ratioCS, 60, 70);
+  setRatio('ratio-ca', rat.ratioCA, 60, 70);
+  setRatio('ratio-cs', rat.ratioCS, 60, 70);
 
-  const setPic = (id, nm, thr) => {
-    const el = document.getElementById(id); if (!el) return;
-    if (isNaN(nm) || isNaN(poids) || poids<=0) { el.textContent='-'; el.className='val'; return; }
-    const v = nm/poids;
-    el.textContent = v.toFixed(2);
-    el.className = 'val ' + (v>=thr ? 'good' : 'bad');
+  /* Les DEUX côtés. Le pic ne se lisait que du côté atteint : un 2,38 ne
+     disait pas si le patient est faible des deux côtés ou du seul opéré. */
+  var setPic = function(id, ca, cs, seuil){
+    poser(id, isNaN(ca) ? '—' : _isoNb(ca, 2) + ' <span class="pic-sain">/ ' + _isoNb(cs, 2) + '</span>',
+      'val' + (isNaN(ca) ? '' : (ca >= seuil ? ' good' : ' bad')));
   };
-  setPic('pic-q', qfca, 2.4);
-  setPic('pic-ij', ijfca, 1.7);
+  setPic('pic-q', rat.picQca, rat.picQcs, 2.4);
+  setPic('pic-ij', rat.picIJca, rat.picIJcs, 1.7);
+
+  poser('iso-criteres', cr.total
+    ? '<b>' + cr.atteints + '</b> critère' + (cr.atteints > 1 ? 's' : '') + ' sur ' + cr.total + ' atteint' + (cr.atteints > 1 ? 's' : '')
+    : 'Aucune mesure renseignée.',
+    'iso-synth' + (cr.total && cr.atteints === cr.total ? ' good' : cr.total ? ' warn' : ''));
+
+  /* Le poids gouverne deux pastilles sur quatre, il se saisit sur une AUTRE
+     page, et son absence n'affichait que deux tirets muets. */
+  poser('iso-poids-rappel', rat.poids > 0
+    ? 'Poids : <b>' + String(Math.round(rat.poids * 10) / 10).replace('.', ',') + ' kg</b>'
+    : 'Poids non renseigné — les pics rapportés au poids ne peuvent pas se calculer. Il se saisit sur la page Informations patient.');
+
+  poser('iso-chart', _isoChartSvg(mes));
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----
@@ -9170,12 +9240,6 @@ function _buildAllTestsHtml() {
   if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _pair('Sauts', shExpCA2, (isNaN(shExpCS2)?'-':shExpCS2), ' sauts', _asymOf(shExpCA2,shExpCS2)), statOf2(lsiCls2(shExpCA2,shExpCS2), lsiVal2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
   if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _pair('Sauts', shEndCA2, (isNaN(shEndCS2)?'-':shEndCS2), ' sauts', _asymOf(shEndCA2,shEndCS2)), statOf2(lsiCls2(shEndCA2,shEndCS2), lsiVal2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
   tfHtml += obsBlock('sh-obs-ca','sh-obs-cs');
-  var qfCA = parseFloat((document.getElementById('q-f-ca')||{}).value||'');
-  var qfCS = parseFloat((document.getElementById('q-f-cs')||{}).value||'');
-  var ijfCA = parseFloat((document.getElementById('ij-f-ca')||{}).value||'');
-  var ijfCS = parseFloat((document.getElementById('ij-f-cs')||{}).value||'');
-  if (!isNaN(qfCA) && !isNaN(qfCS)) { var qd = (1-qfCA/qfCS)*100; tfHtml += crItem('Quadriceps deficit', qd.toFixed(1) + '%', qd<=10?'Normal':'Deficit', qd<=10?'ok':'warn', ['q-f-ca','q-f-cs']); }
-  if (!isNaN(ijfCA) && !isNaN(ijfCS)) { var ijd = (1-ijfCA/ijfCS)*100; tfHtml += crItem('IJ deficit', ijd.toFixed(1) + '%', ijd<=10?'Normal':'Deficit', ijd<=10?'ok':'warn', ['ij-f-ca','ij-f-cs']); }
   // Drop Jump — Temps contact
   var djTca = parseFloat((document.getElementById('dj-t-ca')||{}).value||'');
   var djTcs = parseFloat((document.getElementById('dj-t-cs')||{}).value||'');
@@ -9263,6 +9327,46 @@ function _buildAllTestsHtml() {
   tfHtml += obsBlock('f8-obs-ca','f8-obs-cs');
   if(typeof window._ctBuildSectionHtml === 'function') tfHtml += window._ctBuildSectionHtml('fonctionnels');
   addSec('3. Tests Fonctionnels & Musculaires - Membres Inferieurs', tfHtml);
+
+  /* ── 4. Tests isocinétiques ──────────────────────────────────────────────
+     Leur propre section. Deux lignes sortaient jusqu'ici au milieu des tests
+     fonctionnels — l'isocinétique n'en est pas un — et ne portaient que le
+     déficit de FORCE, en pourcentage nu, sous les clés « Quadriceps deficit »
+     et « IJ deficit » que le CR complet affichait telles quelles.
+     Les libellés de colonne sont ceux du membre inférieur, déjà résolus par
+     zone plus haut (qualite/iso-cas.js). */
+  var isoHtml = '';
+  var _isoMes = _isoLire(), _isoRat = _isoRatios(_isoMes), _isoCr = _isoCriteres(_isoMes);
+  ['Quadriceps', 'Ischio-jambiers'].forEach(function(grp){
+    var rows = _isoMes.filter(function(m){ return m.grp === grp && !isNaN(m.lsi); }).map(function(m){
+      return { l: m.l, a: m.cs + ' Nm', b: m.ca + ' Nm', asym: asymTxt(m.lsi) };
+    });
+    if(!rows.length) return;
+    var pire = _isoMes.filter(function(m){ return m.grp === grp && !isNaN(m.lsi); })
+      .reduce(function(a, m){ return (a === null || m.lsi < a.lsi) ? m : a; }, null);
+    var st = _statForce(pire.lsi);
+    isoHtml += crItem(grp, _crMesTab(rows, _lblMI.cs, _lblMI.ca, { lbl:true }), st.txt, st.cls,
+      ISO_MESURES.filter(function(x){ return x.grp === grp; })
+        .reduce(function(a, x){ return a.concat([x.cle + '-cs', x.cle + '-ca']); }, []));
+  });
+  if(isoHtml){
+    var _isoNotes = [];
+    if(!isNaN(_isoRat.ratioCA) || !isNaN(_isoRat.ratioCS))
+      _isoNotes.push('Ratio ischio-jambiers / quadriceps en concentrique à 60°/s — '
+        + _lblMI.ca.toLowerCase() + ' : ' + _isoNb(_isoRat.ratioCA) + ' %, '
+        + _lblMI.cs.toLowerCase() + ' : ' + _isoNb(_isoRat.ratioCS) + ' % (cible 60 à 70 %).');
+    if(!isNaN(_isoRat.picQca))
+      _isoNotes.push('Pic de force du quadriceps rapporté au poids : ' + _isoNb(_isoRat.picQca, 2)
+        + ' ' + _lblMI.ca.toLowerCase() + ', ' + _isoNb(_isoRat.picQcs, 2) + ' ' + _lblMI.cs.toLowerCase() + ' (cible supérieure à 2,4).');
+    if(!isNaN(_isoRat.picIJca))
+      _isoNotes.push('Pic de force des ischio-jambiers rapporté au poids : ' + _isoNb(_isoRat.picIJca, 2)
+        + ' ' + _lblMI.ca.toLowerCase() + ', ' + _isoNb(_isoRat.picIJcs, 2) + ' ' + _lblMI.cs.toLowerCase() + ' (cible supérieure à 1,7).');
+    if(_isoCr.total)
+      _isoNotes.push(_isoCr.atteints + ' mesure' + (_isoCr.atteints > 1 ? 's' : '') + ' sur ' + _isoCr.total
+        + ' dans la norme d\'asymétrie attendue.');
+    if(_isoNotes.length) isoHtml += crItem('Synthèse', _isoNotes.join('<br>'), '', '', []);
+  }
+  addSec('4. Tests Isocinetiques', isoHtml);
   // Restaurer les variables globales pour les sections MS et suivantes
   _labelCA = _savedLabelCA; _labelCS = _savedLabelCS;
   lsiStr = _savedLsiStr; lsiCls2 = _savedLsiCls2; statOf2 = _savedStatOf2;
@@ -9337,7 +9441,7 @@ function _buildAllTestsHtml() {
     }
   }
   if(typeof window._ctBuildSectionHtml === 'function') tfMsHtml += window._ctBuildSectionHtml('fonctionnelsMS');
-  addSec('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
+  addSec('5. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
   // 5. Tests Fonctionnels Rachis
   var _lblRa = _crLabelsForCote(_getCoteForScope(['rachis-c','rachis-l']));
@@ -9361,7 +9465,7 @@ function _buildAllTestsHtml() {
   if (!isNaN(pdslV2)) { tfRachisHtml += crItem('PDSLRT', pdslV2+'s', pdslV2>=30?'OK':'Deficit', pdslV2>=30?'ok':'bad', ['rf-pdslrt']); tfRachisHtml += obsSingle('rf-pdslrt-obs'); }
   if (rfNotes) tfRachisHtml += crItem('Notes', rfNotes, '', '', ['rf-notes']);
   if(typeof window._ctBuildSectionHtml === 'function') tfRachisHtml += window._ctBuildSectionHtml('fonctionnelsRachis');
-  addSec('5. Tests Fonctionnels - Rachis', tfRachisHtml);
+  addSec('6. Tests Fonctionnels - Rachis', tfRachisHtml);
 
   /* ── 6. Analyse de Course à pied ────────────────────────────────────────
      Les colonnes sont GAUCHE / DROIT, jamais sain / atteint. Ce n'est pas un
@@ -9459,7 +9563,7 @@ function _buildAllTestsHtml() {
 
   if (cpV('cp-conclusion')) cpHtml += crItem('Conclusion', nl2br(cpV('cp-conclusion')), '', '', ['cp-conclusion']);
   if(typeof window._ctBuildSectionHtml === 'function') cpHtml += window._ctBuildSectionHtml('course');
-  addSec('6. Analyse de Course a pied', cpHtml);
+  addSec('7. Analyse de Course a pied', cpHtml);
 
   // 7. Points à travailler
   var toWork = [];
@@ -9815,7 +9919,7 @@ function _buildAllTestsHtml() {
       // autres lignes — le CSS mobile doit la traiter à part (cf. bilan.html).
       workHtml += '<div class="cr-item cr-todo"><span style="margin-right:6px;color:var(--orange)">-></span><span>' + toWork[wi] + '</span></div>';
     }
-    addSec('7. Points a Travailler', workHtml);
+    addSec('8. Points a Travailler', workHtml);
   }
 
   return sections;

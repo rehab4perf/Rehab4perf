@@ -2300,6 +2300,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     scroll-behavior:auto !important;
   }
 }
+/* Isocinétique — la part saine du pic, le compte des critères, le profil */
+.pic-sain { color:var(--text3); font-size:.78em; font-weight:400; }
+.iso-synth { margin-top:10px; font-size:.78rem; color:var(--text2); }
+.iso-synth.good { color:var(--green); }
+.iso-synth.warn { color:var(--orange); }
+#iso-chart .iso-g { font-size:9px; fill:var(--text3); text-transform:uppercase; letter-spacing:.06em; }
+#iso-chart .iso-l { font-size:11px; fill:var(--text2); }
+#iso-chart .iso-v { font-size:11px; font-weight:600; }
 </style>
 
   <script src="js/r4p-erreurs.js?v=20260817a"></script>
@@ -4731,15 +4739,24 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <div class="measure-row"><div class="measure-label">Résistance — Excentrique 30°/s</div><div class="measure-input"><input type="number" id="ij-r-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="ij-r-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-r-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
       </div>
     </div>
+    <div class="block" data-block-id="musculaires--profil">
+      <div class="block-header grey">Profil de l'examen</div>
+      <div style="padding:12px 16px">
+        <div style="font-size:.71rem;color:var(--text3);margin-bottom:8px">Barre claire : côté sain · barre pleine : côté atteint. Vert quand l'asymétrie tient dans la norme de la mesure.</div>
+        <div id="iso-chart"></div>
+      </div>
+    </div>
     <div class="block" data-block-id="musculaires--ratios">
       <div class="block-header grey">Ratios & Pic / Poids de Corps</div>
       <div style="padding:12px 16px">
+        <div id="iso-poids-rappel" style="font-size:.73rem;color:var(--text2);margin-bottom:10px"></div>
         <div class="score-card" style="padding:0">
           <div class="score-pill"><div class="val" id="ratio-ca">—</div><div class="lbl">Ratio IJ/Q 60°/s CA</div></div>
           <div class="score-pill"><div class="val" id="ratio-cs">—</div><div class="lbl">Ratio IJ/Q 60°/s CS</div></div>
-          <div class="score-pill"><div class="val" id="pic-q">—</div><div class="lbl">Pic Q / Poids (>2.4)</div></div>
-          <div class="score-pill"><div class="val" id="pic-ij">—</div><div class="lbl">Pic IJ / Poids (>1.7)</div></div>
+          <div class="score-pill"><div class="val" id="pic-q">—</div><div class="lbl">Pic Q / Poids — atteint / sain (>2.4)</div></div>
+          <div class="score-pill"><div class="val" id="pic-ij">—</div><div class="lbl">Pic IJ / Poids — atteint / sain (>1.7)</div></div>
         </div>
+        <div id="iso-criteres" class="iso-synth"></div>
       </div>
     </div>
   </div>
@@ -6206,7 +6223,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260915a"></script>
+<script src="js/bilan.js?v=20260918b"></script>
 
 </body>
 </html>

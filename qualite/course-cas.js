@@ -118,7 +118,9 @@ pre += crItemSrc + '\n';
 
 // La section elle-meme
 var si = src.indexOf('  var cpV   = function(id)');
-var se = src.indexOf("  addSec('6. Analyse de Course a pied', cpHtml);");
+/* Numerotee 7 depuis que les tests isocinetiques ont leur propre section
+   (2026-09-18, qualite/iso-cas.js). */
+var se = src.indexOf("  addSec('7. Analyse de Course a pied', cpHtml);");
 if (si < 0 || se < 0) { console.error('Section CAP introuvable'); process.exit(1); }
 var sectionSrc = src.slice(si, se);
 
