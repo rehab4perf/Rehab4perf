@@ -572,6 +572,8 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .lib-item-tags { display:flex; gap:4px; flex-wrap:wrap; margin-top:2px; }
 /* « Déjà fait » : la date de la dernière fois, sous le nom. */
 .lib-date { font-size:var(--fs-2xs); color:var(--muted); font-weight:600; letter-spacing:.02em; }
+/* Ce qu'un filtre ne peut pas garder se dit, plutôt que de disparaître. */
+.lib-df-note { padding:12px 14px 16px; font-size:var(--fs-2xs); color:var(--muted); font-style:italic; line-height:1.45; }
 .lib-tag {
   padding:1px 6px; border-radius:8px; background:var(--tag-bg);
   color:var(--tag-color); font-size:var(--fs-2xs); font-weight:600; letter-spacing:.03em; white-space:nowrap;
@@ -3770,7 +3772,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
 <script src="js/volume-sport.js?v=20260911v"></script>
-<script src="js/prog-data.js?v=20260918a"></script>
+<script src="js/prog-data.js?v=20260920a"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

@@ -587,13 +587,9 @@ function applyFilters(){
   var subVal   = subSel  ? subSel.value  : '';
   var subVal2  = subSel2 ? subSel2.value : '';
   var allBtn   = document.getElementById('filterAll');
-  if(typeVal || subVal || subVal2){
-    /* Choisir un objectif sort de « Déjà fait » : sinon le menu resterait
-       sans effet visible. */
-    _dejaFaitFilter = false;
-    document.getElementById('filterDejaFait').classList.remove('active');
-  }
-  if(typeVal || subVal || subVal2){ allBtn.classList.remove('active'); } else { allBtn.classList.add('active'); }
+  /* Les menus s'appliquent AUSSI à « Déjà fait » (demande du praticien,
+     2026-09-20) : il ne s'éteint plus quand on choisit un objectif. */
+  if(typeVal || subVal || subVal2){ allBtn.classList.remove('active'); } else if(!_dejaFaitFilter) { allBtn.classList.add('active'); }
   document.getElementById('filterType').classList.toggle('active-filter', !!typeVal);
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
   renderLib(q, typeVal, subVal, subVal2);
@@ -655,62 +651,108 @@ function _dejaFaitListe(seances){
     return a.date === b.date ? (a.label.localeCompare(b.label)) : (a.date < b.date ? 1 : -1);
   });
 }
-function _dejaFaitHtml(q){
+/* L'entrée de bibliothèque d'un exercice déjà prescrit. L'IDENTIFIANT prime
+   sur le nom : un exercice renommé au catalogue depuis la séance garde son
+   objectif et son articulation. */
+function _dejaFaitLibDe(it){
+  if(it && it.libId){
+    var parId = LIBRARY.filter(function(e){ return e.id === it.libId; })[0];
+    if(parId) return parId;
+  }
+  var cle = it ? it.cle : '';
+  return LIBRARY.filter(function(e){ return _cleExo(e.name) === cle; })[0] || null;
+}
+function _dejaFaitHtml(q, typeFilter, subFilter, subFilter2){
   var vide = function(t){ return '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;">' + t + '</div>'; };
   /* Un modèle n'est à personne — même règle que la ligne sous l'exercice. */
   if(_builderMode === 'template') return vide('Un modèle n\'est rattaché à aucun patient.');
   if(!_progPatient) return vide('Aucun patient sélectionné.');
   if(!_histExos.faits) return vide('Chargement…');
   var mots = _norm(q || '').split(/\s+/).filter(Boolean);
+  /* La recherche porte sur le nom TAPÉ par le praticien, pas sur celui du
+     catalogue : c'est celui-là qu'il a sous les yeux dans ses séances. */
   var items = _histExos.faits.filter(function(it){
     return mots.every(function(w){ return it.cle.indexOf(w) > -1; });
   });
-  if(!items.length) return vide(_histExos.faits.length ? 'Aucun exercice trouvé' : 'Aucun exercice déjà prescrit à ce patient.');
+  var filtre = !!(typeFilter || subFilter || subFilter2);
+  var sansEntree = 0;
+  if(filtre){
+    items = items.filter(function(it){
+      var ex = _dejaFaitLibDe(it);
+      /* Un exercice tapé à la main ne porte NI objectif NI articulation :
+         aucun filtre ne peut le garder. Il ne disparaît pas en silence pour
+         autant — son nombre est dit sous la liste. */
+      if(!ex){ sansEntree++; return false; }
+      return _libFiltreOk(ex, typeFilter, subFilter, subFilter2);
+    });
+  }
+  if(!items.length && !sansEntree) return vide(_histExos.faits.length ? 'Aucun exercice trouvé' : 'Aucun exercice déjà prescrit à ce patient.');
   var dejaMis = {};
   blocs.forEach(function(b){ (b.exos || []).forEach(function(e){ dejaMis[_cleExo(e.name)] = true; }); });
-  return items.map(function(it){
+  var html = items.map(function(it){
+    var ex = _dejaFaitLibDe(it);
     var h = '<div class="lib-item' + (dejaMis[it.cle] ? ' added' : '') + '">';
     h += '<div class="lib-item-info">';
     h += '<div class="lib-item-name">' + escH(it.label) + '</div>';
-    h += '<div class="lib-sub"><span class="lib-date">' + escH(_dateCourteFr(it.date)) + '</span></div>';
-    h += '</div>';
+    h += '<div class="lib-sub"><span class="lib-date">' + escH(_dateCourteFr(it.date)) + '</span>';
+    if(ex) h += '<span class="lib-tag ' + getTypeClass(ex.type) + '">' + getTypeLabel(ex.type) + '</span>';
+    h += '</div></div>';
     h += '<button class="lib-add-btn" onclick="addExoDejaFait(\'' + escJS(it.cle) + '\')" title="Ajouter"></button>';
     return h + '</div>';
   }).join('');
+  if(sansEntree){
+    html += '<div class="lib-df-note">' + sansEntree + ' exercice' + (sansEntree > 1 ? 's' : '')
+      + ' tapé' + (sansEntree > 1 ? 's' : '') + ' à la main ne porte' + (sansEntree > 1 ? 'nt' : '')
+      + ' ni objectif ni articulation — retirez le filtre pour ' + (sansEntree > 1 ? 'les' : 'le') + ' voir.</div>';
+  }
+  return html;
 }
 
+/* Objectif, mouvement, articulation : le prédicat des menus de la barre.
+   EXTRAIT de renderLib pour que « Déjà fait » filtre EXACTEMENT pareil
+   (qualite/deja-fait-filtres-cas.js) — deux copies dériveraient, et la même
+   articulation ne rendrait pas la même liste selon le bouton actif.
+   La recherche texte n'en fait pas partie : la bibliothèque cherche dans le
+   nom du catalogue, « Déjà fait » dans le nom que le praticien a TAPÉ. */
+function _libFiltreOk(ex, typeFilter, subFilter, subFilter2){
+  if(!ex) return false;
+  if(typeFilter && ex.type !== typeFilter) return false;
+  // Filtre mouvement (renfo uniquement)
+  if(subFilter){
+    if(typeFilter === 'renfo'){
+      if(!ex.patterns || ex.patterns.indexOf(subFilter) === -1) return false;
+    } else {
+      var _rzArr = ex.zone ? ex.zone.split(',').map(function(z){ return z.trim(); }) : [];
+      if(_rzArr.indexOf(subFilter) === -1 && (!ex.zones || ex.zones.indexOf(subFilter) === -1)) return false;
+    }
+  }
+  // Filtre articulation (renfo uniquement — correspondance par sous-chaîne)
+  if(subFilter2 && typeFilter === 'renfo'){
+    if(!ex.zone || ex.zone.toUpperCase().indexOf(subFilter2) === -1) return false;
+  }
+  return true;
+}
 function renderLib(q, typeFilter, subFilter, subFilter2){
   q = (q||'').toLowerCase();
-  /* « Déjà fait » ne filtre pas LIBRARY : il liste ce que CE patient a déjà
-     reçu, exercices tapés à la main compris (qualite/biblio-deja-fait-cas.js). */
-  if(_dejaFaitFilter){
-    var _sc = document.getElementById('libScroll');
-    if(_sc) _sc.innerHTML = _dejaFaitHtml(q);
-    return;
-  }
   typeFilter  = typeFilter  !== undefined ? typeFilter  : document.getElementById('filterType').value;
   var subSel  = document.getElementById('filterSub');
   var subSel2 = document.getElementById('filterSub2');
   subFilter  = subFilter  !== undefined ? subFilter  : (subSel  ? subSel.value  : '');
   subFilter2 = subFilter2 !== undefined ? subFilter2 : (subSel2 ? subSel2.value : '');
+  /* « Déjà fait » ne filtre pas LIBRARY : il liste ce que CE patient a déjà
+     reçu, exercices tapés à la main compris (qualite/biblio-deja-fait-cas.js).
+     Les menus lui sont passés — RÉSOLUS d'abord, sinon un objectif choisi dans
+     la barre serait ignoré par ce chemin. */
+  if(_dejaFaitFilter){
+    var _sc = document.getElementById('libScroll');
+    if(_sc) _sc.innerHTML = _dejaFaitHtml(q, typeFilter, subFilter, subFilter2);
+    return;
+  }
   var scroll = document.getElementById('libScroll');
   var favs = getFavs();
   var visible = LIBRARY.filter(function(ex){
     if(_favFilter && !favs.has(ex.id)) return false;
-    if(typeFilter && ex.type!==typeFilter) return false;
-    // Filtre mouvement (renfo uniquement)
-    if(subFilter){
-      if(typeFilter === 'renfo'){
-        if(!ex.patterns || ex.patterns.indexOf(subFilter) === -1) return false;
-      } else {
-        var _rzArr = ex.zone ? ex.zone.split(',').map(function(z){ return z.trim(); }) : [];
-      if(_rzArr.indexOf(subFilter) === -1 && (!ex.zones || ex.zones.indexOf(subFilter)===-1)) return false;
-      }
-    }
-    // Filtre articulation (renfo uniquement — correspondance par sous-chaîne)
-    if(subFilter2 && typeFilter === 'renfo'){
-      if(!ex.zone || ex.zone.toUpperCase().indexOf(subFilter2) === -1) return false;
-    }
+    if(!_libFiltreOk(ex, typeFilter, subFilter, subFilter2)) return false;
     if(q){
       var _words = _norm(q).split(/\s+/).filter(Boolean);
       var _hay = _norm(ex.name)+' '+_norm(ex.zone)+' '+_norm(ex.obj||'')+' '+_norm((ex.patterns||[]).join(' '));
