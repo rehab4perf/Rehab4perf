@@ -8,7 +8,8 @@
    rien ». L'unité est donc GARDÉE, pas ignorée :
      - affichée : « 3 × 5m », « 3 × 20m à 24 kg » ;
      - comparée à unité égale : « → aujourd'hui 8m ↗ +3m » ; en charge, les
-       kilos d'abord (« 30 kg ↗ +6 kg »), la quantité sinon ;
+       kilos d'abord (« 30 kg ↗ +25 % » depuis le 2026-09-20), la quantité
+       sinon ;
      - pas de comparaison si l'unité change (5m contre 10 répétitions) ;
      - pas de 1RM estimé : il n'a pas de sens sur une distance.
    Sans unité, rien ne change (historique-exo, -vivant, -mode, -duree).
@@ -62,8 +63,10 @@ ok('une première charge sur une distance', ligne('Marche sur pointes', x('March
 
 console.log('\nEn charge, en mètres');
 const fw = ligne('Farmer walk');
-ok('« 3 × 20m à 24 kg », sans 1RM, et l\'écart en kilos', fw === 'Dernière séance (9 sept.) : 3 × 20m à 24 kg ↗ +4 kg' && !/1RM/.test(fw), fw);
-ok('plus lourd : les kilos', ligne('Farmer walk', x('Farmer walk', '20m', 30)) === 'Dernière séance (9 sept.) : 3 × 20m à 24 kg → aujourd’hui 30 kg ↗ +6 kg', ligne('Farmer walk', x('Farmer walk', '20m', 30)));
+/* Un écart de CHARGE se dit en POURCENTAGE depuis le 2026-09-20
+   (qualite/historique-pourcent-cas.js). Le kilo reste écrit juste avant. */
+ok('« 3 × 20m à 24 kg », sans 1RM, et l\'écart en pourcentage', fw === 'Dernière séance (9 sept.) : 3 × 20m à 24 kg ↗ +20 %' && !/1RM/.test(fw), fw);
+ok('plus lourd : la charge, en pourcentage', ligne('Farmer walk', x('Farmer walk', '20m', 30)) === 'Dernière séance (9 sept.) : 3 × 20m à 24 kg → aujourd’hui 30 kg ↗ +25 %', ligne('Farmer walk', x('Farmer walk', '20m', 30)));
 ok('plus loin, même charge : la distance', ligne('Farmer walk', x('Farmer walk', '30m', 24)) === 'Dernière séance (9 sept.) : 3 × 20m à 24 kg → aujourd’hui 30m ↗ +10m', ligne('Farmer walk', x('Farmer walk', '30m', 24)));
 ok('identique : le dit', / → aujourd’hui : identique$/.test(ligne('Farmer walk', x('Farmer walk', '20m', 24))));
 

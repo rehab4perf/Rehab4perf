@@ -4474,9 +4474,22 @@ function _histExoHtml(nom, e){
   var txt = titre + ' (' + parseInt(d[2], 10) + ' ' + MOIS[parseInt(d[1], 10) - 1] + ') : '
     + (der.series ? escH(String(der.series)) + ' × ' : '') + der.reps + un(der)
     + (der.bw ? (un(der) ? '' : ' poids du corps') : ' à ' + kgFr(der.kg) + (un(der) ? '' : ' · 1RM est. ' + kgFr(der.rm1)));
-  var fleche = function(dv, bw, u){
+  /* Un écart de CHARGE se dit en POURCENTAGE, pas en kilos (demande du
+     praticien, 2026-09-20) : « +49 % » se lit d'un exercice à l'autre, « +8,1
+     kg » non — il dépend de ce qu'on soulevait. La valeur absolue n'est pas
+     perdue, la ligne vient de l'écrire juste avant (« 1RM est. 24,5 kg »).
+     Répétitions, durées et distances gardent leur unité : ce ne sont pas des
+     charges (qualite/historique-pourcent-cas.js). */
+  var pct = function(dv, base){
+    if(!(base > 0)) return null;
+    var p = Math.round(dv / base * 100);
+    return p === 0 ? null : p;   // un écart qui arrondit à zéro ne dit rien
+  };
+  var fleche = function(dv, bw, u, base){
+    var p = bw ? null : pct(dv, base);
     return ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −')
-      + (bw ? nb(Math.abs(dv)) + (u || ' reps') : kgFr(Math.abs(dv))) + '</span>';
+      + (p !== null ? Math.abs(p) + ' %'
+         : bw ? nb(Math.abs(dv)) + (u || ' reps') : kgFr(Math.abs(dv))) + '</span>';
   };
   /* Dès qu'on prescrit (reps, et une charge si la dernière en avait une),
      la ligne compare CETTE séance à la dernière. Sinon, l'écart entre les deux
@@ -4485,19 +4498,20 @@ function _histExoHtml(nom, e){
   if(cur && cur.rm1 && memeUnite && cur.bw === !!der.bw){
     if(un(der) && !der.bw){   // en charge sur une distance : les kilos, puis la quantité
       var dk = Math.round((cur.kg - der.kg) * 10) / 10, dq = Math.round((cur.reps - der.reps) * 10) / 10;
-      txt += ' → aujourd’hui' + (dk ? ' ' + kgFr(cur.kg) + fleche(dk, false)
+      txt += ' → aujourd’hui' + (dk ? ' ' + kgFr(cur.kg) + fleche(dk, false, '', der.kg)
         : dq ? ' ' + nb(cur.reps) + un(der) + fleche(dq, true, un(der)) : ' : identique');
     } else {
       var dc = der.bw ? Math.round((cur.reps - der.reps) * 10) / 10 : Math.round((cur.rm1 - der.rm1) * 10) / 10;
       txt += ' → aujourd’hui' + (!dc ? (un(der) ? ' : identique' : ' : même charge')
-        : (der.bw ? ' ' + nb(cur.reps) + (un(der) || ' reps') : ' 1RM est. ' + kgFr(cur.rm1)) + fleche(dc, der.bw, un(der)));
+        : (der.bw ? ' ' + nb(cur.reps) + (un(der) || ' reps') : ' 1RM est. ' + kgFr(cur.rm1))
+          + fleche(dc, der.bw, un(der), der.bw ? der.reps : der.rm1));
     }
   } else if(cur && cur.rm1 && !cur.bw && memeUnite){
     txt += ' → aujourd’hui ' + (un(cur) ? kgFr(cur.kg) : '1RM est. ' + kgFr(cur.rm1)) + ' (première charge)';   // jamais chargé avant
   } else if(prec && !!prec.bw === !!der.bw && un(prec) === un(der)){
     var dv = der.bw ? Math.round((der.reps - prec.reps) * 10) / 10
       : un(der) ? Math.round((der.kg - prec.kg) * 10) / 10 : Math.round((der.rm1 - prec.rm1) * 10) / 10;
-    if(dv) txt += fleche(dv, der.bw, un(der));
+    if(dv) txt += fleche(dv, der.bw, un(der), der.bw ? prec.reps : (un(der) ? prec.kg : prec.rm1));
   }
   /* Un clic ouvre la courbe de l'exercice (qualite/cible-1rm-cas.js). */
   return '<button type="button" class="exo-hist-lien" onclick="_histVoirCourbe(this)" title="Voir la courbe de l’exercice">' + txt + '</button>';

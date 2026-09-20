@@ -9,7 +9,7 @@
    A — « Évolution » revient dans le menu ···, dans le BUILDER seulement (sur
        l'agenda, la carte Charge y mène). Provisoire : si B suffit, il repart.
    B — sous chaque exercice, dans la cellule de son nom : la dernière séance
-       AVANT celle qu'on compose, « 4 × 8 à 75 kg · 1RM est. 93,1 kg ↗ +6,2 kg »,
+       AVANT celle qu'on compose, « 4 × 8 à 75 kg · 1RM est. 93,1 kg ↗ +7 % »,
        ou « 3 × 10 poids du corps ↗ +2 reps ». Mêmes données qu'Évolution —
        les charges PRESCRITES des séances passées (_extractExoLoads), un seul
        point suffit ici (Évolution en exige deux pour tracer une courbe).
@@ -70,7 +70,9 @@ const ligne = (nom, ctx) => { try { return (ctx || c)._histExoHtml(nom).replace(
 const bs = ligne('Back squat');
 ok('la dernière séance AVANT celle qu\'on compose (7 sept., pas le 14)', /^Dernière séance \(7 sept\.\) : /.test(bs), bs);
 ok('… séries × répétitions, à la charge prescrite', /4 × 8 à 75 kg/.test(bs), bs);
-ok('… le 1RM estimé, et sa tendance depuis la séance d\'avant', /1RM est\. 93,1 kg/.test(bs) && /↗ \+6,2 kg/.test(bs), bs);
+/* Un écart de CHARGE se dit en POURCENTAGE depuis le 2026-09-20
+   (qualite/historique-pourcent-cas.js). Le kilo reste écrit juste avant. */
+ok('… le 1RM estimé, et sa tendance depuis la séance d\'avant', /1RM est\. 93,1 kg/.test(bs) && /↗ \+7 %/.test(bs), bs);
 ok('au poids du corps : les répétitions, et leur tendance', ligne('Pistol squat box') === 'Dernière séance (7 sept.) : 3 × 10 poids du corps ↗ +2 reps', ligne('Pistol squat box'));
 ok('une seule séance passée suffit (sans tendance)', /^Dernière séance \(31 août\) : 3 × 10 à 20 kg · 1RM est\. [\d,]+ kg$/.test(ligne('Fentes')), ligne('Fentes'));
 ok('le nom se reconnaît sans tenir compte de la casse', ligne('back SQUAT') === bs);

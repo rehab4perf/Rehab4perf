@@ -12,7 +12,7 @@
      2. la ligne ne disait rien de ce qu'on prescrit : son écart comparait les
         DEUX séances précédentes. Dès qu'une charge est posée (cible kg, ou
         %1RM), elle compare CETTE séance à la dernière : « → aujourd'hui 1RM
-        est. 99,3 kg ↗ +6,2 kg » ; au poids du corps, les répétitions ;
+        est. 99,3 kg ↗ +7 % » ; au poids du corps, les répétitions ;
      3. l'historique n'était chargé qu'une fois par patient : une séance
         enregistrée n'y entrait qu'au changement de patient. Il se recharge à
         chaque ouverture du builder (l'ancien reste affiché en attendant).
@@ -57,11 +57,13 @@ const exo = (n, reps, cibles) => ({ name: n, reps: String(reps), series: '4', ci
 
 console.log('\nCette séance, contre la dernière');
 const l80 = ligne('Back squat', exo('Back squat', 8, [{ type: 'kg', min: '80', max: '' }]));
-ok('en charge : le 1RM de CETTE séance et son écart à la dernière', /1RM est\. 93,1 kg → aujourd’hui 1RM est\. 99,3 kg ↗ \+6,2 kg$/.test(l80), l80);
+/* Un écart de CHARGE se dit en POURCENTAGE depuis le 2026-09-20
+   (qualite/historique-pourcent-cas.js). Le kilo reste écrit juste avant. */
+ok('en charge : le 1RM de CETTE séance et son écart à la dernière', /1RM est\. 93,1 kg → aujourd’hui 1RM est\. 99,3 kg ↗ \+7 %$/.test(l80), l80);
 const l75 = ligne('Back squat', exo('Back squat', 8, [{ type: 'kg', min: '75', max: '' }]));
 ok('même charge : dit « même charge », pas une fausse flèche', /→ aujourd’hui : même charge$/.test(l75), l75);
 const lpc = ligne('Back squat', exo('Back squat', 8, [{ type: '%1RM', min: '80', max: '' }]));
-ok('une cible %1RM donne sa charge (≈ 74,5 kg à 8 reps : 1RM ≈ 92,5)', /→ aujourd’hui 1RM est\. 92,5 kg ↘ −0,6 kg$/.test(lpc), lpc);
+ok('une cible %1RM donne sa charge (≈ 74,5 kg à 8 reps : 1RM ≈ 92,5)', /→ aujourd’hui 1RM est\. 92,5 kg ↘ −1 %$/.test(lpc), lpc);
 const lbw = ligne('Pistol squat box', exo('Pistol squat box', 12));
 ok('au poids du corps : les répétitions', /→ aujourd’hui 12 reps ↗ \+2 reps$/.test(lbw), lbw);
 
@@ -70,7 +72,7 @@ ok('répétitions vides : l\'écart entre les deux séances précédentes, incha
 /* Changé le 2026-09-15 (historique-mode-cas) : une charge posée se compare à la
    dernière séance chargée ; s'il n'y en a pas, la ligne le dit. */
 ok('une première charge sur un exercice fait au poids du corps : dite « première charge »', ligne('Pistol squat box', exo('Pistol squat box', 10, [{ type: 'kg', min: '10', max: '' }])) === 'Dernière séance (7 sept.) : 3 × 10 poids du corps → aujourd’hui 1RM est. 13,3 kg (première charge)', ligne('Pistol squat box', exo('Pistol squat box', 10, [{ type: 'kg', min: '10', max: '' }])));
-ok('sans exercice passé (appel d\'avant) : identique', ligne('Back squat') === 'Dernière séance (7 sept.) : 4 × 8 à 75 kg · 1RM est. 93,1 kg ↗ +5 kg' || /Dernière séance \(7 sept\.\) : 4 × 8 à 75 kg · 1RM est\. 93,1 kg ↗ \+/.test(ligne('Back squat')), ligne('Back squat'));
+ok('sans exercice passé (appel d\'avant) : identique', ligne('Back squat') === 'Dernière séance (7 sept.) : 4 × 8 à 75 kg · 1RM est. 93,1 kg ↗ +7 %' || /Dernière séance \(7 sept\.\) : 4 × 8 à 75 kg · 1RM est\. 93,1 kg ↗ \+/.test(ligne('Back squat')), ligne('Back squat'));
 
 console.log('\nEn place, à la frappe');
 const rs = fd('renderSession');

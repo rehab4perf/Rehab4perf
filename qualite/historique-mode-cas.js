@@ -10,7 +10,7 @@
 
    Règle : dès qu'on prescrit une CHARGE, la comparaison se fait avec la
    dernière séance chargée — « Dernière séance chargée (9 sept.) : 3 × 20 à
-   5 kg · 1RM est. 10,6 kg → aujourd'hui 1RM est. 16,4 kg ↗ +5,8 kg ». Sans
+   5 kg · 1RM est. 10,6 kg → aujourd'hui 1RM est. 16,4 kg ↗ +55 % ». Sans
    séance chargée avant : « (première charge) ». Tant qu'aucune charge n'est
    posée, rien ne change : la ligne ne devine pas ce qu'on compose.
 
@@ -51,8 +51,10 @@ const exo = (reps, kg) => ({ name: 'Cycliste squat ', reps: String(reps), series
 console.log('\nUne charge, contre la dernière séance chargée');
 const l10 = ligne('Cycliste squat ', exo(15, 10));
 ok('15 reps à 10 kg : comparées au 9 sept. (3 × 20 à 5 kg), pas à l\'EMOM au poids du corps du 10',
-   l10 === 'Dernière séance chargée (9 sept.) : 3 × 20 à 5 kg · 1RM est. 10,6 kg → aujourd’hui 1RM est. 16,4 kg ↗ +5,8 kg', l10);
-ok('… et elle suit la frappe : 5 kg', / → aujourd’hui 1RM est\. 8,2 kg ↘ −2,4 kg$/.test(ligne('Cycliste squat ', exo(15, 5))), ligne('Cycliste squat ', exo(15, 5)));
+   l10 === 'Dernière séance chargée (9 sept.) : 3 × 20 à 5 kg · 1RM est. 10,6 kg → aujourd’hui 1RM est. 16,4 kg ↗ +55 %', l10);
+/* Un écart de CHARGE se dit en POURCENTAGE depuis le 2026-09-20
+   (qualite/historique-pourcent-cas.js). Le kilo reste écrit juste avant. */
+ok('… et elle suit la frappe : 5 kg', / → aujourd’hui 1RM est\. 8,2 kg ↘ −23 %$/.test(ligne('Cycliste squat ', exo(15, 5))), ligne('Cycliste squat ', exo(15, 5)));
 const lm = ligne('Marche sur pointes', { name: 'Marche sur pointes', reps: '5', series: '3', cibles: [{ type: 'kg', min: '4', max: '' }] });
 ok('jamais chargé avant : « (première charge) », avec le 1RM du jour', lm === 'Dernière séance (9 sept.) : 3 × 5 poids du corps → aujourd’hui 1RM est. 4,5 kg (première charge)', lm);
 
