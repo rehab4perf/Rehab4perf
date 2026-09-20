@@ -34,7 +34,7 @@ const fd = n => { const d = pdata.indexOf('\nfunction ' + n + '('); return d < 0
 
 /* Une bibliothèque réduite, mais de la même forme que la vraie. */
 const LIB = [
-  { id: 'g1', name: 'Chaise 1 jambe isométrique', type: 'renfo', zone: 'GENOU', patterns: ['Triple flexion'] },
+  { id: 'g1', name: 'Chaise 1 jambe isométrique', type: 'renfo', zone: 'GENOU', patterns: ['Triple flexion'], url: 'https://youtu.be/LIBaaaaaaaa' },
   { id: 'h1', name: 'Clamshell (couché latéral)', type: 'renfo', zone: 'HANCHE', patterns: [] },
   { id: 'c1', name: 'Dorsiflexion de cheville contre mur', type: 'warmup', zone: 'CHEVILLE', patterns: [] },
   { id: 'r1', name: 'Exercice renommé depuis', type: 'renfo', zone: 'HANCHE', patterns: [] }
@@ -43,7 +43,8 @@ const FAITS = [
   { cle: 'chaise 1 jambe isometrique', label: 'Chaise 1 jambe isométrique', date: '2026-09-08', libId: null },
   { cle: 'clamshell (couche lateral)', label: 'Clamshell (couché latéral)', date: '2026-09-08', libId: 'h1' },
   { cle: 'dorsiflexion de cheville contre mur', label: 'Dorsiflexion de cheville contre mur', date: '2026-09-08', libId: null },
-  { cle: 'double leg landing', label: 'Double leg landing', date: '2026-09-08', libId: null },
+  { cle: 'double leg landing', label: 'Double leg landing', date: '2026-09-08', libId: null, url: 'https://youtu.be/MANbbbbbbbb' },
+  { cle: 'exercice sans video', label: 'Exercice sans video', date: '2026-09-08', libId: null, url: '' },
   { cle: 'ancien nom de l exercice', label: 'Ancien nom de l exercice', date: '2026-09-08', libId: 'r1' }
 ];
 function banc() {
@@ -51,12 +52,12 @@ function banc() {
   const ctx = vm.createContext({
     LIBRARY: LIB, blocs: [], _progPatient: { id: 'p1' }, _builderMode: 'seance',
     _histExos: { pid: 'p1', faits: FAITS },
-    escH: s => String(s || ''), escJS: s => String(s || ''),
+    escH: s => String(s || ''), escJS: s => String(s || ''), _isTouchDevice: false,
     getTypeClass: t => String(t || ''), getTypeLabel: t => ({renfo:'Renforcement', warmup:'Warm-up / Mobilité'}[t] || String(t || '')),
     document: { getElementById: id => el[id] || null }
   });
   try {
-    vm.runInContext(['_norm', '_cleExo', '_dateCourteFr', '_libFiltreOk', '_dejaFaitLibDe', '_dejaFaitHtml'].map(fd).join('\n'), ctx);
+    vm.runInContext(['_norm', '_cleExo', '_dateCourteFr', '_ytId', '_ytThumbHtml', '_libFiltreOk', '_dejaFaitLibDe', '_dejaFaitHtml'].map(fd).join('\n'), ctx);
   } catch (e) { ok('le code se charge', false, e.message); }
   return ctx;
 }
@@ -70,7 +71,7 @@ ok('… renderLib s\'en sert', /_libFiltreOk\(/.test(fd('renderLib')), 'renderLi
 ok('… et « Déjà fait » aussi', /_libFiltreOk\(/.test(fd('_dejaFaitHtml')), '_dejaFaitHtml garde sa copie');
 
 console.log('\nLes filtres mordent sur la liste');
-ok('sans filtre, tout est là — manuscrits compris', noms(H('')).length === 5 && noms(H('')).indexOf('Double leg landing') > -1, noms(H('')).join(' | '));
+ok('sans filtre, tout est là — manuscrits compris', noms(H('')).length === 6 && noms(H('')).indexOf('Double leg landing') > -1, noms(H('')).join(' | '));
 ok('objectif « renfo » : les warmup sortent', (() => {
   const n = noms(H('', 'renfo'));
   return n.indexOf('Dorsiflexion de cheville contre mur') === -1 && n.indexOf('Chaise 1 jambe isométrique') > -1;
@@ -93,11 +94,22 @@ console.log('\nCe qu\'un filtre ne peut pas garder se DIT');
 {
   const h = H('', 'renfo');
   ok('un manuscrit sort sous un filtre', noms(h).indexOf('Double leg landing') === -1);
-  ok('… mais son nombre est écrit sous la liste', /tap[ée]s? à la main/i.test(h) && /\b1\b/.test(h), h.slice(-260));
+  ok('… mais leur nombre est écrit sous la liste', /tap[ée]s? à la main/i.test(h) && /\b2\b/.test(h), h.slice(-260));
   ok('… et rien n\'est dit quand aucun filtre n\'est actif', !/tap[ée]s? à la main/i.test(H('')));
   /* La note ne parle que de ce que CE filtre écarte : si la recherche a déjà
      retiré le manuscrit, il n'y a rien à signaler. */
   ok('… ni quand le filtre n\'écarte aucun manuscrit', !/tap[ée]s? à la main/i.test(H('clamshell', 'renfo')), H('clamshell', 'renfo').slice(-200));
+}
+
+console.log('\nLa vignette de la vidéo');
+{
+  const h = H('');
+  ok('celle de la BIBLIOTHÈQUE quand l\'exercice y est', h.indexOf('LIBaaaaaaaa') > -1, 'vignette absente');
+  ok('celle de la SÉANCE pour un exercice tapé à la main', h.indexOf('MANbbbbbbbb') > -1, 'un manuscrit peut porter une vidéo');
+  ok('rien quand il n\'y a pas de vidéo — pas de cadre vide', (h.match(/yt-thumb-wrap/g) || []).length === 2,
+     (h.match(/yt-thumb-wrap/g) || []).length + ' vignettes pour 6 exercices');
+  ok('l\'aperçu au survol ne s\'arme que sur une entrée de bibliothèque',
+     (h.match(/_showLibPreviewDelayed/g) || []).length === 4, (h.match(/_showLibPreviewDelayed/g) || []).length + ' aperçus');
 }
 
 console.log('\nLe filtre reste allumé quand on choisit un objectif');

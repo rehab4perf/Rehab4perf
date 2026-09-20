@@ -642,8 +642,9 @@ function _dejaFaitListe(seances){
         var e = map[cle];
         /* Le libellé retenu est celui de la DERNIÈRE fois : c'est
            l'orthographe que le praticien a sous les yeux. */
-        if(!e) map[cle] = { cle:cle, label:nom, date:date, libId:(exo.libId || null) };
-        else if(date >= e.date){ e.label = nom; e.date = date; e.libId = exo.libId || e.libId; }
+        var url = String((exo && exo.url) || '');
+        if(!e) map[cle] = { cle:cle, label:nom, date:date, libId:(exo.libId || null), url:url };
+        else if(date >= e.date){ e.label = nom; e.date = date; e.libId = exo.libId || e.libId; e.url = url; }
       });
     });
   });
@@ -691,12 +692,21 @@ function _dejaFaitHtml(q, typeFilter, subFilter, subFilter2){
   blocs.forEach(function(b){ (b.exos || []).forEach(function(e){ dejaMis[_cleExo(e.name)] = true; }); });
   var html = items.map(function(it){
     var ex = _dejaFaitLibDe(it);
-    var h = '<div class="lib-item' + (dejaMis[it.cle] ? ' added' : '') + '">';
+    /* La vignette vient de la BIBLIOTHÈQUE quand l'exercice y est — c'est la
+       vidéo à jour — et de la séance sinon : un exercice tapé à la main peut
+       en porter une (qualite/deja-fait-filtres-cas.js). */
+    var vignette = _ytThumbHtml((ex && ex.url) || it.url || '');
+    /* L'aperçu au survol lit LIBRARY : il ne s'arme que sur une entrée. */
+    var survol = (ex && !_isTouchDevice)
+      ? ' onmouseenter="_showLibPreviewDelayed(\'' + escJS(ex.id) + '\',this)" onmouseleave="_hideLibPreview()"' : '';
+    var h = '<div class="lib-item' + (dejaMis[it.cle] ? ' added' : '') + '"' + survol + '>';
+    if(vignette) h += vignette;
     h += '<div class="lib-item-info">';
     h += '<div class="lib-item-name">' + escH(it.label) + '</div>';
     h += '<div class="lib-sub"><span class="lib-date">' + escH(_dateCourteFr(it.date)) + '</span>';
     if(ex) h += '<span class="lib-tag ' + getTypeClass(ex.type) + '">' + getTypeLabel(ex.type) + '</span>';
     h += '</div></div>';
+    if(ex && _isTouchDevice) h += '<button class="lib-info-btn" onclick="_toggleLibPreview(event,\'' + escJS(ex.id) + '\')" title="Aperçu">ℹ</button>';
     h += '<button class="lib-add-btn" onclick="addExoDejaFait(\'' + escJS(it.cle) + '\')" title="Ajouter"></button>';
     return h + '</div>';
   }).join('');

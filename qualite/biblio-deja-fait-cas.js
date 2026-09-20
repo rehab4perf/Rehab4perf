@@ -46,12 +46,12 @@ const fd = fnDe(pdata), fm = fnDe(pmain);
    chose écrite de trois façons. */
 const prog = (date, exos) => ({ id: 's' + date, date, programme_id: 'p' + date, programmes: { nom: 'Séance', donnees: { blocs: [{ exos }] } } });
 const SEANCES = [
-  prog('2026-07-06', [{ name: 'Squat bulgare', reps: '10', cibles: [{ type: 'kg', min: '20', max: '20' }], libId: 'renfo-42' },
+  prog('2026-07-06', [{ name: 'Squat bulgare', reps: '10', cibles: [{ type: 'kg', min: '20', max: '20' }], libId: 'renfo-42', url: 'https://youtu.be/ZZZ' },
                       { name: 'Étirement psoas', reps: '', duree: '', cibles: [] },
                       { name: 'Pont fessier une jambe', reps: '12', cibles: [] }]),
   prog('2026-08-24', [{ name: 'squat bulgare ', reps: '10', cibles: [{ type: 'kg', min: '24', max: '24' }], libId: 'renfo-42' },
-                      { name: 'Copenhague excentrique maison', reps: '', duree: '30s', cibles: [] }]),
-  prog('2026-09-14', [{ name: 'Squat Bulgare', reps: '8', cibles: [{ type: 'kg', min: '28', max: '28' }] },
+                      { name: 'Copenhague excentrique maison', reps: '', duree: '30s', cibles: [], url: 'https://youtu.be/BBB' }]),
+  prog('2026-09-14', [{ name: 'Squat Bulgare', reps: '8', cibles: [{ type: 'kg', min: '28', max: '28' }], url: 'https://youtu.be/AAA' },
                       { name: '', reps: '10', cibles: [] }])
 ];
 
@@ -73,6 +73,13 @@ ok('… au libellé de la DERNIÈRE fois', (L.find(x => x.cle === 'squat bulgare
 ok('… et à sa date la plus récente', (L.find(x => x.cle === 'squat bulgare') || {}).date === '2026-09-14');
 ok('la plus récente d\'abord', L.length > 1 && L[0].date === '2026-09-14' && L[L.length - 1].date === '2026-07-06'
    && L.every((x, i) => i === 0 || L[i - 1].date >= x.date), L.map(x => x.label + ':' + x.date).join(' | '));
+/* La vignette vient de la bibliothèque quand l'exercice y est, et de la
+   séance sinon : un exercice tapé à la main peut porter une vidéo
+   (qualite/deja-fait-filtres-cas.js). */
+ok('l\'URL de la dernière fois est gardée', (L.find(x => x.cle === 'squat bulgare') || {}).url === 'https://youtu.be/AAA',
+   JSON.stringify(L.find(x => x.cle === 'squat bulgare')));
+ok('… y compris pour un exercice tapé à la main',
+   (L.find(x => x.cle === 'copenhague excentrique maison') || {}).url === 'https://youtu.be/BBB', JSON.stringify(L.find(x => x.cle === 'copenhague excentrique maison')));
 ok('la date se lit en clair', (() => { try { return c._dateCourteFr('2026-09-14') === '14 sept.'; } catch (e) { return false; } })());
 
 console.log('\nCe que _histExos.map perdait — la raison de ne pas s\'en servir');
