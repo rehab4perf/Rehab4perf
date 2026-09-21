@@ -74,11 +74,14 @@ function banc(etat) {
     + 'function _pevoAujourdhuiIso(){ return "' + AUJ + '"; }\n'
     + PERIODE.concat(BANDE, ['_pevoUneSeule', '_pevoDatesX', '_pevoValEtiq', '_pevoDouleurEtiq', '_buildPevoChart', '_renderPevoCharts']).map(fn).join('\n')
     + '\nreturn function(ex, sel){ _renderPevoCharts(ex, sel); return document.getElementById("pevoBody").innerHTML; };';
-  return new Function('document', '_pevoDureeData', '_pevoCardioData', '_pevoCapPainData', '_pevoNrsData', '_progPatient',
-    '_pevoSelecteurHtml', '_pevoZoneIndex', '_attachPevoEvents', '_buildUaTrendSection', '_volFenetreSemaines', '_volHtml',
-    '_volumeParSport', 'escH', '_pevoGetSel', '_pevoData', code)(
-    { getElementById: () => corps }, null, null, null, null, null,
-    () => '', () => ({}), () => {}, () => '', () => 52, () => '', () => ({}), s => String(s == null ? '' : s), () => new Set(), {});
+  /* `_pevoSansCourbe` et les relevés à un point accompagnent le sélecteur
+     depuis le 2026-09-21 (qualite/pevo-sans-courbe-cas.js) : le panneau les
+     appelle dans le même souffle. */
+  return new Function('document', '_pevoDureeData', '_pevoDureeData1', '_pevoCardioData', '_pevoCapPainData', '_pevoNrsData', '_progPatient',
+    '_pevoSelecteurHtml', '_pevoSansCourbe', '_pevoZoneIndex', '_attachPevoEvents', '_buildUaTrendSection', '_volFenetreSemaines', '_volHtml',
+    '_volumeParSport', 'escH', '_pevoGetSel', '_pevoData', '_pevoData1', code)(
+    { getElementById: () => corps }, null, null, null, null, null, null,
+    () => '', () => [], () => ({}), () => {}, () => '', () => 52, () => '', () => ({}), s => String(s == null ? '' : s), () => new Set(), {}, null);
 }
 const pt = (date, kg) => ({ date, rm1: kg, kg, reps: 5, bw: false });
 const EXO = {

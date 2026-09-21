@@ -2791,6 +2791,13 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
    et l'on écrit du balisage pour elle. `.pevo-pill-toggles`, plus bas, est
    autre chose — les bascules de chaque graphique. */
 .pevo-selall-row { display:flex; gap:8px; margin-bottom:14px; }
+/* « Pas encore de courbe » : nommé et grisé, jamais masqué — une absence est
+   indiscernable d'une panne (qualite/pevo-sans-courbe-cas.js). */
+.pevo-sc { margin-top:12px; padding-top:10px; border-top:1px dashed var(--border2); }
+.pevo-sc-t { font-size:var(--fs-2xs); font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+.pevo-sc-li { display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:4px 2px; color:var(--text3); }
+.pevo-sc-li .pevo-li-nom { font-size:var(--fs-sm); }
+.pevo-sc-n { font-size:var(--fs-2xs); font-style:italic; white-space:nowrap; }
 .pevo-selall-btn { font-size:var(--fs-xs); padding:3px 10px; border:1px solid var(--border2); border-radius:6px; background:#fff; color:var(--text2); cursor:pointer; }
 .pevo-selall-btn:hover { background:var(--surface2); color:var(--navy); }
 .pevo-charts { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -3772,7 +3779,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Partagé avec athlete.html : sports, période, volume. AVANT prog-data.js. -->
 <script src="js/volume-sport.js?v=20260911v"></script>
-<script src="js/prog-data.js?v=20260920c"></script>
+<script src="js/prog-data.js?v=20260921a"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

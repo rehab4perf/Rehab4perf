@@ -3891,8 +3891,10 @@ window.addEventListener('message', function(e){
           window.parent.postMessage({type:'r4p-pevo-response',contentHTML:'',chargeHTML:_ch},_pevoOrigin); return;
         }
         _pevoData        = _extractExoLoads(data);
+        _pevoData1       = _extractExoLoads(data, 1);
         _pevoNrsData     = _extractExoNRS(data);
         _pevoDureeData   = _extractExoDurations(data);
+        _pevoDureeData1  = _extractExoDurations(data, 1);
         _pevoCardioData  = _extractCardioLoads(data);
         _pevoCapPainData = _extractCapPainData(data);
         _sendPevoGrid();
@@ -5485,6 +5487,12 @@ function _pevoSaveCardioSel(patId, sel) {
 }
 
 var _pevoData = null;      // { exoKey → {label, points} } — données chargées
+/* Le MÊME relevé, mais à un seul point. Il ne sert pas à tracer : il sert à
+   savoir ce qu'on ne trace PAS, et à le dire. Un exercice fait une seule fois
+   disparaissait de la liste sans un mot, et cette absence est indiscernable
+   d'une panne (qualite/pevo-sans-courbe-cas.js). */
+var _pevoData1 = null;
+var _pevoDureeData1 = null;
 var _pevoNrsData = null;   // { exoKey → {nom, pts:[{date,nrs}]} } — données NRS
 var _pevoChartCtr = 0;     // compteur unique pour IDs SVG
 var _pevoDureeData = null;  // { exoKey → {label, points:[{date,secs}]} }
@@ -6052,7 +6060,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
     var dureeSel = _pevoGetDureeSel(patId2);
     /* Meme selecteur que les repetitions : liste rangee par zone, nombre de
        seances et micro-courbe. Les trois listes partagent une seule fonction. */
-    var dureePillsHtml = _pevoSelecteurHtml(_pevoDureeData, dureeSel, _pevoZoneIndex(), '_pevoToggleDuree');
+    var dureePillsHtml = _pevoSelecteurHtml(_pevoDureeData, dureeSel, _pevoZoneIndex(), '_pevoToggleDuree',
+      _pevoSansCourbe(_pevoDureeData, _pevoDureeData1));
     var dureeChartsHtml = '';
     dureeKeys.forEach(function(key){
       if(!dureeSel.has(key)) return;
@@ -6220,7 +6229,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
       /* « Tout sélectionner » a disparu : sur vingt-six exercices il produit
          vingt-six courbes, c'est-a-dire plus rien de lisible. Le geste utile
          est de CHOISIR, pas de retrancher d'un tout. */
-      +'<div id="pevoPills">'+_pevoSelecteurHtml(exoData, selectedKeys, _pevoZoneIndex())+'</div>'
+      +'<div id="pevoPills">'+_pevoSelecteurHtml(exoData, selectedKeys, _pevoZoneIndex(), '_pevoToggle',
+          _pevoSansCourbe(exoData, _pevoData1))+'</div>'
       +'</div>'
       +(chartsHtml ? '<div class="pevo-charts' + (_pevoUneSeule(chartsHtml) ? ' pevo-charts--large' : '') + '" id="pevoChartsGrid">'+chartsHtml+'</div>'
                    : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
@@ -6417,7 +6427,17 @@ function _pevoLigneHtml(it, choisi, bascule){
 /* `bascule` nomme la fonction qui coche — les trois listes (repetitions,
    duree, cardio) ont chacune la sienne. Un selecteur ecrit trois fois aurait
    diverge des la premiere correction. */
-function _pevoSelecteurHtml(exoData, selection, idx, bascule){
+/* Les exercices présents dans le relevé à UN point et absents de celui à deux :
+   ceux que la courbe ne peut pas tracer. Rangés par nom — ils n'ont pas de
+   volume qui les départage. */
+function _pevoSansCourbe(complet, partiel){
+  if(!partiel) return [];
+  var dedans = complet || {};
+  return Object.keys(partiel).filter(function(k){ return !dedans[k]; }).map(function(k){
+    return { cle:k, label:partiel[k].label, n:(partiel[k].points || []).length };
+  }).sort(function(a, b){ return a.label.localeCompare(b.label); });
+}
+function _pevoSelecteurHtml(exoData, selection, idx, bascule, sansCourbe){
   bascule = bascule || '_pevoToggle';
   var res = _pevoGrouper(exoData, idx);
   var choisis = [];
@@ -6455,13 +6475,24 @@ function _pevoSelecteurHtml(exoData, selection, idx, bascule){
       + res.groupes[0].exos.map(function(i){ return _pevoLigneHtml(i, selection.has(i.cle), bascule); }).join('')
       + '</div>';
 
+  /* Grisé, NON cochable — il n'y a rien à tracer — mais nommé, et la raison
+     avec. Le repère `.pevo-li-nom` est le même : la recherche les trouve. */
+  var sc = (sansCourbe && sansCourbe.length)
+    ? '<div class="pevo-sc"><div class="pevo-sc-t">Pas encore de courbe (' + sansCourbe.length + ')</div>'
+      + sansCourbe.map(function(i){
+          return '<div class="pevo-sc-li"><span class="pevo-li-nom">' + escH(i.label) + '</span>'
+            + '<span class="pevo-sc-n">' + i.n + ' séance' + (i.n > 1 ? 's' : '')
+            + ' — il en faut deux</span></div>'; }).join('')
+      + '</div>'
+    : '';
+
   return chips
     + '<label class="pevo-rech">'
     + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">'
     + '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
     + '<input type="text" placeholder="Chercher un exercice…" aria-label="Chercher un exercice"'
     + ' oninput="_pevoFiltrer(this.value)"></label>'
-    + corps;
+    + corps + sc;
 }
 
 /* Replier une zone. Le geste est PUREMENT visuel : il ne touche ni la
@@ -6561,7 +6592,7 @@ function openChargesEvo() {
   }
   var body = document.getElementById('pevoBody');
   body.innerHTML = '<div class="pevo-loading">Chargement des séances…</div>';
-  _pevoData = null; _pevoDureeData = null; _pevoCardioData = null; _pevoCapPainData = null;
+  _pevoData = null; _pevoData1 = null; _pevoDureeData = null; _pevoDureeData1 = null; _pevoCardioData = null; _pevoCapPainData = null;
   // Charger toutes les séances du patient avec les données du programme lié
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
     + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,douleur,effort,exo_data,submitted_at)&order=date.asc';
@@ -6588,8 +6619,10 @@ function _rebuildPevoData() {
     ? _pevoRawSeances
     : _pevoRawSeances.filter(function(s){ return !s.date || s.date <= today; });
   _pevoData        = _extractExoLoads(seances);
+  _pevoData1       = _extractExoLoads(seances, 1);
   _pevoNrsData     = _extractExoNRS(seances);
   _pevoDureeData   = _extractExoDurations(seances);
+  _pevoDureeData1  = _extractExoDurations(seances, 1);
   _pevoCardioData  = _extractCardioLoads(seances);
   _pevoCapPainData = _extractCapPainData(seances);
   var sel = _pevoGetSel(_progPatient ? _progPatient.id : 'local');

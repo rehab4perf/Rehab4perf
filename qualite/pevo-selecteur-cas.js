@@ -55,6 +55,10 @@ if (d0 < 0) { console.log('  ✗ `_pevoZoneIndex` introuvable dans js/prog-data.
 var dCle = pdata.indexOf('\nfunction _cleExo(');
 var cleExo = dCle < 0 ? '' : pdata.slice(dCle, pdata.indexOf('\n', dCle + 1));
 var code = cleExo + '\n' + tranche('function _pevoZoneIndex(', 'function _pevoToggle(');
+/* `_pevoSansCourbe` vit juste avant le sélecteur, hors de cette tranche
+   (qualite/pevo-sans-courbe-cas.js) : sans elle le sélecteur ne se charge pas. */
+var dSc = pdata.indexOf('\nfunction _pevoSansCourbe(');
+if (dSc >= 0) code = pdata.slice(dSc, pdata.indexOf('\n}\n', dSc) + 3) + '\n' + code;
 
 function api(bibli) {
   return new Function('LIBRARY', '_norm', 'escH',
@@ -170,8 +174,11 @@ ok('le mur de pastilles a disparu', pdata.indexOf('pevo-exo-pills" id="pevoPills
    etaient restes en pastilles. */
 egal('les trois listes emploient le même sélecteur', 3,
      (pdata.match(/_pevoSelecteurHtml\(/g) || []).length - 1);
+/* Deux d'entre elles lui passent aussi ce qu'elles NE tracent PAS. */
+ok('… et deux d\'entre elles disent ce qui n\'a pas encore de courbe',
+   (pdata.match(/_pevoSansCourbe\(/g) || []).length >= 3);
 ok('… avec chacune sa bascule',
-   /_pevoToggleDuree'\)/.test(pdata) && /_pevoToggleCardio'\)/.test(pdata));
+   /_pevoToggleDuree'[,)]/.test(pdata) && /_pevoToggleCardio'[,)]/.test(pdata));
 /* Le CARDIO n'est pas fait d'exercices : le grouper par zone du corps n'a pas
    de sens, on lui passe un index VIDE. */
 ok('le cardio reste plat par construction',
