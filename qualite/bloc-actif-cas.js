@@ -56,6 +56,9 @@ function joue(blocsInit, actifInit, blocId, exoId) {
     'function renderSession(){ ctx.ordre.push("render:" + activeBloc); }' +
     'function setActiveBloc(id){ activeBloc = id; ctx.ordre.push("setActive:" + id); }' +
     'function renderLib(){}' +
+    /* removeExo denoue l'enchainement orphelin depuis le 2026-09-22
+       (qualite/chaine-orpheline-cas.js). */
+    'function _normChaines(b){ if(b && b.exos && b.exos.length) b.exos[b.exos.length-1].chained = false; }' +
     code +
     'removeExo(' + JSON.stringify(blocId) + ', ' + JSON.stringify(exoId) + ');' +
     'ctx.activeBloc = activeBloc;')(ctx);

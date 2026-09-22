@@ -2265,6 +2265,7 @@ function removeExo(blocId, exoId){
   var bloc = blocs.find(function(b){ return b.id===blocId; });
   if(!bloc) return;
   bloc.exos = bloc.exos.filter(function(e){ return e.id!==exoId; });
+  _normChaines(bloc);   // un enchainement ne survit pas a son partenaire
   /* Retirer un exercice DESIGNE le bloc : on vient d'y travailler, et
      l'exercice suivant s'y ajoute presque toujours. Sans cela il fallait
      recliquer le bloc — ou pire, ne pas y penser et voir l'exercice partir
@@ -2404,6 +2405,23 @@ function updateCible(blocId, exoId, idx, field, val){
   _draftSaveLazy();
 }
 
+/* `chained` veut dire « enchaîné avec le SUIVANT ». Le dernier exercice d'un
+   bloc n'en a pas : son drapeau ne désigne rien. Retirer ou déplacer un
+   exercice peut donc laisser un enchaînement orphelin — signalé par le
+   praticien, qui n'avait alors plus aucun moyen de l'éteindre
+   (qualite/chaine-orpheline-cas.js). */
+function _normChaines(bloc){
+  if(!bloc || !bloc.exos || !bloc.exos.length) return;
+  bloc.exos[bloc.exos.length - 1].chained = false;
+}
+/* Un enchaînement VIF : le drapeau, et quelqu'un après pour le recevoir. Le
+   rendu lit ceci — il ne normalise pas : renderSession tourne à chaque
+   ouverture, et écrire dans le modèle depuis le rendu marquerait « non
+   sauvegardé » une séance qu'on vient seulement d'ouvrir. */
+function _chaineVive(bloc, idx){
+  if(!bloc || !bloc.exos || idx < 0 || idx >= bloc.exos.length - 1) return false;
+  return !!bloc.exos[idx].chained;
+}
 function toggleExoChain(blocId, exoId){
   var e = _getExo(blocId, exoId); if(!e) return;
   e.chained = !e.chained;
@@ -2746,6 +2764,7 @@ function moveExo(blocId, idx, dir){
   if(newIdx < 0 || newIdx >= bloc.exos.length) return;
   var moved = bloc.exos.splice(idx, 1)[0];
   bloc.exos.splice(newIdx, 0, moved);
+  _normChaines(bloc);   // déplacer change qui est dernier
   renderSession();
 }
 
@@ -3051,8 +3070,8 @@ function renderSession(){
       var _cGrpBg  = _cGrpBgs[obj] || '#F5F7FA';
       var _inChainGrp = false;
       b.exos.forEach(function(e, idx){
-        var exoChained = !!e.chained;
-        var prevChained = idx > 0 && !!b.exos[idx-1].chained;
+        var exoChained = _chaineVive(b, idx);
+        var prevChained = _chaineVive(b, idx - 1);
         var isInGroup  = exoChained || prevChained;
         // Ouvrir le wrapper du groupe enchaîné
         if(isInGroup && !_inChainGrp){
@@ -3102,10 +3121,18 @@ function renderSession(){
         html += '<div class="chain-recup-wrap">'
              +  '<span class="cell-lbl">Récup</span>'
              +  '<input class="cell-input'+(exoChained?' chain-dim':'')+'" type="text" value="'+escH(e.recup)+'" placeholder="—" title="Récupération" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'recup\',this.value)">';
-        if(idx < b.exos.length - 1){
-          html += '<button class="chain-icon-toggle'+(exoChained?' active':'')+'"'
+        /* `|| e.chained` : le bouton reste atteignable sur un drapeau
+           orphelin — les seances deja enregistrees en portent, et on doit
+           pouvoir le defaire a la main. Son etat actif suit le DRAPEAU, pas
+           l’enchainement vif, sinon il s’afficherait eteint alors qu’il est
+           allume dans les donnees. (Apostrophes typographiques : une
+           apostrophe DROITE dans un commentaire se fait prendre pour un
+           delimiteur de chaine par les bancs qui reconstruisent le balisage —
+           qualite/builder-consignes-cas.js.) */
+        if(idx < b.exos.length - 1 || e.chained){
+          html += '<button class="chain-icon-toggle'+(e.chained?' active':'')+'"'
                +  ' onclick="toggleExoChain(\''+b.id+'\',\''+e.id+'\')"'
-               +  ' title="'+(exoChained?'Désactiver l\'enchaînement':'Enchaîner avec le suivant')+'">';
+               +  ' title="'+(e.chained?'Désactiver l\'enchaînement':'Enchaîner avec le suivant')+'">';
           html += '<svg width="11" height="11" viewBox="0 0 512 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="m511.36 99.922-18.544 71.516a19.973 19.973 0 0 1 -24.379 14.34l-73.637-19.093a20 20 0 1 1 10.039-38.719l25.722 6.669c-53.134-76.492-151.853-110.186-241.641-80.325a211.136 211.136 0 0 0 -134 132.783 20 20 0 1 1 -37.83-13 254.846 254.846 0 0 1 59.71-96.121 249.919 249.919 0 0 1 99.5-61.617 252.632 252.632 0 0 1 289.673 99.245l6.667-25.712a20 20 0 0 1 38.72 10.039zm-28.86 212.568a20 20 0 0 0 -25.413 12.417 211.136 211.136 0 0 1 -134 132.783c-89.787 29.861-188.507-3.833-241.638-80.325l25.722 6.669a20 20 0 1 0 10.029-38.719l-73.64-19.093a20 20 0 0 0 -24.379 14.34l-18.541 71.516a20 20 0 1 0 38.72 10.039l6.667-25.712a252.738 252.738 0 0 0 289.673 99.241 249.932 249.932 0 0 0 99.5-61.618 254.838 254.838 0 0 0 59.71-96.125 20 20 0 0 0 -12.41-25.413z"/></svg>';
           html += '</button>';
         }
