@@ -7761,7 +7761,7 @@ var ISO_EXPORT_CSS = ".iso-profil{display:grid;grid-template-columns:minmax(0,1f
   + ".iso-profil .iso-b{height:7px;border-radius:2px}"
   + ".iso-profil .iso-pct{font-size:.76rem;font-weight:600;text-align:right}"
   + ".iso-legende{font-size:.71rem;color:@--text3;margin-bottom:10px}"
-  + ".iso-jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:14px 22px;margin-top:16px;max-width:46rem}"
+  + ".iso-jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:16px 26px;margin-top:18px;padding-top:16px;border-top:1px solid @--border;max-width:46rem}"
   + ".iso-j{break-inside:avoid}"
   + ".iso-j-h{display:flex;align-items:baseline;gap:6px}"
   + ".iso-j-v{font-size:1.15rem;font-weight:700;letter-spacing:-.01em}"
@@ -7903,8 +7903,9 @@ function calcMusc() {
 
   /* Le poids gouverne deux pastilles sur quatre, il se saisit sur une AUTRE
      page, et son absence n'affichait que deux tirets muets. */
-  poser('iso-poids-rappel', rat.poids > 0
-    ? 'Poids : <b>' + String(Math.round(rat.poids * 10) / 10).replace('.', ',') + ' kg</b>'
+  /* Le poids est écrit dans la légende du profil, qui voyage jusqu'au
+     courrier : ici on ne dit que son ABSENCE, et où le saisir. */
+  poser('iso-poids-rappel', rat.poids > 0 ? ''
     : 'Poids non renseigné — les pics rapportés au poids ne peuvent pas se calculer. Il se saisit sur la page Informations patient.');
 
   poser('iso-chart', _isoProfilHtml(mes, rat));

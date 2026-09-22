@@ -106,7 +106,11 @@ console.log('\nD — ce que la page dit en plus');
   ok('le pic/poids donne les DEUX côtés', /2,38/.test(picQ) && /2,82/.test(picQ), picQ);
   ok('… ischio-jambiers aussi', /1,05/.test(picIJ) && /1,02/.test(picIJ), picIJ);
   ok('le compte des critères atteints', />5<[^0-9]{0,30}6 /.test(p.els['iso-criteres'].innerHTML), p.els['iso-criteres'].innerHTML);
-  ok('le poids est rappelé sur la page', /55/.test(p.els['iso-poids-rappel'].innerHTML), p.els['iso-poids-rappel'].innerHTML);
+  /* Le poids est écrit dans la LÉGENDE du profil depuis le 2026-09-22
+     (qualite/iso-jauges-cas.js) : elle voyage jusqu'au courrier, et la
+     Synthèse ne le redit pas. */
+  ok('le poids est rappelé, une seule fois, dans le profil', /55 kg/.test(p.els['iso-chart'].innerHTML)
+     && p.els['iso-poids-rappel'].innerHTML === '', p.els['iso-poids-rappel'].innerHTML);
   const q = monter(DONNEES); try { q.ctx.calcMusc(); } catch (e) {}
   ok('… et son absence se DIT, plutôt que deux tirets muets', /renseign/i.test(q.els['iso-poids-rappel'].innerHTML), q.els['iso-poids-rappel'].innerHTML);
 }
