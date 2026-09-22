@@ -52,9 +52,10 @@ function monter(vals) {
     getComputedStyle: () => ({ getPropertyValue: n => JETONS[n] || '' })
   });
   try {
-    vm.runInContext(['ISO_MESURES', 'ISO_EXPORT_CSS'].map(n => {
+    vm.runInContext(['ISO_MESURES', 'ISO_EXPORT_CSS', 'ISO_APPROCHE'].map(n => {
       const i = src.indexOf('var ' + n + ' ='); return i < 0 ? '' : src.slice(i, src.indexOf(';\n', i)) + ';';
-    }).join('\n') + '\n' + ['_isoVal', '_isoLire', '_isoJeton', '_blEsc', '_isoProfilHtml', '_isoProfilExport'].map(fb).join('\n'), ctx);
+    }).join('\n') + '\n' + ['_isoVal', '_isoLire', '_isoRatios', '_isoNb', '_isoJeton', '_blEsc',
+      '_isoJaugeCouleur', '_isoJaugesHtml', '_isoProfilHtml', '_isoProfilExport'].map(fb).join('\n'), ctx);
   } catch (e) { ok('le code du profil se charge', false, e.message); }
   return { ctx, els };
 }
@@ -63,7 +64,10 @@ console.log('\nLe profil part avec ses styles');
 {
   const p = monter(DONNEES);
   let ecran = '', pdf = '';
-  try { ecran = p.ctx._isoProfilHtml(p.ctx._isoLire()); pdf = p.ctx._isoProfilExport(); } catch (e) { ok('l\'export tourne', false, e.message); }
+  /* Le profil porte AUSSI les ratios depuis le 2026-09-22
+     (qualite/iso-jauges-cas.js) : il prend donc leur relevé. */
+  try { const m = p.ctx._isoLire(); ecran = p.ctx._isoProfilHtml(m, p.ctx._isoRatios(m)); pdf = p.ctx._isoProfilExport(); }
+  catch (e) { ok('l\'export tourne', false, e.message); }
   ok('à l\'écran, rien ne change : les classes de la page suffisent', !/<style/.test(ecran) && /var\(--/.test(ecran), ecran.slice(0, 80));
   ok('à l\'export, le fragment emporte sa feuille', /^<style>/.test(pdf) && /\.iso-profil/.test(pdf), pdf.slice(0, 60));
   ok('… et PLUS AUCUN jeton : ils n\'existent pas dans la fenêtre d\'impression',
@@ -73,8 +77,8 @@ console.log('\nLe profil part avec ses styles');
   ok('les mêmes six lignes, les mêmes douze barres', (pdf.match(/class="iso-b"/g) || []).length === 12
      && (pdf.match(/class="iso-ligne"/g) || []).length === 6);
   ok('une ligne ne se coupe pas entre deux pages', /break-inside:avoid/.test(pdf));
-  ok('aucun examen : rien à joindre', monter({})._isoProfilExport === undefined || (() => {
-    const v = monter({}); return v.ctx._isoProfilExport() === '';
+  ok('aucun examen : rien à joindre', (() => {
+    try { return monter({}).ctx._isoProfilExport() === ''; } catch (e) { return false; }
   })());
 }
 

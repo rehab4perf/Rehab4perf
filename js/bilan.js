@@ -7759,15 +7759,71 @@ var ISO_EXPORT_CSS = ".iso-profil{display:grid;grid-template-columns:minmax(0,1f
   + ".iso-profil .iso-nom{font-size:.76rem;color:@--text2}"
   + ".iso-profil .iso-barres{display:flex;flex-direction:column;gap:3px;min-width:0}"
   + ".iso-profil .iso-b{height:7px;border-radius:2px}"
-  + ".iso-profil .iso-pct{font-size:.76rem;font-weight:600;text-align:right}";
+  + ".iso-profil .iso-pct{font-size:.76rem;font-weight:600;text-align:right}"
+  + ".iso-legende{font-size:.71rem;color:@--text3;margin-bottom:10px}"
+  + ".iso-jauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:14px 22px;margin-top:16px;max-width:46rem}"
+  + ".iso-j{break-inside:avoid}"
+  + ".iso-j-h{display:flex;align-items:baseline;gap:6px}"
+  + ".iso-j-v{font-size:1.15rem;font-weight:700;letter-spacing:-.01em}"
+  + ".iso-j-s{font-size:.7rem;color:@--text3}"
+  + ".iso-j-l{font-size:.71rem;color:@--text2;margin:1px 0 5px}"
+  + ".iso-j-t{position:relative;height:7px;border-radius:3px;background:@--surface2;overflow:hidden}"
+  + ".iso-j-z{position:absolute;top:0;bottom:0;background:@--border2}"
+  + ".iso-j-b{position:relative;height:7px;border-radius:3px}"
+  + ".iso-j-m{position:absolute;top:-2px;bottom:-2px;width:2px;background:@--text2}"
+  + ".iso-j-c{font-size:.66rem;color:@--text3;margin-top:4px;font-style:italic}";
 function _isoJeton(nom){
   try { return (getComputedStyle(document.documentElement).getPropertyValue(nom) || '').trim(); }
   catch(e){ return ''; }
 }
 /* Le profil, prêt à être joint au courrier : styles compris, jetons résolus.
    Le générateur le lit dans l'iframe du bilan (qualite/cr-iso-profil-cas.js). */
-function _isoProfilExport(){ return _isoProfilHtml(_isoLire(), true); }
-function _isoProfilHtml(mes, pourExport){
+function _isoProfilExport(){ var m = _isoLire(); return _isoProfilHtml(m, _isoRatios(m), true); }
+/* La couleur d'une jauge. Deux formes de cible :
+   - un PLANCHER (pics rapportés au poids) — mêmes trois bandes que partout
+     ailleurs, ISO_APPROCHE comprise : au-dessus, vert ; à moins de 10 %,
+     ambre ; en deçà, rouge (qualite/iso-cas.js) ;
+   - une FOURCHETTE (ratio ischio-jambiers / quadriceps) — dedans vert, dehors
+     ambre. Jamais rouge : un ratio hors norme signale un déséquilibre à
+     regarder, pas un déficit de force.
+   Un seul endroit décide, sinon un second seuil naît à côté du premier. */
+function _isoJaugeCouleur(v, seuil, max){
+  if(isNaN(v)) return 'var(--text3)';
+  if(max !== undefined) return (v >= seuil && v <= max) ? 'var(--green)' : 'var(--orange)';
+  if(v >= seuil) return 'var(--green)';
+  return v >= seuil * ISO_APPROCHE ? 'var(--orange)' : 'var(--red)';
+}
+/* Un nombre nu ne dit pas la distance à la cible : 1,05 pour 1,7 se lit comme
+   2,38 pour 2,4. Chaque ratio devient une jauge — la valeur, la piste, et la
+   cible marquée dessus (qualite/iso-jauges-cas.js). */
+function _isoJaugesHtml(rat, coul){
+  var lbl = function(v){ return v; };
+  var j = [];
+  var pousser = function(val, sain, txt, libelle, cible, seuil, max, dec){
+    if(isNaN(val)) return;
+    var col = _isoJaugeCouleur(val, seuil, max);
+    /* L'échelle laisse toujours voir le repère : elle va au-delà de la plus
+       grande des deux valeurs (mesure ou cible). */
+    var haut = Math.max(val, max === undefined ? seuil : max) * 1.25 || 1;
+    var pc = function(x){ return Math.max(0, Math.min(100, Math.round(x / haut * 1000) / 10)); };
+    var piste = '<div class="iso-j-t">';
+    if(max !== undefined) piste += '<div class="iso-j-z" style="left:' + pc(seuil) + '%;width:' + Math.max(0, pc(max) - pc(seuil)) + '%"></div>';
+    piste += '<div class="iso-j-b" style="width:' + pc(val) + '%;background:' + coul(col) + '"></div>';
+    if(max === undefined) piste += '<div class="iso-j-m" style="left:' + pc(seuil) + '%"></div>';
+    piste += '</div>';
+    j.push('<div class="iso-j"><div class="iso-j-h">'
+      + '<span class="iso-j-v" style="color:' + coul(col) + '">' + lbl(txt) + '</span>'
+      + (sain ? '<span class="iso-j-s">' + sain + '</span>' : '')
+      + '</div><div class="iso-j-l">' + libelle + '</div>'
+      + piste + '<div class="iso-j-c">' + cible + '</div></div>');
+  };
+  pousser(rat.ratioCA, '', _isoNb(rat.ratioCA) + ' %', 'Ratio ischio-jambiers / quadriceps — atteint', 'cible 60 à 70 %', 60, 70);
+  pousser(rat.ratioCS, '', _isoNb(rat.ratioCS) + ' %', 'Ratio ischio-jambiers / quadriceps — sain', 'cible 60 à 70 %', 60, 70);
+  pousser(rat.picQca, _isoNb(rat.picQcs, 2) + ' sain', _isoNb(rat.picQca, 2), 'Pic quadriceps / poids — atteint', 'cible supérieure à 2,4', 2.4);
+  pousser(rat.picIJca, _isoNb(rat.picIJcs, 2) + ' sain', _isoNb(rat.picIJca, 2), 'Pic ischio-jambiers / poids — atteint', 'cible supérieure à 1,7', 1.7);
+  return j.length ? '<div class="iso-jauges">' + j.join('') + '</div>' : '';
+}
+function _isoProfilHtml(mes, rat, pourExport){
   var faites = mes.filter(function(m){ return !isNaN(m.nCs) || !isNaN(m.nCa); });
   if(!faites.length) return '';
   var max = 0;
@@ -7780,7 +7836,10 @@ function _isoProfilHtml(mes, pourExport){
     var m = String(v).match(/^var\((--[\w-]+)\)$/);
     return (m && _isoJeton(m[1])) || v;
   };
-  var h = '', dernierGrp = '';
+  var h = '<div class="iso-legende">Barre claire : côté sain · barre pleine : côté atteint.'
+    + ((rat && rat.poids > 0) ? ' Poids : ' + String(Math.round(rat.poids * 10) / 10).replace('.', ',') + ' kg.' : '')
+    + '</div>';
+  var dernierGrp = '';
   faites.forEach(function(m){
     if(m.grp !== dernierGrp){ h += '<div class="iso-grp">' + _blEsc(m.grp) + '</div>'; dernierGrp = m.grp; }
     var col = isNaN(m.asym) ? 'var(--border2)' : (m.asym <= m.norme ? 'var(--green)' : 'var(--orange)');
@@ -7799,7 +7858,7 @@ function _isoProfilHtml(mes, pourExport){
     css = ISO_EXPORT_CSS.replace(/@(--[\w-]+)/g, function(_, j){ return _isoJeton(j) || 'inherit'; });
     css = '<style>' + css + '</style>';
   }
-  return css + '<div class="iso-profil">' + h + '</div>';
+  return css + '<div class="iso-profil">' + h + '</div>' + _isoJaugesHtml(rat || {}, coul);
 }
 /* Le statut d'un groupe musculaire. Le SEUIL ABSOLU prime sur la symétrie —
    même règle que le dentelé antérieur : deux côtés égaux mais tous deux sous
@@ -7837,23 +7896,6 @@ function calcMusc() {
     e.className = 'measure-stat ' + (m.asym <= 10 ? 'good' : m.asym <= 20 ? 'warn' : 'bad');
   });
 
-  var setRatio = function(id, v, min, max){
-    poser(id, isNaN(v) ? '—' : _isoNb(v) + '%', 'val' + (isNaN(v) ? '' : (v >= min && v <= max ? ' good' : ' warn')));
-  };
-  setRatio('ratio-ca', rat.ratioCA, 60, 70);
-  setRatio('ratio-cs', rat.ratioCS, 60, 70);
-
-  /* Les DEUX côtés. Le pic ne se lisait que du côté atteint : un 2,38 ne
-     disait pas si le patient est faible des deux côtés ou du seul opéré. */
-  var setPic = function(id, ca, cs, seuil){
-    /* Mêmes trois bandes que le courrier : une valeur rouge à l'écran et
-       ambre dans le CR se lirait comme une contradiction. */
-    poser(id, isNaN(ca) ? '—' : _isoNb(ca, 2) + ' <span class="pic-sain">/ ' + _isoNb(cs, 2) + '</span>',
-      'val' + (isNaN(ca) ? '' : (ca >= seuil ? ' good' : ca >= seuil * ISO_APPROCHE ? ' warn' : ' bad')));
-  };
-  setPic('pic-q', rat.picQca, rat.picQcs, 2.4);
-  setPic('pic-ij', rat.picIJca, rat.picIJcs, 1.7);
-
   poser('iso-criteres', cr.total
     ? '<b>' + cr.atteints + '</b> critère' + (cr.atteints > 1 ? 's' : '') + ' sur ' + cr.total + ' atteint' + (cr.atteints > 1 ? 's' : '')
     : 'Aucune mesure renseignée.',
@@ -7865,7 +7907,7 @@ function calcMusc() {
     ? 'Poids : <b>' + String(Math.round(rat.poids * 10) / 10).replace('.', ',') + ' kg</b>'
     : 'Poids non renseigné — les pics rapportés au poids ne peuvent pas se calculer. Il se saisit sur la page Informations patient.');
 
-  poser('iso-chart', _isoProfilHtml(mes));
+  poser('iso-chart', _isoProfilHtml(mes, rat));
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----

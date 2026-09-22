@@ -58,7 +58,7 @@ function page(vals) {
 }
 const DONNEES = { 'q-f-cs':155, 'q-f-ca':131, 'q-p-cs':66, 'q-p-ca':60, 'q-r-cs':146, 'q-r-ca':162,
                   'ij-f-cs':56, 'ij-f-ca':58, 'ij-p-cs':34, 'ij-p-ca':35, 'ij-r-cs':136, 'ij-r-ca':134 };
-const CHARGER = ['ISO_MESURES','_isoVal','_isoLire','_isoRatios','_isoCriteres','_isoNb','_blEsc','_isoProfilHtml','ISO_APPROCHE','_isoStatutGroupe','asymPct','asymTxt','lsiInverse','_statForce','LSI_INVERSE_TXT','calcMusc'];
+const CHARGER = ['ISO_MESURES','_isoVal','_isoLire','_isoRatios','_isoCriteres','_isoNb','_blEsc','ISO_APPROCHE','_isoJaugeCouleur','_isoJaugesHtml','_isoProfilHtml','_isoStatutGroupe','asymPct','asymTxt','lsiInverse','_statForce','LSI_INVERSE_TXT','calcMusc'];
 function monter(vals) {
   const p = page(vals);
   const code = CHARGER.map(n => (n === 'ISO_MESURES' || n === 'LSI_INVERSE_TXT' || n === 'ISO_APPROCHE')
@@ -89,10 +89,12 @@ ok('updateAll appelle calcMusc', /calcMusc\(\)/.test(fn('updateAll')), 'absent d
 {
   const p = monter(Object.assign({ 'f-poids': '' }, DONNEES));
   try { p.ctx.calcMusc(); } catch (e) { ok('calcMusc tourne sans poids', false, e.message); }
-  const sansPoids = p.els['pic-q'].innerHTML + p.els['pic-q'].textContent;
+  /* Les pics ont quitté leurs pastilles pour les JAUGES du profil, qui
+     voyagent jusqu'au courrier (qualite/iso-jauges-cas.js). */
+  const sansPoids = p.els['iso-chart'].innerHTML;
   p.els['f-poids'].value = '55';
   try { p.ctx.calcMusc(); } catch (e) { ok('calcMusc tourne avec poids', false, e.message); }
-  const avec = p.els['pic-q'].innerHTML + p.els['pic-q'].textContent;
+  const avec = p.els['iso-chart'].innerHTML;
   ok('le pic/poids apparaît dès que le poids est là', !/2,38|2\.38/.test(sansPoids) && /2,38/.test(avec), sansPoids + ' → ' + avec);
 }
 
@@ -100,7 +102,7 @@ console.log('\nD — ce que la page dit en plus');
 {
   const p = monter(Object.assign({ 'f-poids': 55 }, DONNEES));
   try { p.ctx.calcMusc(); } catch (e) { ok('calcMusc tourne', false, e.message); }
-  const picQ = p.els['pic-q'].innerHTML, picIJ = p.els['pic-ij'].innerHTML;
+  const picQ = p.els['iso-chart'].innerHTML, picIJ = picQ;
   ok('le pic/poids donne les DEUX côtés', /2,38/.test(picQ) && /2,82/.test(picQ), picQ);
   ok('… ischio-jambiers aussi', /1,05/.test(picIJ) && /1,02/.test(picIJ), picIJ);
   ok('le compte des critères atteints', />5<[^0-9]{0,30}6 /.test(p.els['iso-criteres'].innerHTML), p.els['iso-criteres'].innerHTML);
@@ -150,7 +152,7 @@ const ISO_L = ['Force — concentrique 60°/s', 'Puissance — concentrique 240�
 console.log('\nC — le profil de l\'examen');
 {
   const p = monter(Object.assign({ 'f-poids': 55 }, DONNEES));
-  let h = ''; try { h = p.ctx._isoProfilHtml(p.ctx._isoLire()); } catch (e) { ok('_isoProfilHtml tourne', false, e.message); }
+  let h = ''; try { const m = p.ctx._isoLire(); h = p.ctx._isoProfilHtml(m, p.ctx._isoRatios(m)); } catch (e) { ok('_isoProfilHtml tourne', false, e.message); }
   ok('douze barres, six lignes, deux groupes', (h.match(/class="iso-b"/g) || []).length === 12
      && (h.match(/class="iso-ligne"/g) || []).length === 6 && (h.match(/class="iso-grp"/g) || []).length === 2,
      (h.match(/class="iso-b"/g) || []).length + ' barres');
@@ -163,7 +165,7 @@ console.log('\nC — le profil de l\'examen');
   ok('… et les largeurs sont relatives', /width:100%/.test(h) && /width:[\d,.]+%/.test(h));
   ok('les couleurs passent par les jetons', /var\(--/.test(h) && !/#[0-9a-f]{3,6}/i.test(h), (h.match(/#[0-9a-f]{3,6}/ig) || []).join(','));
   ok('rien à tracer : rien n\'est tracé (pas de cadre vide)', (() => {
-    try { const v = monter({}); return v.ctx._isoProfilHtml(v.ctx._isoLire()) === ''; } catch (e) { return false; }
+    try { const v = monter({}); return v.ctx._isoProfilHtml(v.ctx._isoLire(), v.ctx._isoRatios(v.ctx._isoLire())) === ''; } catch (e) { return false; }
   })());
   try { p.ctx.calcMusc(); } catch (e) {}
   ok('calcMusc le pose dans la page', /class="iso-profil"/.test(p.els['iso-chart'].innerHTML), p.els['iso-chart'].innerHTML.slice(0, 40));
@@ -197,10 +199,10 @@ console.log('\nLe seuil ABSOLU prime sur la symétrie');
     const s3 = p.ctx._isoStatutGroupe(ij, NaN, 1.7); return s3.cls === 'ok' && s3.txt === 'Symétrique';
   })());
   ok('la section du CR s\'en sert', /_isoStatutGroupe\(mesGrp, g\[1\], g\[3\]\)/.test(src));
-  ok('la pastille de l\'onglet suit les mêmes trois bandes', (() => {
-    try { p.ctx.calcMusc(); } catch (e) { return false; }
-    return /\bwarn\b/.test(p.els['pic-q'].className) && /\bbad\b/.test(p.els['pic-ij'].className);
-  })(), p.els['pic-q'].className + ' | ' + p.els['pic-ij'].className);
+  ok('la jauge de l\'onglet suit les mêmes trois bandes', (() => {
+    try { return /orange/.test(p.ctx._isoJaugeCouleur(r.picQca, 2.4))
+        && /red/.test(p.ctx._isoJaugeCouleur(r.picIJca, 1.7)); } catch (e) { return false; }
+  })(), (() => { try { return p.ctx._isoJaugeCouleur(r.picQca, 2.4) + ' | ' + p.ctx._isoJaugeCouleur(r.picIJca, 1.7); } catch (e) { return 'ERREUR'; } })());
   ok('… et la force rapportée au poids entre DANS le tableau', /l:'Force rapportée au poids'/.test(src));
 }
 
