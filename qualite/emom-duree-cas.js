@@ -38,7 +38,9 @@ function banc() {
   const vide = { id: 'E2', type: 'emom', title: 'EMOM', dureeTotale: '10', intervalle: '1', exos: [] };
   const amrap = { id: 'A1', type: 'amrap', title: 'AMRAP', duree: '12', exos: [] };
   const document = { getElementById: id => els[id] || (els[id] = { id, innerHTML: '', textContent: '', hidden: false, _vu: true }) };
-  const code = ['_emomTours', '_emomResumeHtml', 'updateChronoField', '_renderChronoExos', '_renderChronoBloc'].map(fn).join('\n');
+  /* `_nbFr` lit les champs tapés à la main, virgule décimale comprise
+     (qualite/virgule-decimale-cas.js) : _emomTours s'en sert. */
+  const code = ['_nbFr', '_emomTours', '_emomResumeHtml', 'updateChronoField', '_renderChronoExos', '_renderChronoBloc'].map(fn).join('\n');
   const api = new Function('document', 'blocs', 'escH', 'renderSession', '_draftSaveLazy', 'activeBloc',
     '_estPremierDuGroupe', '_estDernierDuGroupe', '_selectEtape', '_ytThumbHtml',
     code + '\nreturn { maj: updateChronoField, rendu: _renderChronoBloc };')(

@@ -47,7 +47,7 @@ function contexte(etat) {
     escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }, etat));
   try {
-    vm.runInContext(['_norm', '_cleExo', '_repsUnite', '_1rm', '_extractExoLoads', '_histExoHtml', '_rm1Ref', '_cibleKgHtml'].map(fd).join('\n')
+    vm.runInContext(['_nbFr', '_norm', '_cleExo', '_repsUnite', '_1rm', '_extractExoLoads', '_histExoHtml', '_rm1Ref', '_cibleKgHtml'].map(fd).join('\n')
       + '\nvar _histExos = { pid:"x", map:null, enCours:false };', c);
     c._histExos.map = c._extractExoLoads(SEANCES, 1);
   } catch (e) { ok('les fonctions se chargent', false, e.message); }

@@ -41,7 +41,7 @@ const SEANCES = [
 ];
 const c = vm.createContext({ escH: s => String(s || ''), PEVO_NON_CLASSE: 'Non classé' });
 try {
-  vm.runInContext(['_norm', '_cleExo', '_repsUnite', '_1rm', '_extractExoLoads', '_pevoSansCourbe',
+  vm.runInContext(['_nbFr', '_norm', '_cleExo', '_repsUnite', '_1rm', '_extractExoLoads', '_pevoSansCourbe',
     '_pevoValeurPoint', '_pevoSpark', '_pevoLigneHtml', '_pevoGrouper', '_pevoSelecteurHtml'].map(fd).join('\n'), c);
 } catch (e) { ok('le code se charge', false, e.message); }
 

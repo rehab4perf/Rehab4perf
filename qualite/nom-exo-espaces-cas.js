@@ -49,7 +49,7 @@ const c = vm.createContext({
   escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 });
 try {
-  vm.runInContext(['_norm', '_cleExo', '_repsUnite', '_1rm', '_parseDuree', '_formatDuree', '_extractExoLoads', '_extractExoDurations', '_rm1Ref',
+  vm.runInContext(['_nbFr', '_norm', '_cleExo', '_repsUnite', '_1rm', '_parseDuree', '_formatDuree', '_extractExoLoads', '_extractExoDurations', '_rm1Ref',
     '_histExoCourant', '_histDureeHtml', '_histExoHtml', '_cibleKgHtml'].map(fd).join('\n') + '\nvar _histExos = { pid:"x", map:null, durees:null, enCours:false };', c);
 } catch (e) { ok('les fonctions se chargent', false, e.message); }
 const cle = s => { try { return c._cleExo(s); } catch (e) { return 'ERREUR ' + e.message; } };

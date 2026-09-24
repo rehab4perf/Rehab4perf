@@ -1499,8 +1499,8 @@ function updateExoReps(blocId, exoId, val){
 
 /* Nombre de tours d'un EMOM : chaque exercice revient toutes les N minutes. */
 function _emomTours(b){
-  var total = parseFloat(b.dureeTotale) || 0;
-  var inter = parseFloat(b.intervalle) || 1;
+  var total = _nbFr(b.dureeTotale) || 0;
+  var inter = _nbFr(b.intervalle) || 1;
   return inter > 0 ? Math.floor(total / inter) : 0;
 }
 
@@ -2791,7 +2791,9 @@ function moveBloc(idx, dir){
    ================================================================ */
 function parseMin(str){
   if(!str) return null;
-  str=(str+'').trim().toLowerCase().replace(/\s/g,'');
+  /* La virgule décimale se ramène au point AVANT les motifs : « 1,5min »
+     rendait 1 (qualite/virgule-decimale-cas.js). */
+  str=(str+'').trim().toLowerCase().replace(/\s/g,'').replace(',','.');
   var m;
   // Plages en minutes : "3-5'" ou "3-5min"
   m=str.match(/^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:'|min)$/); if(m) return (parseFloat(m[1])+parseFloat(m[2]))/2;
@@ -2807,7 +2809,7 @@ function parseMin(str){
 }
 function parseNum(str){
   if(!str) return null;
-  str=(str+'').trim();
+  str=(str+'').trim().replace(',','.');
   if(str.indexOf('+')!==-1){ var p=str.split('+').map(parseFloat).filter(function(n){return !isNaN(n);}); if(p.length) return p.reduce(function(a,b){return a+b;},0); }
   if(str.match(/^\d[\d-]*\d$/)&&str.indexOf('-')!==-1){ var p2=str.split('-').map(parseFloat).filter(function(n){return !isNaN(n);}); if(p2.length>1) return p2.reduce(function(a,b){return a+b;},0)/p2.length; }
   var n=parseFloat(str); return isNaN(n)?null:n;
@@ -4360,14 +4362,24 @@ function openProgHistory(){
    ÉVOLUTION DES CHARGES
    ================================================================ */
 
+/* Lire un nombre TAPÉ À LA MAIN. Les champs de cible sont des `type="text"` :
+   le praticien y met la virgule décimale française, et `parseFloat('7,5')`
+   s'arrête à la virgule et rend 7 — le demi-kilo se perdait en silence, à la
+   LECTURE, jamais à la saisie (qualite/virgule-decimale-cas.js).
+   Elle ne réécrit rien : ce qui est tapé reste tel quel en base. */
+function _nbFr(v){
+  if(typeof v === 'number') return v;
+  return parseFloat(String(v == null ? '' : v).replace(/\s/g, '').replace(',', '.'));
+}
+
 /* Estimation 1RM :
    - Brzycki pour 1–36 reps (précision optimale en force)
    - Epley pour > 36 reps (endurance, pas de limite haute)
    - kg par défaut = 1 si absent/nul (poids de corps ≈ négligeable) */
 function _1rm(kg, reps) {
-  reps = parseFloat(reps);
+  reps = _nbFr(reps);
   if(isNaN(reps) || reps <= 0) return null;
-  kg = parseFloat(kg);
+  kg = _nbFr(kg);
   if(isNaN(kg) || kg <= 0) kg = 0.1;        // poids de corps → 0.1 kg par défaut (quasi nul)
   if(reps === 1) return Math.round(kg * 10) / 10;
   if(reps <= 36) return Math.round((kg * 36 / (37 - reps)) * 10) / 10;  // Brzycki
@@ -4431,11 +4443,11 @@ function _histExosRemplir(){
    _1rm. Faute de cible kg, une cible %1RM donne sa charge. null sans reps. */
 function _histExoCourant(e){
   if(!e) return null;
-  var reps = parseFloat(e.reps);
+  var reps = _nbFr(e.reps);
   if(isNaN(reps) || reps <= 0) return null;
   var kg = 0, pct = null;
   (e.cibles || []).forEach(function(c){
-    var a = parseFloat(c.min) || 0, b = parseFloat(c.max) || 0;
+    var a = _nbFr(c.min) || 0, b = _nbFr(c.max) || 0;
     if(c.type === 'kg' && (a > 0 || b > 0)) kg = (a > 0 && b > 0) ? (a + b) / 2 : (a || b);
     if(c.type === '%1RM' && (a > 0 || b > 0)) pct = (a > 0 && b > 0) ? (a + b) / 2 : (a || b);
   });
@@ -4455,7 +4467,7 @@ function _histDureeHtml(hd, e){
   var fleche = function(dv){
     return ' <span class="exo-hist-t ' + (dv > 0 ? 'up' : 'down') + '">' + (dv > 0 ? '↗ +' : '↘ −') + _formatDuree(Math.abs(dv)) + '</span>';
   };
-  var cs = (e && !(parseFloat(e.reps) > 0)) ? _parseDuree(e.duree || '') : null;
+  var cs = (e && !(_nbFr(e.reps) > 0)) ? _parseDuree(e.duree || '') : null;
   if(cs){
     var dc = cs - der.secs;
     txt += ' → aujourd’hui' + (!dc ? ' : même durée' : ' ' + _formatDuree(cs) + fleche(dc));
@@ -4472,7 +4484,7 @@ function _histExoHtml(nom, e){
   /* Un exercice en DURÉE (sans répétitions) a sa propre ligne : la dernière
      durée, comparée à ce qu'on prescrit (qualite/historique-duree-cas.js). */
   var hd = _histExos.durees ? _histExos.durees[_cleExo(nom) + '__duree'] : null;
-  if(hd && (!h || (e && !(parseFloat(e.reps) > 0) && _parseDuree(e.duree || '')))) return _histDureeHtml(hd, e);
+  if(hd && (!h || (e && !(_nbFr(e.reps) > 0) && _parseDuree(e.duree || '')))) return _histDureeHtml(hd, e);
   if(!h) return '';
   var ref = _builderDate || _pevoAujourdhuiIso();
   var avant = h.points.filter(function(p){ return p.date && p.date < ref; });
@@ -4639,17 +4651,17 @@ function _extractExoLoads(seances, minPoints) {
       (bloc.exos || []).forEach(function(exo) {
         var name = (exo.name || '').trim();
         if(!name) return;
-        var reps = parseFloat(exo.reps);
+        var reps = _nbFr(exo.reps);
         if(isNaN(reps) || reps <= 0) return;          // besoin d'au moins des reps
         var kgCible = null;
         (exo.cibles || []).forEach(function(c) {
-          if(c.type === 'kg' && (parseFloat(c.min) > 0 || parseFloat(c.max) > 0)) kgCible = c;
+          if(c.type === 'kg' && (_nbFr(c.min) > 0 || _nbFr(c.max) > 0)) kgCible = c;
         });
         // Min seul → min / Max seul → max / Les deux → moyenne
         var kg = 0;
         if(kgCible) {
-          var kMin = parseFloat(kgCible.min) || 0;
-          var kMax = parseFloat(kgCible.max) || 0;
+          var kMin = _nbFr(kgCible.min) || 0;
+          var kMax = _nbFr(kgCible.max) || 0;
           kg = (kMin > 0 && kMax > 0) ? (kMin + kMax) / 2 : (kMin || kMax);
         }
         var bw  = !kgCible || kg <= 0;                // poids de corps / sans charge
@@ -4819,7 +4831,7 @@ function _extractExoDurations(seances, minPoints) {
       (bloc.exos || []).forEach(function(exo) {
         var name = (exo.name || '').trim();
         if(!name) return;
-        var reps = parseFloat(exo.reps);
+        var reps = _nbFr(exo.reps);
         if(!isNaN(reps) && reps > 0) return; // skip si reps définies
         var secs = _parseDuree(exo.duree || '');
         if(!secs || secs <= 0) return;
@@ -4885,7 +4897,7 @@ function _extractCibleVal(c) {
     return ma ? (parseInt(ma[1]) * 60 + parseInt(ma[2])) : null;
   }
   if(_CARDIO_NUM_TYPES.indexOf(c.type) >= 0) {
-    var v = parseFloat(c.min);
+    var v = _nbFr(c.min);
     return isNaN(v) ? null : v;
   }
   return null;
@@ -4970,17 +4982,17 @@ function _extractCardioLoads(seances) {
       // Durée effective
       var duree = null;
       if(isFrac) {
-        var reps = parseFloat(bloc.repetitions);
+        var reps = _nbFr(bloc.repetitions);
         var effortMin = _parseCardioMinutes(bloc.duree_effort);
         if(!isNaN(reps) && reps > 0 && effortMin !== null) duree = reps * effortMin;
       }
       if(duree === null) {
-        var dt = parseFloat(bloc.duree_totale);
+        var dt = _nbFr(bloc.duree_totale);
         if(!isNaN(dt) && dt > 0) duree = dt;
       }
 
       var km = null;
-      var distVal = parseFloat(bloc.distance);
+      var distVal = _nbFr(bloc.distance);
       if(!isNaN(distVal) && distVal > 0) km = distVal;
 
       // Première cible numérique valide

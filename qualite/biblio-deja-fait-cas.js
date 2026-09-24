@@ -86,7 +86,7 @@ console.log('\nCe que _histExos.map perdait — la raison de ne pas s\'en servir
 {
   const c2 = vm.createContext({});
   try {
-    vm.runInContext(['_norm', '_cleExo', '_repsUnite', '_1rm', '_extractExoLoads'].map(fd).join('\n'), c2);
+    vm.runInContext(['_nbFr', '_norm', '_cleExo', '_repsUnite', '_1rm', '_extractExoLoads'].map(fd).join('\n'), c2);
     const m = c2._extractExoLoads(SEANCES, 1);
     ok('l\'étirement n\'y est PAS (donc la liste ne peut pas en venir)', !m['etirement psoas'], Object.keys(m).join(', '));
   } catch (e) { ok('_extractExoLoads tourne', false, e.message); }
