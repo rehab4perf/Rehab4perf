@@ -84,8 +84,11 @@ verifie('… et plus rien n\'y est linéaire', false, /Math\.round\(rpe\s*\*\s*d
 var m0 = js.indexOf('function _buildUaMap');
 var m1 = js.indexOf('\n}', js.indexOf('return map;', m0));
 var mp = js.slice(m0, m1);
+/* Les deux valeurs passent par leurs lecteurs depuis le 2026-09-24 : le
+   praticien peut les saisir lui-même pour une séance faite au cabinet
+   (qualite/feedback-praticien-cas.js). */
 verifie('le retour athlète passe par la même fonction', true,
-  /_uaFoster\(fb\.rpe, fb\.duree_min\)/.test(mp));
+  /_uaFoster\(_fbRpe\(fb\), _fbDuree\(fb\)\)/.test(mp));
 verifie('… et plus par le produit linéaire', false, /fb\.rpe \* fb\.duree_min/.test(mp));
 
 console.log('\n  Ce que l\'écran doit dire');

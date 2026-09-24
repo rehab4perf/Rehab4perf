@@ -447,10 +447,28 @@ function _volNbSemaines(per, auj){
 
 /* ── Helpers sémantiques feedback (partagés) ──────────────────────── */
 /* Vrai feedback de charge Foster (seance standard) — jamais un feedback douleur CAP/HSR */
+/* RPE et durée d'une séance. `rpe` et `duree_min` sont les colonnes de
+   l'ATHLÈTE, et une SEULE ligne existe par séance, partagée : y écrire la
+   saisie du praticien l'écraserait, ou serait écrasé par lui. Sa saisie vit
+   donc dans `exo_data`, et ce sont les LECTEURS qui s'y replient — l'athlète
+   garde la priorité, s'il répond c'est son chiffre qui compte
+   (qualite/feedback-praticien-cas.js). */
+function _fbRpe(fb){
+  if(!fb) return null;
+  if(fb.rpe) return fb.rpe;
+  var p = fb.exo_data && fb.exo_data.rpe_praticien;
+  return p ? p : null;
+}
+function _fbDuree(fb){
+  if(!fb) return null;
+  if(fb.duree_min) return fb.duree_min;
+  var p = fb.exo_data && fb.exo_data.duree_praticien;
+  return p ? p : null;
+}
 function _fbIsCharge(fb){
-  if(!fb || !fb.rpe || !fb.duree_min) return false;
+  if(!fb || !_fbRpe(fb) || !_fbDuree(fb)) return false;
   if(fb.douleur !== null && fb.douleur !== undefined) return false; // ligne douleur explicite
-  if(fb.duree_min <= 10 && !fb.exo_data) return false;              // legacy CAP non migre
+  if(_fbDuree(fb) <= 10 && !fb.exo_data) return false;              // legacy CAP non migre
   return true;
 }
 /* Le builder lit `programmes.donnees` entier ; l'espace athlète ne demande que

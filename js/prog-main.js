@@ -1826,7 +1826,7 @@ function _buildUaMap(){
       return;
     }
     if(_fbIsCharge(fb)){
-      map[ev.date] = (map[ev.date]||0) + (_uaFoster(fb.rpe, fb.duree_min) || 0);
+      map[ev.date] = (map[ev.date]||0) + (_uaFoster(_fbRpe(fb), _fbDuree(fb)) || 0);
       return; // les activites liees sont absorbees par le feedback
     }
     linkedList.forEach(function(act){
@@ -2344,7 +2344,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       var jPlus = _j0Ref ? _computeJPlus(dateStr, _j0Ref) : null;
       var jLabel = jPlus !== null ? ('J'+(jPlus >= 0 ? '+' : '')+jPlus+' · ') : '';
       var fb = ev.athlete_feedback;
-      var ua = _fbIsCharge(fb) ? fb.rpe*fb.duree_min : null;
+      var ua = _fbIsCharge(fb) ? _uaFoster(_fbRpe(fb), _fbDuree(fb)) : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
       var genericStravaBadge = _stravaBadge(_linkedAct[String(ev.id)]);
       // Évaluation praticien (douleur saisie manuellement sur une séance passée) : alerte si > 3/10
@@ -2516,6 +2516,10 @@ function _renderAthleteRetour(seanceId) {
 
 /* ── Feedback modal ─────────────────────────────────────────────────── */
 var _feedbackEva = null;
+/* Seance faite au cabinet : le praticien saisit lui-meme RPE et duree, qui
+   alimentent la charge par Foster (qualite/feedback-praticien-cas.js). */
+var _feedbackRpe = null;
+var _feedbackDuree = null;
 var _feedbackCurrentFb = null; // enregistrement athlète chargé à l'ouverture du modal
 
 function _updateFeedbackBtn(hasAthleteData) {
@@ -2581,7 +2585,7 @@ function _feedbackRenderContent(fb, sid) {
     html += '</div>';
   } else {
     // Séance standard : rpe = effort Borg, duree_min = durée réelle
-    var ua = (fb.rpe||0) * (fb.duree_min||0);
+    var ua = _uaFoster(_fbRpe(fb), _fbDuree(fb)) || 0;
     var exoData = fb.exo_data;
     var exos = (exoData && exoData.exos) ? exoData.exos : [];
     /* Le nom stocke avec le retour a pu etre fausse : la collecte cote athlete
@@ -2653,6 +2657,21 @@ function _feedbackRenderContent(fb, sid) {
     html += '<button class="fm-btn" data-v="'+i+'" onclick="_feedbackSetEva('+i+')">'+i+'</button>';
   }
   html += '</div>';
+  /* Seance au cabinet : le praticien tient lui-meme le RPE et la duree. Ils
+     ne remplacent PAS le retour de l'athlete — ils prennent le relais quand il
+     n'y en a pas (qualite/feedback-praticien-cas.js). */
+  html += '<div class="fm-sublbl" style="margin-top:10px">💪 RPE — effort perçu, 1 (très facile) → 10 (maximal)</div>';
+  html += '<div class="fm-btns" id="fm-rpe-btns">';
+  for (var j = 1; j <= 10; j++) {
+    html += '<button class="fm-btn" data-v="'+j+'" onclick="_feedbackSetRpe('+j+')">'+j+'</button>';
+  }
+  html += '</div>';
+  html += '<div class="fm-duree-row">'
+       +  '<label class="fm-sublbl" for="fm-duree" style="margin:0">⏱ Durée de séance</label>'
+       +  '<input id="fm-duree" class="fm-duree" type="text" inputmode="numeric" placeholder="min"'
+       +  ' oninput="_feedbackSetDuree(this.value)">'
+       +  '<span class="fm-ua-lbl">Charge</span><span id="fm-ua" class="fm-ua">—</span>'
+       +  '</div>';
   html += '<button class="fm-save-btn" onclick="_feedbackSave(\''+sid+'\')">Enregistrer</button>';
 
   // Adapter (CAP ou HSR)
@@ -2675,31 +2694,75 @@ function _feedbackRenderContent(fb, sid) {
   // Restaurer l'EVA praticien depuis exo_data.eva_praticien (ne jamais lire fb.rpe = données athlète)
   var savedEva = (fb && fb.exo_data && fb.exo_data.eva_praticien !== undefined) ? fb.exo_data.eva_praticien : null;
   if (savedEva !== null) _feedbackSetEva(savedEva);
+  var _xd = (fb && fb.exo_data) || {};
+  _feedbackRpe = _xd.rpe_praticien || null;
+  _feedbackDuree = _xd.duree_praticien || null;
+  if (_feedbackRpe) _feedbackSetRpe(_feedbackRpe);
+  var _dEl = document.getElementById('fm-duree');
+  if (_dEl && _feedbackDuree) _dEl.value = _feedbackDuree;
+  _feedbackMajUa();
 
   // Feedback affiché = lu
   if (hasAthleteData) _markFbSeen(sid);
 }
 
+/* Le seuil de 3/10 n'est pas choisi ici : l'application dit deja « douleur
+   legere » jusqu'a 3 et « moderee » au-dela (outils.html), et l'agenda alerte
+   deja au-dessus de 3 sur l'EVA praticien. Deux bandes, une frontiere : une
+   rampe a cinq couleurs faisait hesiter sur celle qui doit inquieter. */
+function _evaCouleur(val){ return val > 3 ? '#C0392B' : '#2D6A4F'; }
 function _feedbackSetEva(val) {
   _feedbackEva = val;
+  var c = _evaCouleur(val);
   document.querySelectorAll('#fm-eva-btns .fm-btn').forEach(function(b) {
     var on = parseInt(b.dataset.v) === val;
-    var c = on ? (val<=2?'#22c55e':val<=4?'#84cc16':val<=6?'#f59e0b':val<=8?'#f97316':'#ef4444') : '';
     b.style.background = on ? c : '';
     b.style.color = on ? '#fff' : '';
     b.style.borderColor = on ? c : '';
   });
 }
+function _feedbackSetRpe(val) {
+  _feedbackRpe = val;
+  document.querySelectorAll('#fm-rpe-btns .fm-btn').forEach(function(b) {
+    var on = parseInt(b.dataset.v) === val;
+    b.style.background = on ? '#2B5FA6' : '';
+    b.style.color = on ? '#fff' : '';
+    b.style.borderColor = on ? '#2B5FA6' : '';
+  });
+  _feedbackMajUa();
+}
+function _feedbackSetDuree(val) {
+  var n = parseInt(String(val || '').replace(/[^0-9]/g, ''), 10);
+  _feedbackDuree = (isFinite(n) && n > 0) ? n : null;
+  _feedbackMajUa();
+}
+/* L'UA se lit EN DIRECT : c'est le produit des deux champs juste au-dessus,
+   et le praticien doit voir ce qu'il ajoute a la charge avant d'enregistrer. */
+function _feedbackMajUa() {
+  var el = document.getElementById('fm-ua');
+  if (!el) return;
+  var ua = _uaFoster(_feedbackRpe, _feedbackDuree);
+  el.textContent = ua ? ua + ' UA' : '—';
+  el.style.color = ua ? '#1A3A5C' : '#9D9B96';
+}
 
 function _feedbackSave(sid) {
-  if (_feedbackEva === null) { _showToast('Sélectionne un score de douleur (0–10).'); return; }
+  /* La charge reste FACULTATIVE : une seance ou l'on ne note que la douleur
+     doit pouvoir s'enregistrer comme avant. */
+  if (_feedbackEva === null && _feedbackRpe === null && _feedbackDuree === null) {
+    _showToast('Renseigne au moins la douleur, ou le RPE et la durée.'); return;
+  }
   if (!sid) return;
   var btn = document.querySelector('.fm-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
   // Merge eva_praticien dans exo_data existant — ne touche pas à rpe (données athlète)
   var existingExoData = (_feedbackCurrentFb && _feedbackCurrentFb.exo_data)
     ? Object.assign({}, _feedbackCurrentFb.exo_data) : {};
-  existingExoData.eva_praticien = _feedbackEva;
+  if (_feedbackEva !== null) existingExoData.eva_praticien = _feedbackEva;
+  /* Rangees dans exo_data, jamais dans les colonnes `rpe` / `duree_min` : une
+     seule ligne par seance, partagee avec l'athlete. */
+  if (_feedbackRpe !== null) existingExoData.rpe_praticien = _feedbackRpe;
+  if (_feedbackDuree !== null) existingExoData.duree_praticien = _feedbackDuree;
   /* Une SEULE ligne existe par seance, partagee avec l'athlete : on ne peut
      donc pas l'etiqueter d'une source, le dernier ecrivain ecraserait
      l'autre. On horodate a la place notre propre saisie.
@@ -10507,8 +10570,8 @@ function _renderJournal() {
       var nom   = (ev.programmes && ev.programmes.nom) || ev.nom || 'Programme';
       var isCapN = nom.indexOf('CAP') === 0, isHsrN = nom.indexOf('HSR') === 0;
       // CAP/HSR : le champ rpe de l'item porte la douleur, duree porte l'effort Borg
-      var rpe   = fb ? ((isCapN || isHsrN) ? _fbDouleur(fb) : fb.rpe) : null;
-      var duree = fb ? ((isCapN || isHsrN) ? _fbEffort(fb) : fb.duree_min) : null;
+      var rpe   = fb ? ((isCapN || isHsrN) ? _fbDouleur(fb) : _fbRpe(fb)) : null;
+      var duree = fb ? ((isCapN || isHsrN) ? _fbEffort(fb) : _fbDuree(fb)) : null;
       if(_journalFilter === 'retours' && (rpe === null || rpe === undefined)) return; // ne garder que les séances avec feedback
       items.push({
         date:    ev.date,
