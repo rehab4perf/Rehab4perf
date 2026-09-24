@@ -2544,9 +2544,9 @@ function _renderAthleteRetour(seanceId) {
     .then(function(r){ return r.json(); })
     .then(function(arr){
       var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-      _updateFeedbackBtn(_fbRetourAthlete(fb));
+      _updateFeedbackBtn(fb);   // le FEEDBACK, pas un booléen : le relevé en dépend
     })
-    .catch(function(){ _updateFeedbackBtn(false); });
+    .catch(function(){ _majFeedbackBtn(); });   // on garde ce qu'on a
 }
 
 /* ── Feedback modal ─────────────────────────────────────────────────── */
@@ -2601,7 +2601,9 @@ function _fbReleveHtml(fb){
 function _updateFeedbackBtn(fb) {
   var btn = document.getElementById('builder-feedback-btn');
   if (!btn) return;
-  if (fb === true || fb === false) fb = null;   // anciens appels booléens
+  /* `fb` est le FEEDBACK, jamais un booléen. Trois rappels réseau passaient
+     encore le résultat d'un test — le relevé se peignait, puis s'effaçait à
+     l'arrivée de la réponse (qualite/feedback-releve-cas.js). */
   var hasAthleteData = _fbRetourAthlete(fb);
   var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
   /* Un modèle n'a pas d'athlète : pas de retour à consulter. */
@@ -8050,7 +8052,7 @@ function openBuilderForDate(dateStr){
      ouverte plus tôt affichait « Feedback » sur une séance qui n'existe pas
      encore (qualite/builder-clarte-cas.js). */
   _capBbSeanceId = null; _hsrBbSeanceId = null;
-  _updateFeedbackBtn(false);
+  _updateFeedbackBtn(null);
   _builderFromTemplate = null;
   _applyBuilderReadOnly(false);
   // Pas de protocole actif quand on ouvre depuis le calendrier
@@ -8067,7 +8069,7 @@ function _resetBuilderState(){
      ouverte plus tôt affichait « Feedback » sur une séance qui n'existe pas
      encore (qualite/builder-clarte-cas.js). */
   _capBbSeanceId = null; _hsrBbSeanceId = null;
-  _updateFeedbackBtn(false);
+  _updateFeedbackBtn(null);
   _notes = '';
   activeBloc = null;
   _currentProgId = null;
@@ -8146,7 +8148,7 @@ function openBuilderNew(){
   /* Une seance NEUVE n'a pas de retour : sans ca, l'identifiant d'une seance
      CAP ou HSR ouverte plus tot affichait « Feedback » (qualite/barre-builder-cas.js). */
   _capBbSeanceId = null; _hsrBbSeanceId = null;
-  _updateFeedbackBtn(false);
+  _updateFeedbackBtn(null);
   _builderFromTemplate = null;
   _applyBuilderReadOnly(false);
   // Pas de protocole actif quand on ouvre une nouvelle séance depuis + Séance
@@ -14127,11 +14129,11 @@ function _renderCapBuilderBanner(donnees, seanceId) {
       .then(function(r){ return r.json(); })
       .then(function(arr){
         var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-        _updateFeedbackBtn(_fbRetourAthlete(fb));
+        _updateFeedbackBtn(fb);   // le FEEDBACK, pas un booléen : le relevé en dépend
       })
-      .catch(function(){ _updateFeedbackBtn(false); });
+      .catch(function(){ _majFeedbackBtn(); });   // on garde ce qu'on a
   } else {
-    _updateFeedbackBtn(false);
+    _updateFeedbackBtn(null);
   }
 }
 
@@ -14751,11 +14753,11 @@ function _renderHsrBuilderBanner(donnees, seanceId) {
       .then(function(r){ return r.json(); })
       .then(function(arr){
         var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-        _updateFeedbackBtn(_fbRetourAthlete(fb));
+        _updateFeedbackBtn(fb);   // le FEEDBACK, pas un booléen : le relevé en dépend
       })
-      .catch(function(){ _updateFeedbackBtn(false); });
+      .catch(function(){ _majFeedbackBtn(); });   // on garde ce qu'on a
   } else {
-    _updateFeedbackBtn(false);
+    _updateFeedbackBtn(null);
   }
 }
 

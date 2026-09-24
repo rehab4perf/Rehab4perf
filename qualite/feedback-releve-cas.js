@@ -135,11 +135,24 @@ ok('… et le relevé dans le sien', /id="fb-val"|class="fb-val"/.test(html), 'p
   ok('… la pastille reste réservée au retour d\'athlète', /_fbRetourAthlete\(/.test(s) && /has-retour/.test(s), s.slice(0, 300));
   /* Des appels passaient un booleen : ils ne doivent pas etre lus comme un
      feedback. Tolere ici plutot que traque partout. */
-  ok('… et un ancien appel booléen ne se lit pas comme un feedback',
-     /fb === true \|\| fb === false/.test(s), s.split('\n').slice(0, 6).join(' / '));
+  ok('… et un appel sans feedback rend simplement le libellé',
+     /_fbReleveHtml\(fb\)/.test(s), s.split('\n').slice(0, 6).join(' / '));
 }
-ok('les appelants passent le feedback, plus un booléen',
-   !/_updateFeedbackBtn\(true\)/.test(pmain), (pmain.match(/_updateFeedbackBtn\((?:true)\)/g) || []).join(' '));
+/* Le défaut qui a demandé trois passes : trois rappels réseau passaient
+   `_fbRetourAthlete(fb)` — un BOOLÉEN — et le relevé, peint à l'ouverture,
+   s'effaçait à l'arrivée de la réponse. Un booléen ne doit plus jamais
+   atteindre cette fonction. */
+ok('aucun appelant ne passe un booléen',
+   !/_updateFeedbackBtn\((?:true|false|_fbRetourAthlete)/.test(pmain),
+   (pmain.match(/_updateFeedbackBtn\((?:true|false|_fbRetourAthlete)[^)]*\)/g) || []).join(' | '));
+ok('… et la fonction ne le rattrape plus en silence',
+   !/fb === true \|\| fb === false/.test(fm('_updateFeedbackBtn')), 'le garde-fou ambigu est revenu');
+ok('un pépin réseau garde ce qu\'on a déjà',
+   !/catch\(function\(\)\{ _updateFeedbackBtn\(/.test(pmain),
+   (pmain.match(/catch\(function\(\)\{ _updateFeedbackBtn\([^)]*\)/g) || []).join(' | '));
+ok('une séance neuve dit « rien » explicitement',
+   (pmain.match(/_updateFeedbackBtn\(null\)/g) || []).length >= 3,
+   (pmain.match(/_updateFeedbackBtn\(null\)/g) || []).length + ' appels');
 ok('le relevé ne disparaît pas sur écran étroit (il n\'est pas dans .btn-label)',
    !/class="btn-label"[^<]*<span class="fb-val"/.test(html) && /fb-val/.test(html));
 ok('le style du relevé existe', /\.fb-val\b/.test(html) && /\.fb-def\b/.test(html), 'CSS absent');

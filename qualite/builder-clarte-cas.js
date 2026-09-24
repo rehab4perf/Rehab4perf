@@ -105,8 +105,8 @@ function fb(etat) {
 ok('séance enregistrée : visible', fb({ _currentSeanceId: 's1' }) === 'inline-flex');
 ok('modèle ouvert : masqué, même avec un identifiant CAP resté', fb({ _builderFromTemplate: 't1', _capBbSeanceId: 'c9' }) === 'none');
 ok('une nouvelle séance efface les identifiants CAP / HSR d\'une séance précédente',
-   /_capBbSeanceId = null/.test(fn('_resetBuilderState')) && /_hsrBbSeanceId = null/.test(fn('_resetBuilderState')) && /_updateFeedbackBtn\(false\)/.test(fn('_resetBuilderState')));
-ok('… y compris depuis un clic sur un jour de l\'agenda', /_capBbSeanceId = null/.test(fn('openBuilderForDate')) && /_updateFeedbackBtn\(false\)/.test(fn('openBuilderForDate')));
+   /_capBbSeanceId = null/.test(fn('_resetBuilderState')) && /_hsrBbSeanceId = null/.test(fn('_resetBuilderState')) && /_updateFeedbackBtn\(null\)/.test(fn('_resetBuilderState')));
+ok('… y compris depuis un clic sur un jour de l\'agenda', /_capBbSeanceId = null/.test(fn('openBuilderForDate')) && /_updateFeedbackBtn\(null\)/.test(fn('openBuilderForDate')));
 
 /* ── 7. La séance vide ───────────────────────────────────────────────────── */
 console.log('\nLa séance vide propose de partir d\'un modèle');

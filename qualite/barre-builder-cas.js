@@ -59,7 +59,7 @@ ok('… dans le builder seulement', /_prog\.style\.display = \(_bp && _bp\.class
 
 console.log('\nFeedback');
 ok('« + Séance » efface la séance CAP ou HSR d\'avant : pas de Feedback sur une séance neuve',
-   /_capBbSeanceId = null; _hsrBbSeanceId = null;/.test(fm('openBuilderNew')) && /_updateFeedbackBtn\(false\)/.test(fm('openBuilderNew')));
+   /_capBbSeanceId = null; _hsrBbSeanceId = null;/.test(fm('openBuilderNew')) && /_updateFeedbackBtn\(null\)/.test(fm('openBuilderNew')));
 ok('… et reste sur une séance enregistrée, même sans retour (le praticien peut y saisir)',
    /btn\.style\.display = sid \? 'inline-flex' : 'none';/.test(fm('_updateFeedbackBtn')));
 

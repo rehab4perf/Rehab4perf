@@ -54,10 +54,12 @@ console.log('\nUne seule règle, partout');
 ok('plus aucun appel ne se contente d\'exo_data',
    !/_updateFeedbackBtn\(!!\(fb && \(fb\.exo_data \|\|/.test(pmain),
    (pmain.match(/_updateFeedbackBtn\(!!\(fb && \(fb\.exo_data[^\n]*/g) || []).length + ' appels laxistes');
-ok('les quatre passent par la même fonction',
-   (pmain.match(/_updateFeedbackBtn\(_fbRetourAthlete\(/g) || []).length >= 3
-   && /_fbRetourAthlete\(fb\)/.test(fm('_feedbackRenderContent')),
-   (pmain.match(/_updateFeedbackBtn\(_fbRetourAthlete\(/g) || []).length + ' appels');
+/* `_updateFeedbackBtn` reçoit le FEEDBACK et lit la règle lui-même depuis le
+   2026-09-24 : les appelants ne la recopient plus
+   (qualite/feedback-releve-cas.js). */
+ok('la règle est lue au même endroit pour tous',
+   /_fbRetourAthlete\(fb\)/.test(fm('_updateFeedbackBtn')) && /_fbRetourAthlete\(fb\)/.test(fm('_feedbackRenderContent')),
+   fm('_updateFeedbackBtn').slice(0, 300));
 ok('… et le panneau ne recopie plus la règle',
    !/fb\.exo_data && fb\.exo_data\.exos && fb\.exo_data\.exos\.length > 0/.test(fm('_feedbackRenderContent')),
    'la règle est encore écrite en double');
