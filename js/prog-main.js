@@ -1788,6 +1788,18 @@ function _fbDouleur(fb){
   if(fb.duree_min && fb.duree_min <= 10 && fb.rpe !== null && fb.rpe !== undefined) return fb.rpe; // legacy CAP/HSR
   return null;
 }
+/* Un RETOUR D'ATHLÈTE, et rien d'autre. La pastille bleue du bouton se lit
+   « quelque chose est arrivé, va le voir » : elle ne doit pas s'allumer pour
+   ce que le praticien vient lui-même d'écrire. `exo_data` abrite les DEUX —
+   les retours par exercice de l'athlète, et l'EVA / le RPE / la durée du
+   praticien (qualite/feedback-mien-cas.js). */
+function _fbRetourAthlete(fb){
+  if(!fb) return false;
+  if(fb.rpe !== null && fb.rpe !== undefined) return true;
+  if(_fbDouleur(fb) !== null) return true;
+  var x = fb.exo_data;
+  return !!(x && x.exos && x.exos.length > 0);
+}
 function _fbEffort(fb){
   if(!fb) return null;
   if(fb.effort !== null && fb.effort !== undefined) return fb.effort;
@@ -2509,7 +2521,7 @@ function _renderAthleteRetour(seanceId) {
     .then(function(r){ return r.json(); })
     .then(function(arr){
       var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-      _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null || _fbDouleur(fb) !== null)));
+      _updateFeedbackBtn(_fbRetourAthlete(fb));
     })
     .catch(function(){ _updateFeedbackBtn(false); });
 }
@@ -2560,12 +2572,8 @@ function _feedbackRenderContent(fb, sid) {
   var isCAP = !!_capBbDonnees && _capBbDonnees.type === 'cap' && !!_capBbSeanceId;
   var isHSR = !!_hsrBbDonnees && _hsrBbDonnees.type === 'hsr' && !!_hsrBbSeanceId;
 
-  // Badge : l'athlète a soumis si rpe/douleur est défini, ou si exo_data.exos existe
-  var hasAthleteData = !!(fb && (
-    (fb.rpe !== null && fb.rpe !== undefined) ||
-    _fbDouleur(fb) !== null ||
-    (fb.exo_data && fb.exo_data.exos && fb.exo_data.exos.length > 0)
-  ));
+  // Badge : l'athlète a soumis — la règle vit dans _fbRetourAthlete, une seule fois
+  var hasAthleteData = _fbRetourAthlete(fb);
   _updateFeedbackBtn(hasAthleteData);
 
   var html = '<div class="fm-section">Retour athlète</div>';
@@ -2794,6 +2802,11 @@ function _feedbackSave(sid) {
     if (_feedbackCurrentFb) _feedbackCurrentFb = Object.assign({}, _feedbackCurrentFb, { exo_data: existingExoData });
     else _feedbackCurrentFb = { exo_data: existingExoData };
     renderCalendar();
+    /* La fenêtre se ferme d'elle-même — mais APRÈS le « ✓ Enregistré » : une
+       fermeture immédiate ne laisse pas voir que c'est parti. Sur erreur, on
+       a rendu la main plus haut : elle reste ouverte, la saisie n'est pas
+       perdue (qualite/feedback-mien-cas.js). */
+    setTimeout(_closeFeedbackModal, 650);
   }).catch(function() {
     _showToast('Erreur réseau.');
     if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
@@ -14026,7 +14039,7 @@ function _renderCapBuilderBanner(donnees, seanceId) {
       .then(function(r){ return r.json(); })
       .then(function(arr){
         var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-        _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null || _fbDouleur(fb) !== null)));
+        _updateFeedbackBtn(_fbRetourAthlete(fb));
       })
       .catch(function(){ _updateFeedbackBtn(false); });
   } else {
@@ -14650,7 +14663,7 @@ function _renderHsrBuilderBanner(donnees, seanceId) {
       .then(function(r){ return r.json(); })
       .then(function(arr){
         var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-        _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null || _fbDouleur(fb) !== null)));
+        _updateFeedbackBtn(_fbRetourAthlete(fb));
       })
       .catch(function(){ _updateFeedbackBtn(false); });
   } else {
