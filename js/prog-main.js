@@ -2576,17 +2576,19 @@ function _fbReleveHtml(fb){
   var ua = _uaFoster(_fbRpe(fb), _fbDuree(fb));
   var eva = _fbEvaAffichee(fb);
   if(!ua && eva.val === null) return '';
-  /* Les pictogrammes de l'AGENDA : ⚡ pour la charge (les chips du calendrier
-     l'emploient déjà), 🩹 pour la douleur (le panneau aussi). Ils distinguent
-     les deux chiffres mieux qu'un trait, et coûtent moins de largeur que
-     « UA » et « /10 ».
+  /* Deux marques, chacune déjà employée à sa place : ⚡ pour la charge — les
+     chips du calendrier l'utilisent — et EVA pour la douleur, le mot que le
+     builder écrit sous CHAQUE exercice, trois lignes plus bas. Le pansement
+     Le pansement disait « blessure » là où il ne s'agit que d'une échelle
+     (demande du praticien, 2026-09-24). Il est retiré partout où il portait le
+     sens à lui seul ; là où le mot « Douleur » est écrit, il n'ajoutait rien.
      Ce qui manque n'est PAS écrit : un « — /10 » se lit comme une douleur
      notée à zéro, ce qui est pire qu'un bouton de largeur variable. */
   var out = '';
   if(ua) out += '<span class="fb-p">⚡</span><span class="fb-ua">' + ua + '</span>';
   if(eva.val !== null){
     if(out) out += '<span class="fb-sep"></span>';
-    out += '<span class="fb-p">🩹</span><span class="fb-eva ' + _evaClasse(eva.val) + '">'
+    out += '<span class="fb-p fb-eva-lbl">EVA</span><span class="fb-eva ' + _evaClasse(eva.val) + '">'
         +  eva.val + '<span class="fb-u">/10</span></span>';
   }
   return out;
@@ -2668,7 +2670,7 @@ function _feedbackRenderContent(fb, sid) {
     html += '<div class="fm-chips">';
     if (pain !== null) {
       var pc = pain<=2?'#22c55e':pain<=4?'#84cc16':pain<=6?'#f59e0b':pain<=8?'#f97316':'#ef4444';
-      html += '<span class="fm-chip-g" style="color:'+pc+';border-color:'+pc+'">🩹 Douleur '+pain+'/10</span>';
+      html += '<span class="fm-chip-g" style="color:'+pc+';border-color:'+pc+'">Douleur '+pain+'/10</span>';
     }
     if (effort !== null) html += '<span class="fm-chip-n">💪 Effort '+effort+'/10</span>';
     html += '</div>';
@@ -2740,7 +2742,7 @@ function _feedbackRenderContent(fb, sid) {
 
   // EVA praticien
   html += '<div class="fm-section">Évaluation praticien</div>';
-  html += '<div class="fm-sublbl">🩹 Douleur — 0 (aucune) → 10 (insupportable)</div>';
+  html += '<div class="fm-sublbl">Douleur (EVA) — 0 (aucune) → 10 (insupportable)</div>';
   html += '<div class="fm-btns" id="fm-eva-btns">';
   for (var i = 0; i <= 10; i++) {
     html += '<button class="fm-btn" data-v="'+i+'" onclick="_feedbackSetEva('+i+')">'+i+'</button>';
@@ -10750,7 +10752,7 @@ function _renderJournal() {
         var capBadges = [];
         if(item.rpe !== null && item.rpe !== undefined) {
           var pc = _capEvaColor(item.rpe);
-          capBadges.push('<span class="journal-item-rpe" style="background:'+pc+'22;color:'+pc+';border-color:'+pc+'55;">🩹 '+item.rpe+'/10</span>');
+          capBadges.push('<span class="journal-item-rpe" style="background:'+pc+'22;color:'+pc+';border-color:'+pc+'55;">EVA '+item.rpe+'/10</span>');
         }
         if(item.duree !== null && item.duree !== undefined) {
           capBadges.push('<span class="journal-item-rpe">💪 '+item.duree+'/10</span>');
@@ -10762,7 +10764,7 @@ function _renderJournal() {
         var hsrJBadges = [];
         if(item.rpe !== null && item.rpe !== undefined) {
           var hc = _hsrEvaColor(item.rpe);
-          hsrJBadges.push('<span class="journal-item-rpe" style="background:'+hc+'22;color:'+hc+';border-color:'+hc+'55;">🩹 '+item.rpe+'/10</span>');
+          hsrJBadges.push('<span class="journal-item-rpe" style="background:'+hc+'22;color:'+hc+';border-color:'+hc+'55;">EVA '+item.rpe+'/10</span>');
         }
         if(item.duree !== null && item.duree !== undefined) {
           hsrJBadges.push('<span class="journal-item-rpe">💪 '+item.duree+'/10</span>');
@@ -10811,7 +10813,7 @@ function _renderJournal() {
       retourDetail += '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;">';
       if(item.isCap || item.isHsr){
         // CAP/HSR : rpe = douleur, duree = effort Borg — jamais d'UA
-        if(item.rpe !== null && item.rpe !== undefined) retourDetail += '<span style="background:#fee2e2;color:#991b1b;border-radius:5px;padding:2px 7px;font-size:.73rem;font-weight:700;">🩹 Douleur '+item.rpe+'/10</span>';
+        if(item.rpe !== null && item.rpe !== undefined) retourDetail += '<span style="background:#fee2e2;color:#991b1b;border-radius:5px;padding:2px 7px;font-size:.73rem;font-weight:700;">Douleur '+item.rpe+'/10</span>';
         if(item.duree) retourDetail += '<span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 7px;font-size:.73rem;font-weight:700;">💪 Effort '+item.duree+'/10</span>';
       } else {
         if(item.rpe) retourDetail += '<span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 7px;font-size:.73rem;font-weight:700;">RPE '+item.rpe+'/10</span>';

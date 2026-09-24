@@ -883,6 +883,9 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .builder-feedback-btn .fb-eva.ok { color:var(--ok-b); }
 .builder-feedback-btn .fb-eva.bad { color:var(--alerte-b); }
 .builder-feedback-btn .fb-p { font-size:var(--fs-2xs); opacity:.85; margin-right:1px; }
+/* « EVA » est un mot, pas un pictogramme : il prend la casse et l'espacement
+   des intitulés de la barre, sinon il se lit comme un prénom. */
+.builder-feedback-btn .fb-eva-lbl { font-weight:700; letter-spacing:.06em; opacity:.7; margin-right:3px; }
 .builder-feedback-btn .fb-u { font-size:var(--fs-2xs); font-weight:400; opacity:.7; }
 .builder-feedback-btn .fb-sep { width:1px; height:11px; background:currentColor; opacity:.35; align-self:center; margin:0 2px; }
 @media (max-width:1100px) { .builder-feedback-btn .fb-u { display:none; } }
@@ -4970,6 +4973,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260924i"></script>
+<script src="js/prog-main.js?v=20260924j"></script>
 </body>
 </html>

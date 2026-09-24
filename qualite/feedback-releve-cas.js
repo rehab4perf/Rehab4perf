@@ -70,15 +70,17 @@ ok('… la charge suit Foster', /180/.test(H(CABINET)) && /315/.test(H(ATHLETE))
    se lit comme une douleur notée à zéro — pire qu'un bouton de largeur
    variable, qui était l'argument d'avant. */
 ok('douleur seule : la douleur seule, sans charge fantôme',
-   /🩹/.test(H(EVA_SEULE)) && !/⚡/.test(H(EVA_SEULE)) && /2/.test(H(EVA_SEULE)), H(EVA_SEULE));
+   /EVA/.test(H(EVA_SEULE)) && !/⚡/.test(H(EVA_SEULE)) && /2/.test(H(EVA_SEULE)), H(EVA_SEULE));
 ok('charge seule : la charge seule', (() => {
   const h = H({ rpe: 7, duree_min: 45, exo_data: {} });
-  return /⚡/.test(h) && !/🩹/.test(h) && /315/.test(h);
+  return /⚡/.test(h) && !/EVA/.test(h) && /315/.test(h);
 })(), H({ rpe: 7, duree_min: 45, exo_data: {} }));
-/* Les mêmes pictogrammes que l'agenda : ⚡ sur les chips du calendrier,
-   🩹 dans le panneau. Deux symboles distinguent mieux que deux unités. */
-ok('les pictogrammes sont ceux déjà employés ailleurs',
-   /⚡/.test(H(CABINET)) && /🩹/.test(H(CABINET)), H(CABINET));
+/* Deux marques déjà employées à leur place : ⚡ sur les chips du calendrier,
+   et EVA sous chaque exercice du builder. Le pansement disait « blessure »
+   là où il ne s'agit que d'une échelle (praticien, 2026-09-24). */
+ok('les marques sont celles déjà employées ailleurs',
+   /⚡/.test(H(CABINET)) && /EVA/.test(H(CABINET)), H(CABINET));
+ok('… et plus aucun pansement', !/🩹/.test(pmain), (pmain.match(/🩹[^\n]{0,60}/g) || []).slice(0, 2).join(' | '));
 
 console.log('\nLa couleur ne va que sur la douleur');
 /* Le relevé vit sur la barre NAVY du builder : un hex sombre y est invisible.
