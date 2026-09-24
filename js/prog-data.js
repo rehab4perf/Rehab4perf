@@ -6688,6 +6688,8 @@ function _loadProg(id, seanceId, quitterModele){
      modele — mais elle se declare (`quitterModele`), elle ne se subit pas. */
   var _gardeModele = !!_builderFromTemplate && !quitterModele;
   _currentSeanceId = _gardeModele ? null : (seanceId || null);
+  /* Le bouton Feedback suit la séance chargée, sans attendre un clic. */
+  try { if(typeof _majFeedbackBtn === 'function') _majFeedbackBtn(); } catch(ex){}
   if(!_gardeModele) _builderFromTemplate = null;
   var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
   _fetchRetry(url, {method:'GET', headers:_sbHeaders()})

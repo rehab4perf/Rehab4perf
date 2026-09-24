@@ -2511,6 +2511,15 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
 }
 
+/* Le relevé du bouton, posé SANS qu'on ouvre le panneau. `_renderAthleteRetour`
+   n'était appelée de nulle part : le bouton restait sur « Feedback » tant qu'on
+   n'avait pas cliqué dessus — exactement ce que le praticien signalait
+   (qualite/feedback-releve-cas.js). */
+function _majFeedbackBtn(){
+  var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
+  _updateFeedbackBtn(sid ? _fbEnMemoire(sid) : null);
+}
+
 /* Le feedback déjà chargé avec l'agenda — aucune requête à attendre. */
 function _fbEnMemoire(seanceId){
   if(!seanceId) return null;
@@ -2572,13 +2581,20 @@ function _fbReleveHtml(fb){
   var ua = _uaFoster(_fbRpe(fb), _fbDuree(fb));
   var eva = _fbEvaAffichee(fb);
   if(!ua && eva.val === null) return '';
-  var cls = eva.val === null ? 'vide' : _evaClasse(eva.val);
-  /* La charge s'écrit « — » plutôt que de disparaître : sans elle le bouton
-     change de largeur d'une séance à l'autre, et toute la barre bouge. */
-  return '<span class="fb-ua">' + (ua ? ua : '—') + '</span><span class="fb-u">UA</span>'
-    + '<span class="fb-sep"></span>'
-    + '<span class="fb-eva ' + cls + '">' + (eva.val === null ? '—' : eva.val) + '</span>'
-    + '<span class="fb-u">/10</span>';
+  /* Les pictogrammes de l'AGENDA : ⚡ pour la charge (les chips du calendrier
+     l'emploient déjà), 🩹 pour la douleur (le panneau aussi). Ils distinguent
+     les deux chiffres mieux qu'un trait, et coûtent moins de largeur que
+     « UA » et « /10 ».
+     Ce qui manque n'est PAS écrit : un « — /10 » se lit comme une douleur
+     notée à zéro, ce qui est pire qu'un bouton de largeur variable. */
+  var out = '';
+  if(ua) out += '<span class="fb-p">⚡</span><span class="fb-ua">' + ua + '</span>';
+  if(eva.val !== null){
+    if(out) out += '<span class="fb-sep"></span>';
+    out += '<span class="fb-p">🩹</span><span class="fb-eva ' + _evaClasse(eva.val) + '">'
+        +  eva.val + '<span class="fb-u">/10</span></span>';
+  }
+  return out;
 }
 /* Reçoit le FEEDBACK, plus un booléen : le bouton en tire deux choses — la
    pastille (un retour d'athlète non lu) et son relevé (charge et douleur). */
@@ -7874,6 +7890,8 @@ function _enterBuilderMode(){
   setTimeout(_draftRestore, 120);
   // Bandeau protocole contextuel
   _builderLoadProtoContext();
+  /* Le relevé du bouton, dès l'ouverture : charge et douleur sans un clic. */
+  try { _majFeedbackBtn(); } catch(ex){}
 }
 
 // ── Bandeau protocole dans le builder ──

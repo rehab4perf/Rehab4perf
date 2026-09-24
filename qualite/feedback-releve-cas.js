@@ -66,8 +66,19 @@ const H = fb => { try { return c._fbReleveHtml(fb); } catch (e) { return 'ERREUR
 ok('rien de saisi : pas de relevé, le libellé reste', H(RIEN) === '' && H({ exo_data: {} }) === '', JSON.stringify([H(RIEN), H({})]));
 ok('ma saisie : la charge et la douleur', /180/.test(H(CABINET)) && /3/.test(H(CABINET)), H(CABINET));
 ok('… la charge suit Foster', /180/.test(H(CABINET)) && /315/.test(H(ATHLETE)), H(ATHLETE));
-ok('douleur seule : la charge s\'écrit « — », le bouton garde sa largeur',
-   /—/.test(H(EVA_SEULE)) && /2/.test(H(EVA_SEULE)), H(EVA_SEULE));
+/* Décision revue le 2026-09-24 : ce qui manque n'est PAS écrit. Un « — /10 »
+   se lit comme une douleur notée à zéro — pire qu'un bouton de largeur
+   variable, qui était l'argument d'avant. */
+ok('douleur seule : la douleur seule, sans charge fantôme',
+   /🩹/.test(H(EVA_SEULE)) && !/⚡/.test(H(EVA_SEULE)) && /2/.test(H(EVA_SEULE)), H(EVA_SEULE));
+ok('charge seule : la charge seule', (() => {
+  const h = H({ rpe: 7, duree_min: 45, exo_data: {} });
+  return /⚡/.test(h) && !/🩹/.test(h) && /315/.test(h);
+})(), H({ rpe: 7, duree_min: 45, exo_data: {} }));
+/* Les mêmes pictogrammes que l'agenda : ⚡ sur les chips du calendrier,
+   🩹 dans le panneau. Deux symboles distinguent mieux que deux unités. */
+ok('les pictogrammes sont ceux déjà employés ailleurs',
+   /⚡/.test(H(CABINET)) && /🩹/.test(H(CABINET)), H(CABINET));
 
 console.log('\nLa couleur ne va que sur la douleur');
 /* Le relevé vit sur la barre NAVY du builder : un hex sombre y est invisible.
@@ -78,6 +89,8 @@ ok('aucune couleur figée dans le balisage', !/style="color:/.test(H(CABINET)) &
 ok('douleur acceptable : la classe « ok »', /fb-eva ok/.test(H(CABINET)), H(CABINET));
 ok('au-dessus de 3 : la classe « bad »', /fb-eva bad/.test(H(MAL)), H(MAL));
 ok('… et la charge n\'en prend aucune', !/fb-ua[^>]*(ok|bad)/.test(H(MAL)), H(MAL));
+ok('le séparateur ne sort que s\'il sépare deux choses',
+   /fb-sep/.test(H(CABINET)) && !/fb-sep/.test(H(EVA_SEULE)), H(EVA_SEULE));
 ok('un seul seuil pour les deux rendus', /_evaAlerte\(/.test(fm('_evaCouleur')) && /_evaAlerte\(/.test(fm('_evaClasse')),
    fm('_evaCouleur') + fm('_evaClasse'));
 ok('la feuille donne une encre CLAIRE aux deux classes',
@@ -96,6 +109,15 @@ console.log('\nLe relevé s\'affiche sans attendre le réseau');
   ok('… qu\'il soit objet ou tableau', (ctx._fbEnMemoire('s2') || {}).rpe === 5, JSON.stringify(ctx._fbEnMemoire('s2')));
   ok('… une séance inconnue ne casse rien', ctx._fbEnMemoire('sX') === null && ctx._fbEnMemoire(null) === null);
 }
+/* Le défaut signalé : _renderAthleteRetour n'était appelée de NULLE PART, et
+   le relevé ne se posait qu'en ouvrant le panneau. */
+ok('le relevé se pose à l\'ouverture du builder, sans clic',
+   /_majFeedbackBtn\(\)/.test(fm('_enterBuilderMode')), '_enterBuilderMode ne le pose pas');
+ok('… et au chargement d\'une séance existante',
+   /_majFeedbackBtn\(\)/.test(fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8')),
+   '_loadProg ne le pose pas');
+ok('_majFeedbackBtn lit la séance courante, quelle que soit sa nature',
+   /_currentSeanceId \|\| _capBbSeanceId \|\| _hsrBbSeanceId/.test(fm('_majFeedbackBtn')), fm('_majFeedbackBtn'));
 ok('le bouton est peint AVANT la requête', (() => {
   const s = fm('_renderAthleteRetour');
   const i = s.indexOf('_updateFeedbackBtn(_fbEnMemoire('), j = s.indexOf('_fetchRetry(');
