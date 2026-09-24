@@ -48,6 +48,11 @@ body {
 .bar-track { height: 16px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
 .bar-fill { height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; min-width: 2px; }
 .bar-val { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+/* La valeur est cliquable : elle bascule entre le nombre et le pourcentage.
+   Soulignée en pointillé — rien d'autre ne signale qu'on peut cliquer. */
+.bar-val-btn { border: none; background: none; padding: 0; font: inherit; cursor: pointer;
+  text-decoration: underline dotted var(--text3); text-underline-offset: 3px; }
+.bar-val-btn:hover { color: var(--accent); }
 .bar-row.muted .bar-lbl, .bar-row.muted .bar-val { color: var(--text3); }
 .bar-row.muted .bar-fill { background: var(--text3); }
 
@@ -290,26 +295,63 @@ function esc(s){
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+/* La vue choisie pour chaque carte de barres — « pct » ou « n ». Retenue ici
+   et non dans le DOM : filtrer par période rebâtit la page, et une vue qui se
+   réinitialise à chaque filtre ne sert à rien (qualite/stats-bascule-cas.js). */
+var _statVue = {};
+
 /* Barres : longueur relative au maximum de la série (pas au total) — c'est une
    comparaison de magnitude, pas une part-à-tout. Valeur toujours écrite en clair
-   à droite, pour que l'identité ne repose jamais sur la seule couleur. */
+   à droite, pour que l'identité ne repose jamais sur la seule couleur.
+
+   Les DEUX nombres partent dans le balisage : rien ne se recalcule au clic. Le
+   dénominateur d'une carte n'est pas le total des patients — un patient compte
+   dans plusieurs régions — et le retrouver au clic était le moyen sûr de le
+   prendre faux. */
 function barRows(items, opts){
   opts = opts || {};
   if (!items.length) return '';
   var max = Math.max.apply(null, items.map(function(i){ return i.n; })) || 1;
+  var denom = opts.denom > 0 ? opts.denom : 0;
+  var cle = opts.cle || '';
+  var bascule = !!(denom && cle);
+  var vue = bascule ? (_statVue[cle] || (opts.asPct ? 'pct' : 'n')) : 'n';
   return items.map(function(i){
     var pct = Math.round(i.n / max * 100);
-    var val = opts.asPct && opts.denom
-      ? Math.round(i.n / opts.denom * 100) + ' %'
-      : String(i.n);
-    var title = opts.asPct && opts.denom
-      ? i.label + ' : ' + i.n + ' patients sur ' + opts.denom
+    var part = denom ? Math.round(i.n / denom * 100) : null;
+    var val = (vue === 'pct' && part !== null) ? part + ' %' : String(i.n);
+    var title = denom
+      ? i.label + ' : ' + i.n + ' patients sur ' + denom
       : i.label + ' : ' + i.n + ' patients';
+    var valHtml = bascule
+      ? '<button type="button" class="bar-val bar-val-btn" data-n="' + i.n + '" data-pct="' + part + '"'
+        + ' data-cle="' + esc(cle) + '" data-vue="' + vue + '"'
+        + ' title="' + (vue === 'pct' ? 'Afficher le nombre de patients' : 'Afficher le pourcentage')
+        + '" onclick="_statBascule(this)">' + val + '</button>'
+      : '<span class="bar-val">' + val + '</span>';
     return '<div class="bar-row' + (i.muted ? ' muted' : '') + '" title="' + esc(title) + '">'
       + '<span class="bar-lbl">' + esc(i.label) + '</span>'
       + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>'
-      + '<span class="bar-val">' + val + '</span></div>';
+      + valHtml + '</div>';
   }).join('');
+}
+
+/* Le clic bascule la COLONNE entière, pas la seule ligne cliquée : une colonne
+   où « 18 % » voisine « 24 » ne se compare plus, et comparer est tout ce qu'une
+   liste de barres sert à faire. Les valeurs sont réécrites EN PLACE — redessiner
+   la page entière pour un changement d'unité perdrait le défilement. */
+function _statBascule(btn){
+  if (!btn || !btn.dataset) return;
+  var cle = btn.dataset.cle;
+  if (!cle) return;
+  var vue = (_statVue[cle] || btn.dataset.vue) === 'pct' ? 'n' : 'pct';
+  _statVue[cle] = vue;
+  var cibles = document.querySelectorAll('.bar-val-btn[data-cle="' + cle + '"]');
+  Array.prototype.forEach.call(cibles, function(el){
+    el.textContent = vue === 'pct' ? el.dataset.pct + ' %' : el.dataset.n;
+    el.dataset.vue = vue;
+    el.title = vue === 'pct' ? 'Afficher le nombre de patients' : 'Afficher le pourcentage';
+  });
 }
 
 function card(title, sub, body, badge){
@@ -650,7 +692,7 @@ function render(s, hasBilanPlan, bounds){
   /* — Âge — */
   var agesNonVides = s.ages.filter(function(a){ return a.n > 0; });
   if (agesNonVides.length) {
-    var bodyAge = barRows(s.ages);
+    var bodyAge = barRows(s.ages, { denom: s.total, cle: 'age' });
     if (s.ageInconnu) bodyAge += '<div class="note">' + s.ageInconnu + ' patient(s) sans date de naissance.</div>';
     h += card('Âge', 'Calculé depuis la date de naissance', bodyAge);
   }
@@ -660,7 +702,8 @@ function render(s, hasBilanPlan, bounds){
     var sportItems = s.sports.slice();
     if (s.sportAutres) sportItems.push({ label: 'Autres', n: s.sportAutres });
     if (s.sportVide)   sportItems.push({ label: 'Non renseigné', n: s.sportVide, muted: true });
-    h += card('Sports pratiqués', 'Regroupés par alias — la saisie reste libre', barRows(sportItems));
+    h += card('Sports pratiqués', 'Regroupés par alias — la saisie reste libre',
+      barRows(sportItems, { denom: s.total, cle: 'sports' }));
   }
 
   if (hasBilanPlan) {
@@ -669,7 +712,7 @@ function render(s, hasBilanPlan, bounds){
     if (s.regions.length) {
       h += card('Régions atteintes',
         'Part des ' + s.patientsAvecBilan + ' patients ayant au moins un bilan — un patient peut compter dans plusieurs lignes',
-        barRows(s.regions, { asPct: true, denom: s.patientsAvecBilan }),
+        barRows(s.regions, { asPct: true, denom: s.patientsAvecBilan, cle: 'regions' }),
         'Bilan');
     }
 
@@ -679,7 +722,7 @@ function render(s, hasBilanPlan, bounds){
       if (s.motifNonReconnu) motifItems.push({ label: 'Non reconnu', n: s.motifNonReconnu, muted: true });
       var reconnus = s.motifsRenseignes - s.motifNonReconnu;
       var tauxNon = s.motifsRenseignes ? Math.round(s.motifNonReconnu / s.motifsRenseignes * 100) : 0;
-      var bodyMotif = barRows(motifItems, { asPct: true, denom: s.motifsRenseignes })
+      var bodyMotif = barRows(motifItems, { asPct: true, denom: s.motifsRenseignes, cle: 'motifs' })
         + '<div class="note">' + s.motifsRenseignes + ' diagnostic(s) renseigné(s) · ' + reconnus + ' reconnu(s), '
         + s.motifNonReconnu + ' non reconnu(s) — ' + tauxNon + ' %.'
         + ' <span style="color:var(--text3)">Au-delà de 30 % de non-reconnus, le classement devient trompeur : c\'est le signal qu\'il faut nommer la pathologie dans le diagnostic.</span></div>';
