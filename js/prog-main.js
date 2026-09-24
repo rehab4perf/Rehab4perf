@@ -2511,14 +2511,9 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
 }
 
-/* Le relevé du bouton, posé SANS qu'on ouvre le panneau. `_renderAthleteRetour`
-   n'était appelée de nulle part : le bouton restait sur « Feedback » tant qu'on
-   n'avait pas cliqué dessus — exactement ce que le praticien signalait
-   (qualite/feedback-releve-cas.js). */
-function _majFeedbackBtn(){
-  var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
-  _updateFeedbackBtn(sid ? _fbEnMemoire(sid) : null);
-}
+/* Conservée : douze endroits l'appellent, et elle dit mieux l'intention
+   (« remets le bouton à jour ») qu'un _updateFeedbackBtn() sans argument. */
+function _majFeedbackBtn(){ _updateFeedbackBtn(); }
 
 /* Le feedback déjà chargé avec l'agenda — aucune requête à attendre. */
 function _fbEnMemoire(seanceId){
@@ -2544,7 +2539,7 @@ function _renderAthleteRetour(seanceId) {
     .then(function(r){ return r.json(); })
     .then(function(arr){
       var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-      _updateFeedbackBtn(fb);   // le FEEDBACK, pas un booléen : le relevé en dépend
+      _updateFeedbackBtn(fb);
     })
     .catch(function(){ _majFeedbackBtn(); });   // on garde ce qu'on a
 }
@@ -2596,14 +2591,19 @@ function _fbReleveHtml(fb){
   }
   return out;
 }
-/* Reçoit le FEEDBACK, plus un booléen : le bouton en tire deux choses — la
-   pastille (un retour d'athlète non lu) et son relevé (charge et douleur). */
-function _updateFeedbackBtn(fb) {
+/* Le bouton LIT la séance courante lui-même. Il ne l'a pas toujours fait, et
+   c'est ce qui a demandé trois passes : tant qu'un appelant fournissait la
+   donnée, n'importe lequel pouvait l'effacer — un booléen hérité, un rappel
+   réseau, un `setTimeout` anonyme. La peinture était juste trois fois, puis
+   un appel de trop la blanchissait (qualite/feedback-releve-cas.js).
+   `fbOverride` ne sert qu'au seul cas où la mémoire n'est pas encore à jour :
+   juste après un enregistrement. */
+function _updateFeedbackBtn(fbOverride) {
   var btn = document.getElementById('builder-feedback-btn');
   if (!btn) return;
-  /* `fb` est le FEEDBACK, jamais un booléen. Trois rappels réseau passaient
-     encore le résultat d'un test — le relevé se peignait, puis s'effaçait à
-     l'arrivée de la réponse (qualite/feedback-releve-cas.js). */
+  var _sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
+  var fb = (fbOverride && typeof fbOverride === 'object') ? fbOverride
+         : (_sid ? _fbEnMemoire(_sid) : null);
   var hasAthleteData = _fbRetourAthlete(fb);
   var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
   /* Un modèle n'a pas d'athlète : pas de retour à consulter. */
@@ -14129,7 +14129,7 @@ function _renderCapBuilderBanner(donnees, seanceId) {
       .then(function(r){ return r.json(); })
       .then(function(arr){
         var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-        _updateFeedbackBtn(fb);   // le FEEDBACK, pas un booléen : le relevé en dépend
+        _updateFeedbackBtn(fb);
       })
       .catch(function(){ _majFeedbackBtn(); });   // on garde ce qu'on a
   } else {
@@ -14753,7 +14753,7 @@ function _renderHsrBuilderBanner(donnees, seanceId) {
       .then(function(r){ return r.json(); })
       .then(function(arr){
         var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
-        _updateFeedbackBtn(fb);   // le FEEDBACK, pas un booléen : le relevé en dépend
+        _updateFeedbackBtn(fb);
       })
       .catch(function(){ _majFeedbackBtn(); });   // on garde ce qu'on a
   } else {

@@ -98,6 +98,7 @@ function fb(etat) {
   const ctx = vm.createContext(Object.assign({ _currentSeanceId: null, _capBbSeanceId: null, _hsrBbSeanceId: null, _builderMode: 'seance',
     _builderFromTemplate: null, _currentProgId: null, document: { getElementById: () => btn },
     _fbRetourAthlete: () => false, _fbReleveHtml: () => '', _fbEvaAffichee: () => ({ val: null, source: null }),
+    _fbEnMemoire: () => null,
     _uaFoster: () => null, _fbRpe: () => null, _fbDuree: () => null }, etat));
   vm.runInContext(fn('_updateFeedbackBtn'), ctx); ctx._updateFeedbackBtn(null);
   return btn.style.display;

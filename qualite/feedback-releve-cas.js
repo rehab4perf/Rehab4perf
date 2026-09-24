@@ -116,8 +116,15 @@ ok('le relevé se pose à l\'ouverture du builder, sans clic',
 ok('… et au chargement d\'une séance existante',
    /_majFeedbackBtn\(\)/.test(fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8')),
    '_loadProg ne le pose pas');
-ok('_majFeedbackBtn lit la séance courante, quelle que soit sa nature',
-   /_currentSeanceId \|\| _capBbSeanceId \|\| _hsrBbSeanceId/.test(fm('_majFeedbackBtn')), fm('_majFeedbackBtn'));
+/* Le bouton LIT la séance lui-même : tant qu'un appelant fournissait la
+   donnée, n'importe lequel pouvait l'effacer — c'est ce qui a demandé trois
+   passes. L'argument ne sert plus qu'au cas où la mémoire n'est pas encore à
+   jour, juste après un enregistrement. */
+ok('le bouton lit la séance courante lui-même',
+   /_currentSeanceId \|\| _capBbSeanceId \|\| _hsrBbSeanceId/.test(fm('_updateFeedbackBtn'))
+   && /_fbEnMemoire\(_sid\)/.test(fm('_updateFeedbackBtn')), fm('_updateFeedbackBtn').slice(0, 400));
+ok('… et un appelant ne peut plus l\'effacer par erreur',
+   /fbOverride && typeof fbOverride === 'object'/.test(fm('_updateFeedbackBtn')), 'un argument non-objet efface encore');
 ok('le bouton est peint AVANT la requête', (() => {
   const s = fm('_renderAthleteRetour');
   const i = s.indexOf('_updateFeedbackBtn(_fbEnMemoire('), j = s.indexOf('_fetchRetry(');
