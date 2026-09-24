@@ -90,11 +90,16 @@ ok('« Mettre à jour le modèle » a l\'icône d\'enregistrement, pas 🔄', !/
 
 /* ── 6. Feedback ─────────────────────────────────────────────────────────── */
 console.log('\n« Feedback » n\'apparaît que sur une séance qui existe');
+/* _updateFeedbackBtn reçoit le FEEDBACK depuis le 2026-09-24 : il en tire la
+   pastille et son relevé (qualite/feedback-releve-cas.js). Ce cas-ci ne juge
+   que la VISIBILITÉ du bouton — les doublures suffisent. */
 function fb(etat) {
-  const btn = { style: {}, classList: { add() {}, remove() {} } };
+  const btn = { style: {}, classList: { add() {}, remove() {} }, querySelector: () => null };
   const ctx = vm.createContext(Object.assign({ _currentSeanceId: null, _capBbSeanceId: null, _hsrBbSeanceId: null, _builderMode: 'seance',
-    _builderFromTemplate: null, _currentProgId: null, document: { getElementById: () => btn } }, etat));
-  vm.runInContext(fn('_updateFeedbackBtn'), ctx); ctx._updateFeedbackBtn(false);
+    _builderFromTemplate: null, _currentProgId: null, document: { getElementById: () => btn },
+    _fbRetourAthlete: () => false, _fbReleveHtml: () => '', _fbEvaAffichee: () => ({ val: null, source: null }),
+    _uaFoster: () => null, _fbRpe: () => null, _fbDuree: () => null }, etat));
+  vm.runInContext(fn('_updateFeedbackBtn'), ctx); ctx._updateFeedbackBtn(null);
   return btn.style.display;
 }
 ok('séance enregistrée : visible', fb({ _currentSeanceId: 's1' }) === 'inline-flex');

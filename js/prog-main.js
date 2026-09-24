@@ -2534,15 +2534,61 @@ var _feedbackRpe = null;
 var _feedbackDuree = null;
 var _feedbackCurrentFb = null; // enregistrement athlète chargé à l'ouverture du modal
 
-function _updateFeedbackBtn(hasAthleteData) {
+/* La douleur qu'affiche le bouton. Celle de l'ATHLÈTE quand il en a donné une
+   — c'est son ressenti qui compte — la saisie du praticien sinon. Sur une
+   séance standard, l'athlète note par exercice : on retient la PLUS FORTE,
+   celle qui appelle un regard (qualite/feedback-releve-cas.js). */
+function _fbEvaAffichee(fb){
+  if(!fb) return { val:null, source:null };
+  var d = _fbDouleur(fb);
+  if(d !== null) return { val:d, source:'athlete' };
+  var x = fb.exo_data || {};
+  var exos = (x.exos || []).filter(function(e){ return e && e.pain !== null && e.pain !== undefined; });
+  if(exos.length){
+    return { val: exos.reduce(function(m, e){ return e.pain > m ? e.pain : m; }, 0), source:'athlete' };
+  }
+  if(x.eva_praticien !== null && x.eva_praticien !== undefined) return { val:x.eva_praticien, source:'praticien' };
+  return { val:null, source:null };
+}
+/* Le relevé du bouton : la charge, puis la douleur. Vide quand il n'y a rien —
+   le libellé « Feedback » reprend alors sa place.
+   La COULEUR ne va que sur la douleur : une charge de 315 UA n'est pas un
+   problème en soi, c'est l'ACWR qui en juge. */
+function _fbReleveHtml(fb){
+  var ua = _uaFoster(_fbRpe(fb), _fbDuree(fb));
+  var eva = _fbEvaAffichee(fb);
+  if(!ua && eva.val === null) return '';
+  var col = eva.val === null ? '#9D9B96' : _evaCouleur(eva.val);
+  /* La charge s'écrit « — » plutôt que de disparaître : sans elle le bouton
+     change de largeur d'une séance à l'autre, et toute la barre bouge. */
+  return '<span class="fb-ua">' + (ua ? ua : '—') + '</span><span class="fb-u">UA</span>'
+    + '<span class="fb-sep"></span>'
+    + '<span class="fb-eva" style="color:' + col + '">' + (eva.val === null ? '—' : eva.val) + '</span>'
+    + '<span class="fb-u">/10</span>';
+}
+/* Reçoit le FEEDBACK, plus un booléen : le bouton en tire deux choses — la
+   pastille (un retour d'athlète non lu) et son relevé (charge et douleur). */
+function _updateFeedbackBtn(fb) {
   var btn = document.getElementById('builder-feedback-btn');
   if (!btn) return;
+  if (fb === true || fb === false) fb = null;   // anciens appels booléens
+  var hasAthleteData = _fbRetourAthlete(fb);
   var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
   /* Un modèle n'a pas d'athlète : pas de retour à consulter. */
   if(_builderMode === 'template' || (_builderFromTemplate && !_currentSeanceId && !_currentProgId)) sid = null;
   btn.style.display = sid ? 'inline-flex' : 'none';
   if (hasAthleteData) btn.classList.add('has-retour');
   else btn.classList.remove('has-retour');
+  var releve = _fbReleveHtml(fb);
+  var elDef = btn.querySelector('.fb-def'), elVal = btn.querySelector('.fb-val');
+  if (elVal) { elVal.innerHTML = releve; elVal.hidden = !releve; }
+  if (elDef) elDef.hidden = !!releve;
+  var e = _fbEvaAffichee(fb);
+  btn.title = releve
+    ? ((_uaFoster(_fbRpe(fb), _fbDuree(fb)) ? 'Charge ' + _uaFoster(_fbRpe(fb), _fbDuree(fb)) + ' UA · ' : '')
+       + (e.val === null ? '' : 'douleur ' + e.val + '/10 ('
+          + (e.source === 'athlete' ? 'retour athlète' : 'saisie au cabinet') + ')'))
+    : 'Feedback';
 }
 
 function _openFeedbackModal() {
@@ -2574,7 +2620,7 @@ function _feedbackRenderContent(fb, sid) {
 
   // Badge : l'athlète a soumis — la règle vit dans _fbRetourAthlete, une seule fois
   var hasAthleteData = _fbRetourAthlete(fb);
-  _updateFeedbackBtn(hasAthleteData);
+  _updateFeedbackBtn(fb);
 
   var html = '<div class="fm-section">Retour athlète</div>';
 
@@ -2802,6 +2848,7 @@ function _feedbackSave(sid) {
     if (_feedbackCurrentFb) _feedbackCurrentFb = Object.assign({}, _feedbackCurrentFb, { exo_data: existingExoData });
     else _feedbackCurrentFb = { exo_data: existingExoData };
     renderCalendar();
+    _updateFeedbackBtn(_feedbackCurrentFb);   // le relevé suit la saisie
     /* La fenêtre se ferme d'elle-même — mais APRÈS le « ✓ Enregistré » : une
        fermeture immédiate ne laisse pas voir que c'est parti. Sur erreur, on
        a rendu la main plus haut : elle reste ouverte, la saisie n'est pas
