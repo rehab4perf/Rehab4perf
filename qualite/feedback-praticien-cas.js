@@ -87,11 +87,13 @@ console.log('\nLa saisie du praticien');
 
 console.log('\nLe rouge au-dessus de 3');
 {
-  ok('le seuil est celui de l\'application : légère jusqu\'à 3', /> ?3/.test(fm('_evaCouleur')), fm('_evaCouleur'));
+  /* Le seuil vit dans _evaAlerte depuis le 2026-09-24 : deux rendus le lisent,
+     la couleur du panneau et la classe du relevé (qualite/feedback-releve-cas.js). */
+  ok('le seuil est celui de l\'application : légère jusqu\'à 3', /> ?3/.test(fm('_evaAlerte')), fm('_evaAlerte'));
   ok('… et une seule fonction le porte', /_evaCouleur\(/.test(fm('_feedbackSetEva')), 'la couleur est recopiée dans la bascule');
   const ctx = vm.createContext({ document: { querySelectorAll: () => [] } });
   let coul = null;
-  try { vm.runInContext(fm('_evaCouleur'), ctx); coul = v => ctx._evaCouleur(v); } catch (e) {}
+  try { vm.runInContext(fm('_evaAlerte') + fm('_evaCouleur'), ctx); coul = v => ctx._evaCouleur(v); } catch (e) {}
   if (coul) {
     ok('0 à 3 : pas de rouge', [0, 1, 2, 3].every(v => coul(v) !== coul(4)), [0, 1, 2, 3, 4].map(coul).join(' '));
     ok('4 et au-delà : rouge', [4, 7, 10].every(v => coul(v) === coul(4)), [4, 7, 10].map(coul).join(' '));

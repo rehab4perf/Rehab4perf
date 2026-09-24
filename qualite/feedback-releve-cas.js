@@ -43,7 +43,7 @@ const fm = fnDe(pmain), fv = fnDe(vol);
 const c = vm.createContext({ escH: s => String(s || '') });
 try {
   vm.runInContext(['_uaFoster', '_fbRpe', '_fbDuree'].map(fv).join('\n') + '\n'
-    + ['_fbDouleur', '_fbRetourAthlete', '_evaCouleur', '_fbEvaAffichee', '_fbReleveHtml'].map(fm).join('\n'), c);
+    + ['_fbDouleur', '_fbRetourAthlete', '_evaAlerte', '_evaCouleur', '_evaClasse', '_fbEvaAffichee', '_fbReleveHtml', '_fbEnMemoire'].map(fm).join('\n'), c);
 } catch (e) { ok('le code se charge', false, e.message); }
 
 const RIEN     = null;
@@ -70,14 +70,39 @@ ok('douleur seule : la charge s\'écrit « — », le bouton garde sa largeur',
    /—/.test(H(EVA_SEULE)) && /2/.test(H(EVA_SEULE)), H(EVA_SEULE));
 
 console.log('\nLa couleur ne va que sur la douleur');
-ok('douleur acceptable : vert', H(CABINET).indexOf(c._evaCouleur(3)) > -1, H(CABINET));
-ok('au-dessus de 3 : rouge', H(MAL).indexOf(c._evaCouleur(6)) > -1, H(MAL));
-ok('… et la charge reste neutre dans les deux cas', (() => {
-  const rouge = c._evaCouleur(6);
-  const i = H(MAL).indexOf('315');
-  return i > -1 && H(MAL).lastIndexOf(rouge) > i;   /* le rouge vient APRÈS la charge */
-})(), H(MAL));
-ok('le seuil reste celui de _evaCouleur, pas un second', /_evaCouleur\(/.test(fm('_fbReleveHtml')), 'un seuil est recopié');
+/* Le relevé vit sur la barre NAVY du builder : un hex sombre y est invisible.
+   La CLASSE laisse la feuille choisir l'encre selon le fond — c'est ce qui
+   manquait, « 300 UA | — /10 » sortait navy sur navy. */
+ok('aucune couleur figée dans le balisage', !/style="color:/.test(H(CABINET)) && !/#[0-9A-Fa-f]{6}/.test(H(MAL)),
+   (H(MAL).match(/style="[^"]*"|#[0-9A-Fa-f]{6}/g) || []).join(' '));
+ok('douleur acceptable : la classe « ok »', /fb-eva ok/.test(H(CABINET)), H(CABINET));
+ok('au-dessus de 3 : la classe « bad »', /fb-eva bad/.test(H(MAL)), H(MAL));
+ok('… et la charge n\'en prend aucune', !/fb-ua[^>]*(ok|bad)/.test(H(MAL)), H(MAL));
+ok('un seul seuil pour les deux rendus', /_evaAlerte\(/.test(fm('_evaCouleur')) && /_evaAlerte\(/.test(fm('_evaClasse')),
+   fm('_evaCouleur') + fm('_evaClasse'));
+ok('la feuille donne une encre CLAIRE aux deux classes',
+   /\.fb-eva\.ok \{ ?color:var\(--ok-b\)/.test(html) && /\.fb-eva\.bad \{ ?color:var\(--alerte-b\)/.test(html),
+   (html.match(/\.fb-eva\.(ok|bad)[^}]*\}/g) || []).join(' '));
+ok('… et le reste du relevé prend l\'encre du bouton',
+   /\.fb-ua \{ ?font-weight:700; ?color:inherit/.test(html), (html.match(/\.fb-ua[^}]*\}/) || [])[0]);
+
+console.log('\nLe relevé s\'affiche sans attendre le réseau');
+{
+  const ctx = vm.createContext({ window: { _cloudCalEvents: [
+    { id: 's1', athlete_feedback: { rpe: 7, duree_min: 45 } },
+    { id: 's2', athlete_feedback: [{ rpe: 5, duree_min: 30 }] } ] } });
+  vm.runInContext(fm('_fbEnMemoire'), ctx);
+  ok('le feedback de l\'agenda est retrouvé', (ctx._fbEnMemoire('s1') || {}).rpe === 7, JSON.stringify(ctx._fbEnMemoire('s1')));
+  ok('… qu\'il soit objet ou tableau', (ctx._fbEnMemoire('s2') || {}).rpe === 5, JSON.stringify(ctx._fbEnMemoire('s2')));
+  ok('… une séance inconnue ne casse rien', ctx._fbEnMemoire('sX') === null && ctx._fbEnMemoire(null) === null);
+}
+ok('le bouton est peint AVANT la requête', (() => {
+  const s = fm('_renderAthleteRetour');
+  const i = s.indexOf('_updateFeedbackBtn(_fbEnMemoire('), j = s.indexOf('_fetchRetry(');
+  return i > -1 && j > i;
+})(), fm('_renderAthleteRetour').slice(0, 400));
+ok('… et le panneau s\'ouvre sur ce qu\'on a déjà', /_fbEnMemoire\(sid\)/.test(fm('_openFeedbackModal')),
+   'le panneau attend encore le réseau');
 
 console.log('\nLe bouton reste un bouton');
 ok('le libellé par défaut vit dans son propre bloc', /class="fb-def"/.test(html), 'le SVG et le libellé ne sont pas isolés');

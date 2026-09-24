@@ -2511,12 +2511,26 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
 }
 
+/* Le feedback déjà chargé avec l'agenda — aucune requête à attendre. */
+function _fbEnMemoire(seanceId){
+  if(!seanceId) return null;
+  var ev = (window._cloudCalEvents || []).filter(function(e){ return String(e.id) === String(seanceId); })[0];
+  if(!ev) return null;
+  var fb = ev.athlete_feedback;
+  return Array.isArray(fb) ? (fb[0] || null) : (fb || null);
+}
+
 /* ── Retour athlète dans le builder — accordéon style CAP ── */
 function _renderAthleteRetour(seanceId) {
   // CAP/HSR : leur bandeau gère déjà le bouton feedback
   var rawType = _currentProgRawDonnees && _currentProgRawDonnees.type;
   if (rawType === 'cap' || rawType === 'hsr') return;
-  if (!seanceId) { _updateFeedbackBtn(false); return; }
+  if (!seanceId) { _updateFeedbackBtn(null); return; }
+  /* L'agenda a DÉJÀ le feedback en mémoire : sa requête le sélectionne avec
+     chaque séance. On peint donc le bouton tout de suite, et la requête qui
+     suit ne fait que confirmer — sinon le relevé n'apparaissait qu'après un
+     aller-retour réseau (qualite/feedback-releve-cas.js). */
+  _updateFeedbackBtn(_fbEnMemoire(seanceId));
   _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, { headers: _sbHeaders() })
     .then(function(r){ return r.json(); })
     .then(function(arr){
@@ -2558,12 +2572,12 @@ function _fbReleveHtml(fb){
   var ua = _uaFoster(_fbRpe(fb), _fbDuree(fb));
   var eva = _fbEvaAffichee(fb);
   if(!ua && eva.val === null) return '';
-  var col = eva.val === null ? '#9D9B96' : _evaCouleur(eva.val);
+  var cls = eva.val === null ? 'vide' : _evaClasse(eva.val);
   /* La charge s'écrit « — » plutôt que de disparaître : sans elle le bouton
      change de largeur d'une séance à l'autre, et toute la barre bouge. */
   return '<span class="fb-ua">' + (ua ? ua : '—') + '</span><span class="fb-u">UA</span>'
     + '<span class="fb-sep"></span>'
-    + '<span class="fb-eva" style="color:' + col + '">' + (eva.val === null ? '—' : eva.val) + '</span>'
+    + '<span class="fb-eva ' + cls + '">' + (eva.val === null ? '—' : eva.val) + '</span>'
     + '<span class="fb-u">/10</span>';
 }
 /* Reçoit le FEEDBACK, plus un booléen : le bouton en tire deux choses — la
@@ -2598,7 +2612,10 @@ function _openFeedbackModal() {
   var content = document.getElementById('feedback-modal-content');
   if (!overlay || !content) return;
   overlay.classList.add('open');
-  content.innerHTML = '<div class="fm-empty">Chargement…</div>';
+  /* Le feedback en mémoire s'affiche tout de suite ; la requête le confirme. */
+  var _memo = _fbEnMemoire(sid);
+  content.innerHTML = _memo ? '' : '<div class="fm-empty">Chargement…</div>';
+  if (_memo) _feedbackRenderContent(_memo, sid);
   _feedbackEva = null;
   _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + sid, { headers: _sbHeaders() })
     .then(function(r){ return r.json(); })
@@ -2764,7 +2781,13 @@ function _feedbackRenderContent(fb, sid) {
    legere » jusqu'a 3 et « moderee » au-dela (outils.html), et l'agenda alerte
    deja au-dessus de 3 sur l'EVA praticien. Deux bandes, une frontiere : une
    rampe a cinq couleurs faisait hesiter sur celle qui doit inquieter. */
-function _evaCouleur(val){ return val > 3 ? '#C0392B' : '#2D6A4F'; }
+function _evaAlerte(val){ return val > 3; }
+function _evaCouleur(val){ return _evaAlerte(val) ? '#C0392B' : '#2D6A4F'; }
+/* Le relevé du bouton vit sur la barre NAVY du builder : une couleur sombre y
+   est invisible — c'est ce qui rendait « 300 UA | — /10 » illisible. La classe
+   laisse la feuille choisir l'encre selon le fond, plutôt que de figer un hex
+   qui ne vaut que sur blanc (qualite/feedback-releve-cas.js). */
+function _evaClasse(val){ return _evaAlerte(val) ? 'bad' : 'ok'; }
 function _feedbackSetEva(val) {
   _feedbackEva = val;
   var c = _evaCouleur(val);
