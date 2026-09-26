@@ -3998,6 +3998,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 }
 .cycle-form-btn-save:hover { background:var(--navy-d); }
 .cycle-list-empty { color:var(--text3);font-size:var(--fs-md);text-align:center;padding:14px 0; }
+/* Le repli des cycles terminés : une ligne, pas une carte. Elle annonce un
+   contenu rangé, elle ne doit pas peser autant que les cycles qu'elle cache. */
+.cycle-plies { display:flex; align-items:center; gap:7px; width:100%; margin-bottom:8px;
+  padding:8px 12px; border:none; border-radius:9px; background:var(--surface2);
+  color:var(--muted); font-family:inherit; font-size:var(--fs-md); cursor:pointer; text-align:left; }
+.cycle-plies:hover { background:var(--border-l); color:var(--text2); }
+.cycle-plies-fl { font-size:var(--fs-sm); line-height:1; }
+.cycle-plies-sem { color:var(--text3); }
+/* Le « tout voir » de la frise vit dans la ligne de total : un lien, pas un
+   bouton — il change ce qu'on regarde, pas les données. */
+.cycle-frise-tout { background:none; border:none; padding:0; font-family:inherit;
+  font-size:inherit; color:var(--accent); font-weight:700; cursor:pointer; }
+.cycle-frise-tout:hover { text-decoration:underline; }
 .cycle-swatch { transition:box-shadow .12s,border-color .12s; }
 .cycle-swatch:focus { outline:none; }
 
@@ -5029,6 +5042,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260926h"></script>
+<script src="js/prog-main.js?v=20260926j"></script>
 </body>
 </html>

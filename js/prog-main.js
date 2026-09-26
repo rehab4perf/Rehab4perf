@@ -791,6 +791,43 @@ function _cycleIsDone(c, today){
   var e = new Date(end+'T00:00:00'); e.setHours(0,0,0,0);
   return today > e;
 }
+/* Les cycles TERMINES. On ne les supprime jamais : un cycle a criteres attend
+   que le precedent A CRITERES soit valide, donc ce sont eux qui debloquent la
+   suite — et ils teignent leurs journees passees sur l'agenda.
+   (qualite/cycles-perimes-cas.js) */
+function _cyclesTermines(cycles, today){
+  return (cycles || []).filter(function(c){ return _cycleIsDone(c, today); });
+}
+/* Combien de semaines de passe la frise garde dans son cadre. Assez pour voir
+   d'ou l'on vient — une frise qui s'ouvre sur le seul cycle en cours ne dit
+   plus rien de la progression. */
+var _CYCLE_FRISE_RECUL_SEM = 4;
+var _cycleFriseTout = false;
+/* Les cycles que la FRISE montre. Elle les place a largeur fixe : chaque
+   cycle ajoute retrecit tous les autres, si bien qu'a cinq cycles les noms
+   etaient deja tronques et le trait « Aujourd'hui » colle au bord droit —
+   l'endroit le plus utile avait le moins de place. */
+function _cycleFriseCycles(cycles, today, tout){
+  var liste = cycles || [];
+  if(tout || liste.length < 2) return liste;
+  var borne = new Date(today.getTime()); borne.setDate(borne.getDate() - _CYCLE_FRISE_RECUL_SEM * 7);
+  var vus = liste.filter(function(c){
+    /* Un cycle a criteres n'a pas de fin connue : il n'est jamais « passe ». */
+    if(c.mode === 'criteres' || !c.startDate) return true;
+    var f = c.endDate || _cycleComputeEndDate(c.startDate, c.duree);
+    if(!f) return true;
+    return new Date(f + 'T00:00:00') >= borne;
+  });
+  /* Un plan entierement passe n'a rien a cadrer : une frise vide sous un total
+     qui compte des cycles qu'on ne voit pas serait pire que trop de blocs. */
+  return vus.length ? vus : liste;
+}
+function _cycleFriseBasculer(){ _cycleFriseTout = !_cycleFriseTout; renderCycleTimeline(); }
+window._cycleFriseBasculer = _cycleFriseBasculer;
+var _cyclePlieTermines = true;
+function _cyclePlierBasculer(){ _cyclePlieTermines = !_cyclePlieTermines; renderCycleList(); }
+window._cyclePlierBasculer = _cyclePlierBasculer;
+
 function _cycleIsCurrent(cycles, idx, today){
   var c = cycles[idx];
   if(c.mode === 'criteres'){
@@ -1279,24 +1316,40 @@ function renderCycleTimeline(){
     tot.textContent = '';
     return;
   }
-  var dureeCycles = _cycles.filter(function(c){ return c.mode!=='criteres'; });
-  var critCycles   = _cycles.filter(function(c){ return c.mode==='criteres'; });
-  var totalWeeks = dureeCycles.reduce(function(s,c){ return s+(c.duree||0); },0);
-  var minW = 60, unitW = Math.max(minW, Math.min(90, 600/Math.max(totalWeeks,1)));
   var today = new Date(); today.setHours(0,0,0,0);
+  /* Le CADRE : ce que la frise montre. Le reste du plan n'est pas perdu — il
+     revient par « tout voir » (qualite/cycles-perimes-cas.js). */
+  var vus = _cycleFriseCycles(_cycles, today, _cycleFriseTout);
+  var caches = _cycles.length - vus.length;
+  var critCycles   = _cycles.filter(function(c){ return c.mode==='criteres'; });
+  /* Le TOTAL reste celui du plan entier : c'est une propriete du plan, elle ne
+     depend pas de ce qu'on regarde. Le cadre, lui, se dit a cote. */
+  var totalWeeks = _cycles.filter(function(c){ return c.mode!=='criteres'; })
+                          .reduce(function(s,c){ return s+(c.duree||0); },0);
+  /* La largeur, elle, se calcule sur les cycles AFFICHES : sinon cadrer ne
+     rendrait pas un pixel aux blocs restants. */
+  var weeksVues = vus.filter(function(c){ return c.mode!=='criteres'; })
+                     .reduce(function(s,c){ return s+(c.duree||0); },0);
+  var minW = 60, unitW = Math.max(minW, Math.min(90, 600/Math.max(weeksVues,1)));
 
+  /* Le trait « Aujourd'hui » se place en % de ce qui est AFFICHE. Calcule sur
+     le plan entier alors qu'on n'en montre qu'une part, il designerait le
+     mauvais cycle — la frise serait fausse, pas seulement chargee. */
   var todayMarkerPct = null;
-  var firstStart = _cycles[0] && _cycles[0].startDate ? new Date(_cycles[0].startDate+'T00:00:00') : null;
-  if(firstStart && totalWeeks>0){
+  var firstStart = vus[0] && vus[0].startDate ? new Date(vus[0].startDate+'T00:00:00') : null;
+  if(firstStart && weeksVues>0){
     firstStart.setHours(0,0,0,0);
-    var diffDays = Math.round((today - firstStart) / 86400000);
-    var diffWeeks = diffDays / 7;
-    if(diffWeeks >= 0 && diffWeeks <= totalWeeks) todayMarkerPct = (diffWeeks / totalWeeks) * 100;
+    var diffWeeks = Math.round((today - firstStart) / 86400000) / 7;
+    if(diffWeeks >= 0 && diffWeeks <= weeksVues) todayMarkerPct = (diffWeeks / weeksVues) * 100;
   }
 
   var html = '<div style="position:relative;display:flex;gap:6px;align-items:stretch;min-height:72px;width:100%;">';
+  /* Le numero de semaine du repli sans dates (« S1 → S3 ») compte depuis le
+     DEBUT DU PLAN, pas depuis le cadre : reparti de 1, le cinquieme cycle
+     s'annoncerait comme le premier. */
   var weekCursor = 1;
   _cycles.forEach(function(c){
+    if(vus.indexOf(c) < 0){ weekCursor += (c.duree||0); return; }
     var col = c.color || _cycleColor(c.nom);
     if(c.mode === 'criteres'){
       var phasesT = _cyclePhases(c);
@@ -1336,7 +1389,14 @@ function renderCycleTimeline(){
   }
   html += '</div>';
   tl.innerHTML = html;
-  tot.textContent = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'') + (critCycles.length ? ' + '+critCycles.length+' cycle'+(critCycles.length>1?'s':'')+' à critères' : '');
+  tot.innerHTML = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'')
+    + (critCycles.length ? ' + '+critCycles.length+' cycle'+(critCycles.length>1?'s':'')+' à critères' : '')
+    + (caches > 0
+        ? ' · <button type="button" class="cycle-frise-tout" onclick="_cycleFriseBasculer()">'
+          + caches + ' terminé' + (caches>1?'s':'') + ' masqué' + (caches>1?'s':'') + ' — tout voir</button>'
+        : (_cycleFriseTout && _cycles.length > 1
+            ? ' · <button type="button" class="cycle-frise-tout" onclick="_cycleFriseBasculer()">revenir au présent</button>'
+            : ''));
 }
 
 /* ── Liste des cycles + formulaire inline ── */
@@ -1540,8 +1600,31 @@ function renderCycleList(){
   var wrap=document.getElementById('cycle-list-wrap'); if(!wrap) return;
   var h='';
   if(_cycles.length){
+    /* Les cycles TERMINES se replient : la fenetre s'ouvre sur ce qui reste a
+       faire. Rien n'est supprime — ils debloquent les cycles a criteres qui
+       suivent, teignent leurs journees passees, et se redeploient d'un clic.
+       (qualite/cycles-perimes-cas.js) */
+    var _auj = new Date(); _auj.setHours(0,0,0,0);
+    var finis = _cyclesTermines(_cycles, _auj);
+    /* Tout est fini : il n'y a rien d'autre a montrer, et une fenetre vide
+       sous un total serait pire qu'une liste longue. On deplie. */
+    var plie = _cyclePlieTermines && finis.length && finis.length < _cycles.length;
+    if(plie){
+      var sem = finis.reduce(function(n,c){ return n+(c.duree||0); },0);
+      h+='<button type="button" class="cycle-plies" onclick="_cyclePlierBasculer()">'
+        +'<span class="cycle-plies-fl">\u25B8</span> '+finis.length+' cycle'+(finis.length>1?'s':'')
+        +' terminé'+(finis.length>1?'s':'')
+        +(sem ? ' <span class="cycle-plies-sem">· '+sem+' sem.</span>' : '')+'</button>';
+    } else if(finis.length && finis.length < _cycles.length){
+      h+='<button type="button" class="cycle-plies" onclick="_cyclePlierBasculer()">'
+        +'<span class="cycle-plies-fl">\u25BE</span> replier les '+finis.length+' cycle'+(finis.length>1?'s':'')
+        +' terminé'+(finis.length>1?'s':'')+'</button>';
+    }
     h+='<div class="cycle-list">';
-    _cycles.forEach(function(c){ h+=_cycleListRowHtml(c); });
+    _cycles.forEach(function(c){
+      if(plie && finis.indexOf(c) >= 0) return;
+      h+=_cycleListRowHtml(c);
+    });
     h+='</div>';
   } else if(!_cycleAddOpen){
     h+='<div class="cycle-list-empty">Aucun cycle — cliquez « + » pour commencer.</div>';
