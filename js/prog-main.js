@@ -749,6 +749,29 @@ function _cycleJalonsDuJour(dateStr){
   });
   return out;
 }
+/* Une ligne de critère cochable. Deux mécanismes DISTINCTS s'en servent : les
+   critères d'un CYCLE vivent dans `_cycles` (enregistrés par
+   _saveCyclesToCloud), ceux d'un PROTOCOLE en base. On ne les fusionne pas —
+   seule la LIGNE est partagée (qualite/sidebar-criteres-cas.js). */
+function _ppCritereLigneHtml(texte, coche, clic){
+  return '<label class="pp-crit' + (coche ? ' on' : '') + '">'
+    + '<input type="checkbox"' + (coche ? ' checked' : '') + ' onchange="' + clic + '">'
+    + '<span>' + escH(texte) + '</span></label>';
+}
+/* Les critères de la phase EN COURS d'un cycle à critères. Les phases
+   suivantes ne sont pas listées : les cocher d'avance n'a pas de sens. */
+function _ppCycleCriteresHtml(cy){
+  if(!cy || cy.mode !== 'criteres') return '';
+  var phs = _cyclePhases(cy);
+  if(!phs.length) return '';
+  var i = _cyclePhaseCurrentIndex(cy);
+  if(i < 0) return '<div class="pp-crit-fin">Toutes les phases sont validées.</div>';
+  var ph = phs[i];
+  return '<div class="pp-crits">' + (ph.criteria || []).map(function(t, k){
+    var coche = !!(ph.checks && ph.checks[k] && ph.checks[k].checked);
+    return _ppCritereLigneHtml(t, coche, "_cycleToggleCriterion('" + escJS(String(cy.id)) + "'," + i + "," + k + ")");
+  }).join('') + '</div>';
+}
 function _cycleCurrentIndex(cycles){
   var today = new Date(); today.setHours(0,0,0,0);
   for(var i=0;i<cycles.length;i++){ if(_cycleIsCurrent(cycles, i, today)) return i; }
@@ -1128,6 +1151,9 @@ function addCycle(){ openCycleForm(null); } // compat
 function renderCycleTimeline(){
   var tl = document.getElementById('cycle-timeline');
   var tot = document.getElementById('cycle-total');
+  /* Appelée depuis la barre latérale, fenêtre des cycles fermée : sans cette
+     garde elle écrivait dans un élément absent (qualite/sidebar-criteres-cas.js). */
+  if(!tl || !tot) return;
   if(!_cycles.length){
     tl.innerHTML = '<div style="color:#aaa;font-size:.8rem;align-self:center;">Aucun cycle ajouté.</div>';
     tot.textContent = '';
@@ -1295,6 +1321,8 @@ function _cycleToggleCriterion(cycleId, phaseIdx, idx){
   _saveCyclesToCloud();
   renderCycleList();
   renderCycleTimeline();
+  /* La case se coche aussi depuis la barre latérale : elle doit s'y voir. */
+  try { _renderPanneauPatient(); } catch(ex){}
 }
 function _cycleInlineFormHtml(c){
   var title = c ? 'Modifier — '+c.nom : 'Nouveau cycle';
@@ -8456,6 +8484,73 @@ function _zoneAcwrFr(r){
   if(r <= 1.5)  return { txt:'prudence', cls:'bi-orange' };
   return { txt:'zone à risque', cls:'bi-red' };
 }
+/* Le protocole actif du patient, chargé pour la barre latérale SEULE : la
+   fenêtre Protocoles a son propre chargement, et l'ouvrir en arrière-plan
+   pour remplir une carte aurait des effets de bord (qualite/sidebar-criteres-cas.js). */
+var _ppProto = null;      // { pid, pp, proto, phase, checks }
+var _ppProtoEnCours = false;
+function _ppChargerProto(){
+  if(_ppProtoEnCours) return;
+  if(!_progPatient || !_progUid) { _ppProto = null; return; }
+  if(_builderMode === 'template') return;
+  var pid = String(_progPatient.id);
+  if(_ppProto && _ppProto.pid === pid) return;   // déjà chargé pour ce patient
+  _ppProtoEnCours = true;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + pid
+    + '&praticien_id=eq.' + _progUid + '&status=eq.active&select=*&order=created_at.desc&limit=1',
+    { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(pps){
+    if(String((_progPatient||{}).id) !== pid) return null;   // le patient a changé entre-temps
+    if(!pps || !pps.length){ _ppProto = { pid:pid }; return null; }
+    var pp = pps[0];
+    var proto = _getAllProtocols().find(function(p){ return String(p.id) === String(pp.protocol_id); });
+    if(!proto){ _ppProto = { pid:pid }; return null; }
+    var phase = (proto.phases || []).find(function(x){ return x.id === pp.current_phase_id; });
+    if(!phase){ _ppProto = { pid:pid }; return null; }
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=*',
+      { headers: _sbHeaders() })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(rows){
+        if(String((_progPatient||{}).id) !== pid) return;
+        var ch = {};
+        (rows || []).forEach(function(x){
+          if(!ch[x.phase_id]) ch[x.phase_id] = {};
+          ch[x.phase_id][x.criteria_index] = !!x.checked;
+        });
+        /* Le cache partagé sert à _protoSetCheck : on le sème pour que le
+           coche depuis la barre latérale sache où écrire. */
+        if(!_protoPatientData[proto.id]) _protoPatientData[proto.id] = { checks:{}, checkedAt:{}, seancesStats:{} };
+        _protoPatientData[proto.id].pp = pp;
+        _protoPatientData[proto.id].checks = ch;
+        _ppProto = { pid:pid, pp:pp, proto:proto, phase:phase, checks:ch };
+      });
+  })
+  .catch(function(){ _ppProto = { pid:pid }; })
+  .then(function(){ _ppProtoEnCours = false; try { _renderPanneauPatient(); } catch(ex){} });
+}
+/* La carte « Protocole en cours ». Les critères passent par la bascule des
+   PROTOCOLES, qui enregistre en base — pas par celle des cycles. */
+function _ppProtoHtml(){
+  var p = _ppProto;
+  if(!p || !p.proto || !p.phase) return '';
+  var crits = p.phase.exitCriteria || p.phase.criteria || [];
+  var ch = (p.checks && p.checks[p.phase.id]) || {};
+  var faits = crits.filter(function(_, i){ return ch[i]; }).length;
+  var h = '<div class="pp-carte"><div class="pp-tete">Protocole en cours'
+        + '<button type="button" onclick="openProtoPanel()">Protocoles</button></div>'
+        + '<div class="pp-val">' + escH(p.proto.name || 'Protocole') + '</div>'
+        + '<div class="pp-sub">' + escH(p.phase.name || 'Phase')
+        + (crits.length ? ' · ' + faits + ' / ' + crits.length + ' critère' + (crits.length > 1 ? 's' : '') : '')
+        + '</div>';
+  h += crits.length
+    ? '<div class="pp-crits">' + crits.map(function(t, i){
+        return _ppCritereLigneHtml(t, !!ch[i],
+          "_protoCheckboxChange(this,'" + escJS(String(p.proto.id)) + "','" + escJS(String(p.phase.id)) + "'," + i + ")");
+      }).join('') + '</div>'
+    : '<div class="pp-crit-fin">Aucun critère de sortie sur cette phase.</div>';
+  return h + '</div>';
+}
 function _panneauPatientHtml(){
   if(!_progPatient) return '';
   var auj = new Date(); auj.setHours(0,0,0,0);
@@ -8500,12 +8595,17 @@ function _panneauPatientHtml(){
          + '<div class="pp-val">' + escH(c.cy.nom || 'Cycle') + '</div>'
          + '<div class="pp-sub">' + sub + '</div>'
          + '<div class="pp-barre"><i style="width:' + pc + '%;background:' + coul + '"></i></div>'
+         + _ppCycleCriteresHtml(c.cy)
          + '</div>';
     });
   } else h += '<div class="pp-vide">Aucun cycle en cours.</div>';
   /* Seul acces aux cycles : on y cree, pas seulement on y consulte (decision du praticien). */
   h += '<button type="button" class="pp-ajout" onclick="_ppNouveauCycle()">+ Nouveau cycle</button>';
   h += '</div>';
+  /* Le protocole se charge une fois par patient ; la carte apparaît quand la
+     réponse arrive. */
+  try { _ppChargerProto(); } catch(ex){}
+  h += _ppProtoHtml();
   h += '<div class="pp-carte pp-ech"><div class="pp-tete">Échéances</div><div id="ppEchSlot"></div><div class="pp-vide" id="ppEchVide">Aucune échéance à venir.</div></div>';
   // La charge — memes calculs que le bilan
   var a = _calcACWR(_buildUaMap()), z = _zoneAcwrFr(a.ratio);
@@ -10125,7 +10225,11 @@ function _protoCheckboxChange(el, protoId, phaseId, idx) {
 
 function _protoSetCheck(protoId, phaseId, idx, checked) {
   var data = _protoPatientData[protoId];
-  if(!data) return; /* sécurité : pas de patient sélectionné */
+  /* Coché depuis la BARRE LATÉRALE, fenêtre Protocoles jamais ouverte : le
+     cache n'existe pas encore, et le coche se perdait en silence. On le crée —
+     la suite sait auto-assigner le protocole si besoin. */
+  if(!data && _progPatient) data = _protoPatientData[protoId] = { checks:{}, checkedAt:{}, seancesStats:{} };
+  if(!data) return; /* pas de patient sélectionné */
   var now = new Date().toISOString();
 
   /* Mise à jour cache local immédiate (pour affichage DOM) */

@@ -181,6 +181,13 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 /* Un bloc par cycle en cours : deux peuvent tourner en meme temps, et collés
    ils se liraient comme un seul (qualite/cycles-sidebar-cas.js). */
 .pp-cycle + .pp-cycle { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+/* Critères cochables sur place — cycles ET protocoles partagent la ligne. */
+.pp-crits { margin-top:9px; display:flex; flex-direction:column; gap:2px; }
+.pp-crit { display:flex; align-items:flex-start; gap:7px; font-size:var(--fs-xs); color:var(--text2);
+  line-height:1.35; cursor:pointer; padding:2px 0; }
+.pp-crit input { margin:1px 0 0; accent-color:var(--accent); flex-shrink:0; cursor:pointer; }
+.pp-crit.on span { color:var(--muted); text-decoration:line-through; }
+.pp-crit-fin { margin-top:8px; font-size:var(--fs-xs); color:var(--muted); font-style:italic; }
 .pp-barre { height:5px; border-radius:3px; background:var(--surface2); margin-top:8px; overflow:hidden; }
 .pp-barre i { display:block; height:100%; border-radius:3px; }
 .pp-ligne { display:flex; align-items:center; gap:6px; padding:6px 0; font-size:var(--fs-sm); cursor:pointer; }
@@ -4991,6 +4998,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260926c"></script>
+<script src="js/prog-main.js?v=20260926d"></script>
 </body>
 </html>

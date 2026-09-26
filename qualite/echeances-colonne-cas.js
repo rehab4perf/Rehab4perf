@@ -61,7 +61,14 @@ console.log('\nLe rendu de la colonne');
 const rp = fm('_renderPanneauPatient');
 const i1 = rp.indexOf('_garerEcheances()'), i2 = rp.indexOf('innerHTML = _panneauPatientHtml()'), i3 = rp.indexOf('_placerEcheances()'), i4 = rp.indexOf('_renderEcheances()');
 ok('la bande est mise à l\'abri AVANT la réécriture, replacée et redessinée APRÈS', i1 > 0 && i1 < i2 && i2 < i3 && i3 < i4, [i1, i2, i3, i4].join(' < '));
-ok('la carte se place entre le cycle et la charge', /Nouveau cycle<\/button>';\n\s*h \+= '<\/div>';\n\s*h \+= '<div class="pp-carte pp-ech"><div class="pp-tete">Échéances<\/div><div id="ppEchSlot"><\/div><div class="pp-vide" id="ppEchVide">Aucune échéance à venir\.<\/div><\/div>';/.test(fm('_panneauPatientHtml')));
+/* La carte « Protocole en cours » s'est intercalée le 2026-09-26
+   (qualite/sidebar-criteres-cas.js) : ce qui compte reste l'ORDRE — cycles,
+   protocole, échéances, charge — pas la contiguïté du texte. */
+ok('la carte se place entre le cycle et la charge', (() => {
+  const s = fm('_panneauPatientHtml');
+  const a = s.indexOf('Nouveau cycle'), b = s.indexOf('pp-carte pp-ech'), d = s.indexOf('_calcACWR');
+  return a > 0 && a < b && b < d;
+})(), [fm('_panneauPatientHtml').indexOf('Nouveau cycle'), fm('_panneauPatientHtml').indexOf('pp-carte pp-ech'), fm('_panneauPatientHtml').indexOf('_calcACWR')].join(' < '));
 ok('sans échéance, la carte le dit (le rendu de la bande pilote le message)', /var _vide = document\.getElementById\('ppEchVide'\);\s*if\(_vide && _vide\.style\) _vide\.style\.display = liste\.length \? 'none' : '';/.test(fm('_renderEcheances')));
 ok('au changement de largeur, la bande suit', /_mqActionsMobile\.addEventListener\('change', _placerEcheances\)/.test(pmain));
 

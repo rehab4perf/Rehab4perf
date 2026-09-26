@@ -56,11 +56,18 @@ function contexte(etat) {
     _progPatient: { prenom: 'Zied', nom: 'Ben Yahmed' },
     _cycles: [{ nom: 'Endurance de force', startDate: iso(-10), duree: 6, color: '#2B5FA6' }],
     _cycleColors: {}, _cloudCalEvents: CAL, _buildUaMap: () => UA,
-    escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+    /* Le protocole en cours : sans uid, _ppChargerProto sort sans rien lire et
+       la carte ne s'affiche pas — c'est l'état de ce banc, qui teste le reste. */
+    _ppProto: null, _ppProtoEnCours: false, _progUid: null,
+    escJS: s => String(s || '').replace(/'/g, "\\'")
   }, etat));
   vm.runInContext(['_dateStr', '_calcACWR', '_bcFmt', '_fbEstRetourPatient', '_fbDouleur', '_nomSeancePropre', '_libelleSeance',
     /* La carte lit _cyclesEnCours depuis le 2026-09-26 : critères compris
        (qualite/cycles-en-cours-cas.js). */
+    /* La carte lit aussi le protocole en cours depuis le 2026-09-26
+       (qualite/sidebar-criteres-cas.js). */
+    '_ppCritereLigneHtml', '_ppCycleCriteresHtml', '_ppProtoHtml', '_ppChargerProto',
     '_cyclePhases', '_cyclePhaseIsDone', '_cyclePhaseCurrentIndex', '_cycleComputeEndDate',
     '_cycleIsDone', '_cycleIsCurrent', '_cyclesEnCours',
     '_cyclesDuJour', '_cycleDuJour', '_zoneAcwrFr', '_panneauPatientHtml'].map(src).join('\n'), c);
