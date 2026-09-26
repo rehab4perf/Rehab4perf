@@ -149,7 +149,15 @@ console.log('\nLa liste replie le passé');
   const l = fm('renderCycleList');
   ok('les terminés sont comptés à part', /_cyclesTermines\(/.test(l), l.slice(0, 400));
   ok('… et repliés par défaut', /_cyclePlieTermines/.test(l), l.slice(0, 400));
-  ok('la ligne de repli dit combien', /cycle-plies/.test(l) || /termin/i.test(l), l.slice(0, 600));
+  ok('la ligne de repli dit combien', /cycle-plies/.test(l), l.slice(0, 600));
+  /* « replier les 1 cycle terminé » — vu en ligne. Le singulier se dit
+     autrement, il ne se fabrique pas en retirant les « s ». */
+  /* « replier les 1 cycle terminé » — vu en ligne. Le singulier se dit
+     autrement, il ne se fabrique pas en retirant les « s » : les deux
+     formulations doivent exister en toutes lettres dans le code. */
+  ok('… et elle s\'accorde au singulier',
+     l.indexOf('replier le cycle terminé') > 0 && l.indexOf('cycles terminés') > 0,
+     'une seule formulation : le singulier ou le pluriel sonnera faux');
   ok('le cycle EN COURS n\'est jamais replié', /_cycleIsCurrent\(/.test(l) || /_cyclesTermines\(/.test(l));
   /* Le glisser-deposer travaille par ID (_cycleDrop cherche par findIndex sur
      l'id) : le pliage ne peut donc pas deplacer le mauvais cycle. On le

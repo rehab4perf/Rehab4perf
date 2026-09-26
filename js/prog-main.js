@@ -1617,8 +1617,9 @@ function renderCycleList(){
         +(sem ? ' <span class="cycle-plies-sem">· '+sem+' sem.</span>' : '')+'</button>';
     } else if(finis.length && finis.length < _cycles.length){
       h+='<button type="button" class="cycle-plies" onclick="_cyclePlierBasculer()">'
-        +'<span class="cycle-plies-fl">\u25BE</span> replier les '+finis.length+' cycle'+(finis.length>1?'s':'')
-        +' terminé'+(finis.length>1?'s':'')+'</button>';
+        +'<span class="cycle-plies-fl">\u25BE</span> '
+        +(finis.length>1 ? 'replier les '+finis.length+' cycles terminés' : 'replier le cycle terminé')
+        +'</button>';
     }
     h+='<div class="cycle-list">';
     _cycles.forEach(function(c){
