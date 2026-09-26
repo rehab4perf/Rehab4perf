@@ -87,6 +87,30 @@ ok('la sortie de secours : _protoSetCheck ne perd plus le coche faute de cache',
   ok('… et il redessine quand la réponse arrive', /_renderPanneauPatient\(/.test(l));
   ok('… une réponse pour un AUTRE patient est ignorée', /_ppProto(\.pid|Pid)/.test(l) || /pid !== /.test(l), l.slice(0, 400));
 }
+/* Vu en ligne le 2026-09-26 : deux critères cochés, la carte annonçait
+   « 1 / 4 ». Le compteur ne bougeait qu'au rechargement, parce que rien ne
+   redessinait la barre après un coche de PROTOCOLE — et parce que la carte
+   lisait SA copie des cases (_ppProto.checks) au lieu du cache partagé que
+   _protoSetCheck met à jour. Corriger l'un sans l'autre laisse le décalage :
+   redessiner une copie périmée n'affiche rien de neuf. */
+console.log('\nLe compteur suit le clic');
+ok('_protoSetCheck redessine la barre latérale', /_renderPanneauPatient\(/.test(fm('_protoSetCheck')),
+   'le compteur reste sur l\'état d\'avant le clic');
+ok('la carte lit le cache PARTAGÉ, pas sa propre copie', (() => {
+  const k = vm.createContext({ escH: x => String(x || ''), escJS: x => String(x || ''),
+    _protoPatientData: { lca: { checks: { p1: { 0: true, 1: true } } } },
+    /* la copie de la carte est restée en arrière : c'est l'état d'après un clic */
+    _ppProto: { proto: { id: 'lca', name: 'LCA' }, phase: { id: 'p1', name: 'Phase 1', criteria: ['a', 'b', 'c', 'd'] },
+                checks: { p1: { 0: true } } } });
+  vm.runInContext([fm('_ppCritereLigneHtml'), fm('_ppProtoHtml')].join('\n'), k);
+  const t = k._ppProtoHtml();
+  return /2 \/ 4 critères/.test(t) && (t.match(/ checked/g) || []).length === 2;
+})(), (() => { const k = vm.createContext({ escH: x => String(x || ''), escJS: x => String(x || ''),
+    _protoPatientData: { lca: { checks: { p1: { 0: true, 1: true } } } },
+    _ppProto: { proto: { id: 'lca', name: 'LCA' }, phase: { id: 'p1', name: 'Phase 1', criteria: ['a','b','c','d'] }, checks: { p1: { 0: true } } } });
+  vm.runInContext([fm('_ppCritereLigneHtml'), fm('_ppProtoHtml')].join('\n'), k);
+  return (k._ppProtoHtml().match(/\d+ \/ \d+ critères/) || ['?'])[0]; })());
+
 ok('la carte est posée dans la colonne', /_ppProtoHtml\(\)/.test(fm('_panneauPatientHtml')), 'la carte n\'est pas rendue');
 ok('le style des critères existe', /\.pp-crit\b/.test(html), 'CSS absent');
 

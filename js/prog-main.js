@@ -8535,7 +8535,13 @@ function _ppProtoHtml(){
   var p = _ppProto;
   if(!p || !p.proto || !p.phase) return '';
   var crits = p.phase.exitCriteria || p.phase.criteria || [];
-  var ch = (p.checks && p.checks[p.phase.id]) || {};
+  /* Les cases se lisent dans le cache PARTAGÉ, jamais dans une copie : c'est
+     lui que _protoSetCheck met à jour au clic. La carte lisait _ppProto.checks
+     et restait donc sur l'état d'avant — « 1 / 4 » avec deux cases cochées,
+     vu en ligne le 2026-09-26. _ppChargerProto le sème avant de poser
+     _ppProto : il est toujours là quand cette carte se dessine. */
+  var pd = _protoPatientData[p.proto.id];
+  var ch = (pd && pd.checks && pd.checks[p.phase.id]) || {};
   var faits = crits.filter(function(_, i){ return ch[i]; }).length;
   var h = '<div class="pp-carte"><div class="pp-tete">Protocole en cours'
         + '<button type="button" onclick="openProtoPanel()">Protocoles</button></div>'
@@ -10265,6 +10271,11 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
       }
     });
   }
+  /* La barre latérale montre les mêmes critères : elle se redessine ici, AVANT
+     les sorties précoces plus bas (un protocole hors de PROTOCOLS_REF les
+     emprunte) — sinon son compteur reste sur l'état d'avant le clic. */
+  try { _renderPanneauPatient(); } catch(ex){}
+
   /* Mise à jour DOM — classe + date inline */
   var ciEl = document.getElementById('proto-ci-'+protoId+'-'+phaseId+'-'+idx);
   if(ciEl){
