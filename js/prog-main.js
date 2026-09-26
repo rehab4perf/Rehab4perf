@@ -675,7 +675,14 @@ function _cycleIsCurrent(cycles, idx, today){
   var c = cycles[idx];
   if(c.mode === 'criteres'){
     if(_cycleIsDone(c, today)) return false;
-    for(var i=0;i<idx;i++){ if(!_cycleIsDone(cycles[i], today)) return false; }
+    /* Seuls les cycles À CRITÈRES qui précèdent bloquent : un cycle daté
+       encore en route est l'AUTRE voie, et les deux avancent en parallèle.
+       Le blocage croisé avait sauté côté athlète et pas ici — c'est ce qui
+       faisait diverger les deux écrans (qualite/cycles-en-cours-cas.js). */
+    for(var i=0;i<idx;i++){
+      if(cycles[i].mode !== 'criteres') continue;
+      if(!_cycleIsDone(cycles[i], today)) return false;
+    }
     return true;
   }
   if(!c.startDate) return false;
@@ -689,6 +696,27 @@ function _cycleIsCurrent(cycles, idx, today){
    la séquence, pas un calcul indépendant par ligne (sinon un cycle durée
    déjà daté peut s'afficher « en cours » avant qu'un cycle critères qui
    le précède ne soit terminé). */
+/* TOUS les cycles en cours, critères COMPRIS. La carte de la barre latérale
+   lisait les dates seules et ne pouvait donc pas voir un cycle à critères — il
+   n'en a pas. Elle annonçait « Endurance de force » pendant que le
+   planificateur marquait « Tendon EN COURS » : deux écrans, deux réponses à la
+   même question (qualite/cycles-en-cours-cas.js).
+   `deb` et `fin` restent nulles pour un cycle à critères : il n'a pas de
+   bornes, et lui en inventer serait mentir sur ce qu'on sait. */
+function _cyclesEnCours(today){
+  var out = [];
+  for(var i=0;i<_cycles.length;i++){
+    if(!_cycleIsCurrent(_cycles, i, today)) continue;
+    var cy = _cycles[i], deb = null, fin = null;
+    if(cy.mode !== 'criteres' && cy.startDate){
+      deb = new Date(cy.startDate+'T00:00:00'); deb.setHours(0,0,0,0);
+      var f = cy.endDate || _cycleComputeEndDate(cy.startDate, cy.duree);
+      if(f){ fin = new Date(f+'T00:00:00'); fin.setHours(0,0,0,0); }
+    }
+    out.push({ cy:cy, i:i, deb:deb, fin:fin });
+  }
+  return out;
+}
 function _cycleCurrentIndex(cycles){
   var today = new Date(); today.setHours(0,0,0,0);
   for(var i=0;i<cycles.length;i++){ if(_cycleIsCurrent(cycles, i, today)) return i; }
@@ -1123,7 +1151,10 @@ var _CYCLE_ICO_CIRCLE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="n
 function _cycleListRowHtml(c){
   var col = c.color || _cycleColor(c.nom);
   var idx = _cycles.findIndex(function(x){ return x.id===c.id; });
-  var isCurrent = idx>=0 && idx === _cycleCurrentIndex(_cycles);
+  /* Plusieurs cycles peuvent être en cours — un à critères et un daté. Le
+     badge se posait sur le PREMIER seulement (qualite/cycles-en-cours-cas.js). */
+  var _auj = new Date(); _auj.setHours(0,0,0,0);
+  var isCurrent = idx>=0 && _cycleIsCurrent(_cycles, idx, _auj);
   var currentBadge = isCurrent ? '<span class="cycle-current-badge">EN COURS</span>' : '';
   var sub;
   if(c.mode === 'criteres'){
@@ -8384,17 +8415,34 @@ function _panneauPatientHtml(){
   };
   var h = '';
   // Le cycle en cours
-  var cs = _cyclesDuJour(auj);
+  var cs = _cyclesEnCours(auj);
   h += '<div class="pp-carte"><div class="pp-tete">' + (cs.length > 1 ? 'Cycles en cours' : 'Cycle en cours')
      + '<button type="button" onclick="openCycles()">Cycles</button></div>';
   if(cs.length){
     cs.forEach(function(c){
-      var n = Math.max(1, Math.ceil((Math.round((c.fin - c.deb)/J) + 1)/7));
-      var k = Math.min(n, Math.floor(Math.round((auj - c.deb)/J)/7) + 1);
+      var coul = c.cy.color || _cycleColors[c.cy.nom] || '#2B5FA6';
+      var sub, pc;
+      if(c.cy.mode === 'criteres'){
+        /* Un cycle à critères n'a pas de semaines : il a des phases. Lui
+           afficher « Semaine 3 sur 6 » serait inventer une fin qu'on ignore. */
+        var phs = _cyclePhases(c.cy);
+        var faites = phs.filter(_cyclePhaseIsDone).length;
+        var cur = _cyclePhaseCurrentIndex(c.cy);
+        sub = phs.length
+          ? 'Phase ' + (cur < 0 ? phs.length : cur + 1) + ' sur ' + phs.length
+            + ' · ' + faites + ' / ' + phs.length + ' validée' + (faites > 1 ? 's' : '') + ' · durée variable'
+          : 'Durée variable · aucun critère saisi';
+        pc = phs.length ? Math.round(faites / phs.length * 100) : 0;
+      } else {
+        var n = Math.max(1, Math.ceil((Math.round((c.fin - c.deb)/J) + 1)/7));
+        var k = Math.min(n, Math.floor(Math.round((auj - c.deb)/J)/7) + 1);
+        sub = 'Semaine ' + k + ' sur ' + n + ' · jusqu’au ' + c.fin.getDate() + ' ' + MOIS[c.fin.getMonth()];
+        pc = Math.round(k/n*100);
+      }
       h += '<div class="pp-cycle">'
          + '<div class="pp-val">' + escH(c.cy.nom || 'Cycle') + '</div>'
-         + '<div class="pp-sub">Semaine ' + k + ' sur ' + n + ' · jusqu’au ' + c.fin.getDate() + ' ' + MOIS[c.fin.getMonth()] + '</div>'
-         + '<div class="pp-barre"><i style="width:' + Math.round(k/n*100) + '%;background:' + (c.cy.color || _cycleColors[c.cy.nom] || '#2B5FA6') + '"></i></div>'
+         + '<div class="pp-sub">' + sub + '</div>'
+         + '<div class="pp-barre"><i style="width:' + pc + '%;background:' + coul + '"></i></div>'
          + '</div>';
     });
   } else h += '<div class="pp-vide">Aucun cycle en cours.</div>';

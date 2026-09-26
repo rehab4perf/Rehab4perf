@@ -59,6 +59,10 @@ function contexte(etat) {
     escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }, etat));
   vm.runInContext(['_dateStr', '_calcACWR', '_bcFmt', '_fbEstRetourPatient', '_fbDouleur', '_nomSeancePropre', '_libelleSeance',
+    /* La carte lit _cyclesEnCours depuis le 2026-09-26 : critères compris
+       (qualite/cycles-en-cours-cas.js). */
+    '_cyclePhases', '_cyclePhaseIsDone', '_cyclePhaseCurrentIndex', '_cycleComputeEndDate',
+    '_cycleIsDone', '_cycleIsCurrent', '_cyclesEnCours',
     '_cyclesDuJour', '_cycleDuJour', '_zoneAcwrFr', '_panneauPatientHtml'].map(src).join('\n'), c);
   return c;
 }

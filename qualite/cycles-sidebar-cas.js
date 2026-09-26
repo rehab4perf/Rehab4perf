@@ -72,7 +72,10 @@ ok('le ruban continue de l\'employer', /_cycleDuJour\(d\)/.test(fm('_cycleRubanH
 console.log('\nCe que la carte montre');
 {
   const carte = pmain.slice(pmain.indexOf("var h = '';\n  // Le cycle"), pmain.indexOf("pp-carte pp-ech"));
-  ok('elle parcourt TOUS les cycles', /_cyclesDuJour\(/.test(carte) && /forEach/.test(carte), carte.slice(0, 300));
+  /* Elle lit _cyclesEnCours depuis le 2026-09-26 : les cycles à CRITÈRES n'ont
+     pas de dates, et les dates seules ne pouvaient pas les voir
+     (qualite/cycles-en-cours-cas.js). */
+  ok('elle parcourt TOUS les cycles en cours', /_cyclesEnCours\(/.test(carte) && /forEach/.test(carte), carte.slice(0, 300));
   ok('le titre s\'accorde au nombre', /Cycles? en cours/.test(carte) && /length > 1/.test(carte), carte.slice(0, 400));
   ok('chacun garde sa semaine et sa couleur', (carte.match(/pp-barre/g) || []).length >= 1 && /cy\.color/.test(carte));
   ok('aucun cycle : le message reste', /Aucun cycle en cours/.test(carte));
