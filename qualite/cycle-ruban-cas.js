@@ -33,7 +33,9 @@ const fm = fnDe(pmain);
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');   // comme escH (prog-data.js)
 
 const ctx = vm.createContext({ escH: esc, _cycleColors: {}, _cycles: [] });
-try { vm.runInContext(fm('_cycleDuJour') + fm('_cycleRubanHtml'), ctx); }
+/* `_cycleDuJour` s'appuie sur `_cyclesDuJour` depuis le 2026-09-26 : la carte
+   de la barre latérale les montre TOUS (qualite/cycles-sidebar-cas.js). */
+try { vm.runInContext(fm('_cyclesDuJour') + fm('_cycleDuJour') + fm('_cycleRubanHtml'), ctx); }
 catch (e) { ok('les fonctions se chargent', false, e.message); }
 const jour = iso => { const d = new Date(iso + 'T00:00:00'); d.setHours(0, 0, 0, 0); return d; };
 const semaine = lundi => { const out = [], d = jour(lundi); for (let i = 0; i < 7; i++) { out.push(new Date(d)); d.setDate(d.getDate() + 1); } return out; };

@@ -731,7 +731,12 @@ function _dayCycleStyle(cellDate){ var i=_dayCycleInfo(cellDate); return i?i.sty
    jours, avec l'avancement (« sem. 3/6 ») ; un cycle qui change en cours de
    semaine donne deux segments. Retenu par le praticien sur le prototype du
    2026-09-13 (qualite/cycle-ruban-cas.js). La teinte des cases reste. */
-function _cycleDuJour(date){
+/* TOUS les cycles qui couvrent la date. Deux peuvent tourner en meme temps —
+   un cycle a criteres et un cycle date sont vrais ensemble, c'est l'angle mort
+   deja referme cote athlete (qualite/cycles-paralleles-cas.js). La carte de la
+   barre laterale n'en montrait qu'un (qualite/cycles-sidebar-cas.js). */
+function _cyclesDuJour(date){
+  var out=[];
   for(var i=0;i<_cycles.length;i++){
     var cy=_cycles[i];
     if(!cy.startDate) continue;
@@ -739,10 +744,13 @@ function _cycleDuJour(date){
     var fin;
     if(cy.endDate){ fin=new Date(cy.endDate+'T00:00:00'); fin.setHours(0,0,0,0); }
     else { fin=new Date(deb); fin.setDate(fin.getDate()+cy.duree*7-1); }
-    if(date>=deb && date<=fin) return { cy:cy, i:i, deb:deb, fin:fin };
+    if(date>=deb && date<=fin) out.push({ cy:cy, i:i, deb:deb, fin:fin });
   }
-  return null;
+  return out;
 }
+/* Le PREMIER : le ruban du calendrier n'a pas la place d'en empiler plusieurs,
+   et cette decision-la n'a pas ete prise. */
+function _cycleDuJour(date){ return _cyclesDuJour(date)[0] || null; }
 /* `jours` : les 7 dates d'une rangee (null hors du mois). Les semaines d'un
    cycle se comptent par blocs de 7 jours depuis son debut, lues au DERNIER
    jour du segment : un cycle demarre un jeudi donne 1, 2, 3… et non 1, 1, 2. */
@@ -8376,14 +8384,19 @@ function _panneauPatientHtml(){
   };
   var h = '';
   // Le cycle en cours
-  var c = _cycleDuJour(auj);
-  h += '<div class="pp-carte"><div class="pp-tete">Cycle en cours<button type="button" onclick="openCycles()">Cycles</button></div>';
-  if(c){
-    var n = Math.max(1, Math.ceil((Math.round((c.fin - c.deb)/J) + 1)/7));
-    var k = Math.min(n, Math.floor(Math.round((auj - c.deb)/J)/7) + 1);
-    h += '<div class="pp-val">' + escH(c.cy.nom || 'Cycle') + '</div>'
-       + '<div class="pp-sub">Semaine ' + k + ' sur ' + n + ' · jusqu’au ' + c.fin.getDate() + ' ' + MOIS[c.fin.getMonth()] + '</div>'
-       + '<div class="pp-barre"><i style="width:' + Math.round(k/n*100) + '%;background:' + (c.cy.color || _cycleColors[c.cy.nom] || '#2B5FA6') + '"></i></div>';
+  var cs = _cyclesDuJour(auj);
+  h += '<div class="pp-carte"><div class="pp-tete">' + (cs.length > 1 ? 'Cycles en cours' : 'Cycle en cours')
+     + '<button type="button" onclick="openCycles()">Cycles</button></div>';
+  if(cs.length){
+    cs.forEach(function(c){
+      var n = Math.max(1, Math.ceil((Math.round((c.fin - c.deb)/J) + 1)/7));
+      var k = Math.min(n, Math.floor(Math.round((auj - c.deb)/J)/7) + 1);
+      h += '<div class="pp-cycle">'
+         + '<div class="pp-val">' + escH(c.cy.nom || 'Cycle') + '</div>'
+         + '<div class="pp-sub">Semaine ' + k + ' sur ' + n + ' · jusqu’au ' + c.fin.getDate() + ' ' + MOIS[c.fin.getMonth()] + '</div>'
+         + '<div class="pp-barre"><i style="width:' + Math.round(k/n*100) + '%;background:' + (c.cy.color || _cycleColors[c.cy.nom] || '#2B5FA6') + '"></i></div>'
+         + '</div>';
+    });
   } else h += '<div class="pp-vide">Aucun cycle en cours.</div>';
   /* Seul acces aux cycles : on y cree, pas seulement on y consulte (decision du praticien). */
   h += '<button type="button" class="pp-ajout" onclick="_ppNouveauCycle()">+ Nouveau cycle</button>';

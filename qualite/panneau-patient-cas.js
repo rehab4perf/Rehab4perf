@@ -59,7 +59,7 @@ function contexte(etat) {
     escH: s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }, etat));
   vm.runInContext(['_dateStr', '_calcACWR', '_bcFmt', '_fbEstRetourPatient', '_fbDouleur', '_nomSeancePropre', '_libelleSeance',
-    '_cycleDuJour', '_zoneAcwrFr', '_panneauPatientHtml'].map(src).join('\n'), c);
+    '_cyclesDuJour', '_cycleDuJour', '_zoneAcwrFr', '_panneauPatientHtml'].map(src).join('\n'), c);
   return c;
 }
 let h = '';

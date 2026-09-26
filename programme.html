@@ -178,6 +178,9 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .pp-val { font-size:var(--fs-xl); font-weight:800; color:var(--navy); letter-spacing:-.02em; line-height:1.25; }
 .pp-val .bc-chip { vertical-align:middle; letter-spacing:0; }
 .pp-sub { font-size:var(--fs-xs); color:var(--muted); margin-top:2px; }
+/* Un bloc par cycle en cours : deux peuvent tourner en meme temps, et collés
+   ils se liraient comme un seul (qualite/cycles-sidebar-cas.js). */
+.pp-cycle + .pp-cycle { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
 .pp-barre { height:5px; border-radius:3px; background:var(--surface2); margin-top:8px; overflow:hidden; }
 .pp-barre i { display:block; height:100%; border-radius:3px; }
 .pp-ligne { display:flex; align-items:center; gap:6px; padding:6px 0; font-size:var(--fs-sm); cursor:pointer; }
@@ -4973,6 +4976,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260924j"></script>
+<script src="js/prog-main.js?v=20260926a"></script>
 </body>
 </html>
