@@ -2432,7 +2432,13 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
    (qualite/echeance-praticien-cas.js) */
 .ech-form .cal-note-save { background:var(--amrap); }
 .ech-form .cal-note-save:hover { filter:brightness(.92); }
-.ech-form-dates { display:flex; gap:8px; }
+/* Le formulaire d'échéance respire davantage que celui de la note : il tient
+   en quatre éléments, et ils étaient collés (demande du praticien,
+   2026-09-26). L'espacement est porté par le conteneur, pas par des marges
+   sur chaque enfant — deux marges voisines se recouvrent, un `gap` non. */
+.ech-form { display:flex; flex-direction:column; gap:14px; }
+.ech-form .cal-note-inp { padding:11px 12px; }
+.ech-form-dates { display:flex; gap:10px; }
 .ech-form-dates label { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
 /* Le libelle est UN element : dans une colonne flex, deux enfants font deux
    lignes, et la colonne la plus haute decalait le champ de l'autre. */
@@ -2444,7 +2450,9 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
    pastille, pas par l'icone. */
 .ech-ico-svg { display:inline-flex; align-items:center; justify-content:center; }
 .ech-ico-svg svg { width:1.05em; height:1.05em; display:block; }
-.ech-form-aide { font-size:var(--fs-xs); color:var(--muted); margin:2px 0 2px; }
+/* Elle explique le champ « Fin » juste au-dessus : elle s'en rapproche, pour
+   qu'on lise l'un avec l'autre plutôt que comme deux blocs séparés. */
+.ech-form-aide { font-size:var(--fs-xs); color:var(--muted); margin:-6px 0 0; }
 /* ── Sélecteur de type de note ── */
 .cal-note-type-row { display:flex; gap:6px; margin-bottom:10px; }
 .cal-note-type-btn {
@@ -5042,6 +5050,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260926k"></script>
+<script src="js/prog-main.js?v=20260926l"></script>
 </body>
 </html>

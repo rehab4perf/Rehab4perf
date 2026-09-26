@@ -145,9 +145,28 @@ console.log('\nPasser à la phase suivante');
      /r4pConfirmer\(/.test(f), 'un clic suffirait à faire avancer le protocole');
   ok('… et passe par la bascule déjà écrite, qui journalise', /_protoUpdatePhase\(/.test(f),
      'une seconde écriture de phase divergerait de l\'historique');
-  ok('… puis relit le protocole, sinon la carte garde l\'ancienne phase',
-     /_ppProto = null/.test(f) && /_ppChargerProto\(/.test(f), f);
+  /* IL FALLAIT CLIQUER DEUX FOIS (vu par le praticien, 2026-09-26). La
+     première version relisait la base juste après avoir lancé le PATCH :
+     une course, que la relecture gagnait presque toujours — elle rapportait
+     donc l'ANCIENNE phase, et le clic semblait sans effet.
+
+     La carte se met désormais à jour SUR PLACE, sans attendre le réseau :
+     les cases de toutes les phases sont déjà en cache (_ppChargerProto lit
+     protocol_criteria_checks pour le protocole entier, pas pour une phase),
+     il n'y a donc rien à aller chercher. */
+  ok('… et NE RELIT PAS la base dans la foulée : c\'est la course qui coûtait un clic',
+     !/_ppChargerProto\(/.test(f), 'la relecture double le clic');
+  ok('la carte bascule sur place, d\'après le cache',
+     /\bphase *= *suiv\b/.test(f) && /_renderPanneauPatient\(/.test(f), f.slice(0, 400));
+  ok('… et le cache partagé suit, sinon la fenêtre Protocoles diverge',
+     /current_phase_id *=/.test(f), f);
+  ok('si l\'écriture échoue, on REVIENT en arrière et on le dit',
+     /catch\(/.test(f) && /_showToast\(/.test(f), 'l\'écran annoncerait une phase que la base ignore');
 }
+/* Pour que l'appelant puisse savoir si l'ecriture a abouti, la bascule doit
+   rendre sa promesse. Sans elle, il n'y a aucun moyen de revenir en arriere. */
+ok('_protoUpdatePhase rend sa promesse', /return _fetchRetry\(/.test(fm('_protoUpdatePhase')),
+   'impossible de savoir si le changement de phase a été écrit');
 
 ok('la carte est posée dans la colonne', /_ppProtoHtml\(\)/.test(fm('_panneauPatientHtml')), 'la carte n\'est pas rendue');
 ok('le style des critères existe', /\.pp-crit\b/.test(html), 'CSS absent');

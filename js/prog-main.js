@@ -8808,12 +8808,32 @@ function _ppPhaseSuivante(protoId, phaseId){
              + ((suiv && (suiv.name || suiv.nom)) || 'la phase suivante') + ' ».',
     ok: 'Passer à la suite'
   }).then(function(oui){
-    if(!oui) return;
-    _protoUpdatePhase(protoId, phaseId);
-    /* `_ppChargerProto` sort tot quand le patient est deja charge : sans cette
-       remise a zero, elle ne relirait rien et la carte resterait en place. */
-    _ppProto = null;
-    try { _ppChargerProto(); } catch(ex){}
+    if(!oui || !suiv) return;
+    /* LA CARTE BASCULE TOUT DE SUITE, sans attendre le reseau. La premiere
+       version relisait la base juste apres avoir lance le PATCH : une course,
+       que la relecture gagnait presque toujours — elle rapportait donc
+       l'ANCIENNE phase, et il fallait cliquer une seconde fois.
+
+       Rien n'est a aller chercher : `_ppChargerProto` lit les cases du
+       protocole ENTIER, pas d'une phase, donc celles de la suivante sont deja
+       en cache. */
+    var avant = p.phase;
+    p.phase = suiv;
+    var pd = _protoPatientData[p.proto.id];
+    if(p.pp) p.pp.current_phase_id = suiv.id;
+    /* Le cache partage porte la meme ligne : sans cela, la fenetre Protocoles
+       resterait sur l'ancienne phase jusqu'a son prochain chargement. */
+    if(pd && pd.pp) pd.pp.current_phase_id = suiv.id;
+    try { _renderPanneauPatient(); } catch(ex){}
+    /* L'ecriture suit. Si elle echoue, on REVIENT : un ecran qui annonce une
+       phase que la base ignore est pire qu'un clic sans effet. */
+    _protoUpdatePhase(protoId, phaseId).catch(function(){
+      p.phase = avant;
+      if(p.pp) p.pp.current_phase_id = avant.id;
+      if(pd && pd.pp) pd.pp.current_phase_id = avant.id;
+      try { _renderPanneauPatient(); } catch(ex){}
+      if(typeof _showToast === 'function') _showToast('Changement de phase non enregistré — réessayez.', true);
+    });
   });
 }
 window._ppPhaseSuivante = _ppPhaseSuivante;
@@ -10947,12 +10967,17 @@ function _protoUpdatePhase(protoId, phaseId) {
     var ph = proto && proto.phases ? proto.phases.find(function(p){ return p.id===phaseId; }) : null;
     history.push({ type:'phase_changed', at:now, phaseId:phaseId, phaseName: ph ? ph.name : null, note:null });
   }
-  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+  /* La promesse est RENDUE : l'appelant doit pouvoir savoir si l'ecriture a
+     abouti — c'est ce qui permet a la barre laterale de revenir en arriere
+     quand elle echoue (qualite/sidebar-criteres-cas.js). */
+  return _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
     method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
     body: JSON.stringify({ current_phase_id: phaseId||null, phase_started_at: phaseId ? now : null, updated_at: now, history: history })
   }).then(function(r){
     if(r.ok && data.pp){ data.pp.current_phase_id = phaseId||null; data.pp.history = history; renderProtocols(); }
-  }).catch(function(){ _showToast('Erreur mise à jour phase.', true); });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r;
+  });
 }
 
 /* ─── Ouvrir une phase dans le builder ──────────────────────── */
