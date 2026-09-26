@@ -718,7 +718,8 @@ const TESTS = {
     'ULNT ulnaire (ULNT 3)',
     /* Cluster de Wainner (2003). AJOUTES EN FIN : l'index est l'identite,
        les bilans enregistres en derivent. L'ordre d'AFFICHAGE les remet a
-       leur place clinique (_BL_ORDRE_DEFAUT). */
+       leur place, juste avant l'ULNT median qui ferme le cluster
+       (_BL_ORDRE_DEFAUT). */
     'Rotation cervicale active &lt; 60\u00b0 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Du côté atteint</span>',
     'Distraction cervicale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Soulagement des symptômes à la traction</span>',
     'Spurling A <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension + inclinaison homolatérale + compression ≈ 14 kg</span>',
@@ -1765,14 +1766,18 @@ function _initAllRomBars() {
    n'a aucune raison de s'afficher en derniere position.
 
    Le Scan neurologique le demande : les trois items du cluster de Wainner ont
-   ete ajoutes apres les ULNT, alors qu'ils se lisent avec l'ULNT median — qui
-   est le quatrieme item du cluster et le premier a faire, puisque negatif il
-   ecarte a lui seul. (qualite/cluster-wainner-cas.js) */
+   ete ajoutes apres les ULNT, alors qu'ils se lisent ensemble.
+
+   L'ULNT median FERME le cluster (decision du praticien, 2026-09-26) : il en
+   est le quatrieme item ET le premier des quatre ULNT, donc il fait charniere
+   — les quatre ULNT se suivent, 1, 2a, 2b, 3. Sa place a l'ecran ne change
+   rien a la regle : negatif, il ecarte, quel que soit son rang d'affichage.
+   (qualite/cluster-wainner-cas.js) */
 var _BL_ORDRE_DEFAUT = {
-  /* Arm Squeeze · cluster (ULNT 1, rotation, distraction, Spurling) · autres ULNT */
-  'tb-ep-irrit':   [0, 1, 5, 6, 7, 2, 3, 4],
-  'tb-ep-irrit-g': [0, 1, 5, 6, 7, 2, 3, 4],
-  'tb-ep-irrit-d': [0, 1, 5, 6, 7, 2, 3, 4]
+  /* Arm Squeeze · cluster (rotation, distraction, Spurling, ULNT 1) · ULNT 2a/2b/3 */
+  'tb-ep-irrit':   [0, 5, 6, 7, 1, 2, 3, 4],
+  'tb-ep-irrit-g': [0, 5, 6, 7, 1, 2, 3, 4],
+  'tb-ep-irrit-d': [0, 5, 6, 7, 1, 2, 3, 4]
 };
 function _blTestDisplayOrder(tbodyId, cfg) {
   var all = [];

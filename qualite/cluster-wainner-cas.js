@@ -88,9 +88,16 @@ console.log('\nL\'ordre d\'AFFICHAGE, découplé de l\'identité');
   ok('un ordre par défaut existe pour ce bloc', /_BL_ORDRE_DEFAUT|_blOrdreDefaut/.test(o + bjs.slice(0, 3000)) || /_BL_ORDRE_DEFAUT/.test(bjs),
      'les nouveaux tests resteraient en fin, après les ULNT hors cluster');
   const m = bjs.match(/_BL_ORDRE_DEFAUT\s*=\s*\{[\s\S]*?\}\s*;/);
-  ok('… et il place l\'ULNT médian juste après l\'Arm Squeeze',
-     !!m && /'tb-ep-irrit'\s*:\s*\[0\s*,\s*1\s*,/.test(m[0]),
-     m ? m[0].slice(0, 200) : 'absent');
+  /* L'ULNT médian FERME le cluster (décision du praticien) : il en est le
+     quatrième item et le premier des quatre ULNT, donc il fait charnière —
+     les quatre ULNT se suivent à l'écran. Sa place ne change rien à la
+     règle : négatif, il écarte, quel que soit son rang. */
+  ok('… l\'Arm Squeeze ouvre, et l\'ULNT médian ferme le cluster',
+     !!m && /'tb-ep-irrit'\s*:\s*\[0\s*,\s*5\s*,\s*6\s*,\s*7\s*,\s*1\s*,/.test(m[0]),
+     m ? m[0].slice(0, 220) : 'absent');
+  ok('… et les quatre ULNT se suivent',
+     !!m && /\[0, 5, 6, 7, 1, 2, 3, 4\]/.test(m[0]),
+     'un ULNT séparé des trois autres');
   ok('… un ordre par défaut ne PERD aucun test',
      /all\.forEach/.test(o) || /seen\[i\]/.test(o),
      'un test absent de l\'ordre disparaîtrait de l\'écran');
