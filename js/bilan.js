@@ -711,7 +711,7 @@ function _sbRetry(fn, _n) {
 // -- DATA -----------------------------------------------------
 const TESTS = {
   'tb-ep-irrit':{type:'ortho',items:[
-    'Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras > 3 = positif (Thoomes 2017)</span>',
+    'Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>',
     'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
     'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
     'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
@@ -735,7 +735,7 @@ const TESTS = {
     'External rotation lag sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Tenir la rotation externe max → Incapacité à tenir la position</span>',
     'Internal rotation lag sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Tenir la rotation interne max → Incapacité à tenir la position</span>',
   ]},
-    'tb-ep-fonc': {type:'fonc', items:['Extension thoracique (inspi + rétraction scap.)','Activation coiffe - préhension','Activation coiffe - pré-activation RE','Activation coiffe - contre résistance','Activation coiffe - chaîne croisée','Activation coiffe - bord ulnaire','Inhibition coiffe','Postériorisation GH','SRT (Shoulder Rotation Test)','SAT (Scapular Assistance Test)']},
+    'tb-ep-fonc': {type:'fonc', items:['Extension thoracique (inspi + rétraction scap.)','Activation coiffe - préhension','Activation coiffe - pré-activation RE','Activation coiffe - contre résistance','Activation coiffe - chaîne croisée','Activation coiffe - bord ulnaire','Inhibition coiffe','Postériorisation GH','SRT (Scapular Retraction Test)','SAT (Scapular Assistance Test)']},
   'tb-ep-ortho-mob':{type:'ortho',items:[
     'Mobilité scapulaire en DCL <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">ABD/ADD · Sonnette ext/int · Bascule ant/post → Comparaison controlatérale</span>',
     'Extension thoracique au mur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">❌ si incapacité à lever les coudes &gt; 90° en gardant contacts sacré, thoracique et crânial</span>',
@@ -747,8 +747,8 @@ const TESTS = {
     'Hawkins-Kennedy <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">RI passive max à 90° d\'élévation → Douleur (conflit sous-coracoïdien)</span>',
   ]},
   // Épaule bilatérale — tables simplifiées (flat, sans sous-en-têtes)
-  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras > 3 = positif (Thoomes 2017)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
-  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras > 3 = positif (Thoomes 2017)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
+  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
+  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
   'tb-ep-trau-g':{type:'ortho',items:[
     'Appréhension (ant.)','Relocation test','Appréhension post.','Sulcus Test',
     'Cross body adduction test','Palpation interligne AC',
