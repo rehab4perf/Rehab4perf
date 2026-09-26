@@ -2001,7 +2001,22 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
    rangees, noms de jours et rubans de cycle compris (qualite/cycle-ruban-cas.js). */
 .cal-grid > .cal-day { height:88px; }
 /* Le cycle en ruban, une fois par semaine, au-dessus de ses jours. */
-.cal-cycle-ruban { grid-column:1 / -1; display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:2px; }
+/* Le ruban garde ses 7 colonnes alignées sur les jours. L'étiquette du cycle
+   à critères se pose PAR-DESSUS, à droite : sans dates, il ne peut pas occuper
+   de colonnes, et un bandeau en flex aurait décalé le cycle daté de ses jours
+   (qualite/cycle-criteres-agenda-cas.js). */
+.cal-cycle-ruban { grid-column:1 / -1; display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:2px; position:relative; }
+.cal-cycle-crit { position:absolute; right:0; top:0; bottom:0; z-index:2; display:flex; align-items:baseline; gap:6px;
+  padding:1px 8px; border-radius:4px; background:var(--surface); border:1px solid; font-size:var(--fs-xs); line-height:1.5; white-space:nowrap; }
+.cal-cycle-crit b { font-weight:700; }
+.cal-cycle-crit span { font-weight:600; opacity:.75; }
+.cal-cycle-crit .fl { opacity:.55; }
+/* Sur les semaines ou l'etiquette est la, le « sem. k/n » du cycle date
+   passerait dessous : il s'efface, l'infobulle le porte toujours. */
+.cal-cycle-ruban.avec-crit .cal-cycle-seg:last-child span { display:none; }
+/* Bascule de phase, dans la case du jour — comme une seance. */
+.cal-jalon { font-size:var(--fs-2xs); font-weight:700; border-radius:4px; padding:1px 6px; margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cal-cycle-seg { display:flex; align-items:baseline; gap:6px; min-width:0; padding:1px 8px; border-radius:4px;
   font-size:var(--fs-xs); line-height:1.5; white-space:nowrap; overflow:hidden; }
 .cal-cycle-seg b { font-weight:700; overflow:hidden; text-overflow:ellipsis; }
@@ -4976,6 +4991,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260926b"></script>
+<script src="js/prog-main.js?v=20260926c"></script>
 </body>
 </html>

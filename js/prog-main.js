@@ -717,6 +717,38 @@ function _cyclesEnCours(today){
   }
   return out;
 }
+/* Le jour où une phase a basculé : la date du DERNIER critère coché. Chaque
+   critère stocke la sienne (`checkedAt`) — c'est un événement daté et vrai,
+   la seule chose que l'agenda peut dire et que la barre latérale ne dira
+   jamais, elle qui donne où l'on en est, pas quand on y est arrivé.
+   null tant que la phase n'est pas complète, et null aussi pour un critère
+   coché avant que `checkedAt` n'existe : on ne fabrique pas de date. */
+function _cyclePhaseValideeLe(ph){
+  var items = (ph && ph.criteria) || [];
+  if(!items.length) return null;
+  var max = null;
+  for(var i=0;i<items.length;i++){
+    var ck = ph.checks && ph.checks[i];
+    if(!ck || !ck.checked) return null;
+    if(!ck.checkedAt) return null;
+    var j = String(ck.checkedAt).slice(0,10);
+    if(!max || j > max) max = j;
+  }
+  return max;
+}
+/* Les bascules de phase tombées CE jour-là. */
+function _cycleJalonsDuJour(dateStr){
+  var out = [];
+  (_cycles || []).forEach(function(cy){
+    if(cy.mode !== 'criteres') return;
+    _cyclePhases(cy).forEach(function(p, i){
+      if(_cyclePhaseValideeLe(p) !== dateStr) return;
+      out.push({ texte: (p.nom || ('Phase ' + (i+1))) + ' validée',
+                 color: cy.color || _cycleColors[cy.nom] || '#52514E', cycle: cy.nom || 'Cycle' });
+    });
+  });
+  return out;
+}
 function _cycleCurrentIndex(cycles){
   var today = new Date(); today.setHours(0,0,0,0);
   for(var i=0;i<cycles.length;i++){ if(_cycleIsCurrent(cycles, i, today)) return i; }
@@ -789,8 +821,25 @@ function _cycleRubanHtml(jours){
     if(cur && c && c.i===cur.c.i && col===cur.fin+1){ cur.fin=col; cur.dFin=d; return; }
     if(c){ cur={ c:c, deb:col, fin:col, dFin:d }; segs.push(cur); } else cur=null;
   });
-  if(!segs.length) return '';
-  return '<div class="cal-cycle-ruban">'+segs.map(function(s){
+  /* Le cycle à CRITÈRES n'a pas de jours : il ne peut pas occuper des
+     colonnes. Il se pose en surimpression à droite du ruban — le ruban reste
+     aligné sur les colonnes de jours, ce qu'un bandeau en flex aurait décalé
+     (qualite/cycle-criteres-agenda-cas.js). */
+  var _auj = new Date(); _auj.setHours(0,0,0,0);
+  var _crit = '';
+  _cyclesEnCours(_auj).forEach(function(c){
+    if(c.cy.mode !== 'criteres' || _crit) return;
+    var phs = _cyclePhases(c.cy), cur = _cyclePhaseCurrentIndex(c.cy);
+    var hexC = c.cy.color || _cycleColors[c.cy.nom] || '#52514E';
+    var depuis = c.cy.startDate ? ' · depuis le ' + _fmtDateShort(c.cy.startDate) : '';
+    _crit = '<div class="cal-cycle-crit" style="color:' + hexC + ';border-color:' + hexC + '33"'
+      + ' title="' + escH(c.cy.nom || 'Cycle') + ' — durée variable, fin inconnue">'
+      + '<b>' + escH(c.cy.nom || 'Cycle') + '</b>'
+      + (phs.length > 1 ? '<span>Ph. ' + (cur < 0 ? phs.length : cur + 1) + '/' + phs.length + '</span>' : '')
+      + '<span>' + depuis.replace(' · ', '') + '</span><span class="fl">→</span></div>';
+  });
+  if(!segs.length && !_crit) return '';
+  return '<div class="cal-cycle-ruban' + (_crit ? ' avec-crit' : '') + '">'+_crit+segs.map(function(s){
     var cy=s.c.cy, hex=cy.color||_cycleColors[cy.nom]||'#52514E';
     var r=parseInt(hex.slice(1,3),16)||82, g=parseInt(hex.slice(3,5),16)||81, b=parseInt(hex.slice(5,7),16)||78;
     var n=Math.max(1, Math.ceil((Math.round((s.c.fin-s.c.deb)/J)+1)/7));
@@ -1108,11 +1157,13 @@ function renderCycleTimeline(){
       var donePh = phasesT.filter(_cyclePhaseIsDone).length;
       var curPhT = _cyclePhaseCurrentIndex(c);
       var datesLine = c.startDate ? 'depuis le '+_fmtDateShort(c.startDate) : 'durée variable';
-      html += '<div class="cycle-block" style="background:'+col+';width:'+minW+'px;flex-shrink:0;cursor:pointer;" title="Modifier" onclick="openCycleForm(\''+c.id+'\')">';
+      /* Sans dates, ce bloc n'a pas de largeur naturelle : enfermé dans 60 px
+         il sortait « Ten… » et ses lignes debordaient (qualite/cycle-criteres-agenda-cas.js). */
+      html += '<div class="cycle-block" style="background:'+col+';min-width:'+minW+'px;flex-shrink:0;cursor:pointer;" title="Modifier" onclick="openCycleForm(\''+c.id+'\')">';
       html += '<button class="cycle-block-del" onclick="event.stopPropagation();deleteCycle(\''+c.id+'\')">×</button>';
       html += '<div style="font-size:.8rem;font-weight:700;margin-bottom:2px;padding-right:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+c.nom+'</div>';
-      html += '<div style="font-size:.63rem;opacity:.85;white-space:nowrap;">'+datesLine+'</div>';
-      html += '<div style="font-size:.63rem;opacity:.7;">'
+      html += '<div style="font-size:.63rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+datesLine+'</div>';
+      html += '<div style="font-size:.63rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
             + (phasesT.length>1 ? 'Ph. '+(curPhT<0?phasesT.length:curPhT+1)+'/'+phasesT.length : donePh+'/'+phasesT.length+' phase')
             + '</div>';
       html += '</div>';
@@ -2504,6 +2555,12 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       });
     }
   }
+  /* Bascule de phase d'un cycle à critères : un événement DATÉ, posé le jour
+     où il a eu lieu (qualite/cycle-criteres-agenda-cas.js). */
+  _cycleJalonsDuJour(dateStr).forEach(function(j){
+    allChips.push('<div class="cal-jalon" style="color:' + j.color + ';background:' + j.color + '1A"'
+      + ' title="' + escH(j.cycle + ' — ' + j.texte) + '">' + escH(j.texte) + '</div>');
+  });
   // Cycles : fond coloré sur la cellule (voir _dayCycleStyle), pas de chip
   // Notes calendrier
   _loadCalNotes();
