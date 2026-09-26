@@ -2396,6 +2396,10 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .cal-ctx-btn:last-child { margin-bottom:0; }
 .cal-ctx-btn:hover { background:var(--accent-ll); border-color:var(--info-l); }
 .cal-ctx-btn-icon { font-size:var(--fs-3xl); line-height:1; flex-shrink:0; }
+/* La cible du menu se cale sur ses voisines : 14 px de cote et un trait fin.
+   Le reglage generique (1.05em du texte) la rendait plus grosse et plus
+   epaisse que les trois icones au-dessus — mesure en ligne le 2026-09-26. */
+.cal-ctx-btn-icon.ech-ico-svg svg { width:14px; height:14px; stroke-width:1.3; }
 .cal-ctx-btn-body { display:flex; flex-direction:column; gap:2px; }
 .cal-ctx-btn-desc { font-size:var(--fs-xs); color:var(--muted); font-weight:400; }
 /* ── Formulaire note ── */
