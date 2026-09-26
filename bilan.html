@@ -2077,6 +2077,20 @@ textarea { resize:none !important; overflow:hidden !important; }
 .obj-ech-item b { font-weight:600; color:var(--text); }
 .obj-ech-jm { margin-left:auto; font-size:.7rem; font-weight:700; color:var(--cote-d); white-space:nowrap; }
 .obj-ech-aide { font-size:.7rem; color:var(--muted); }
+/* Verdict du cluster de Wainner. Trois tons, et c'est le ton qui porte le
+   sens avant le texte : vert quand on ECARTE, ambre quand c'est probable,
+   rouge a 4/4. La note grise dit d'ou vient le pourcentage — un chiffre nu
+   se lirait comme une affirmation sur CE patient. */
+.wainner-verdict { padding:9px 14px; font-size:.82rem; border-left:3px solid var(--border);
+  background:var(--surface2); }
+.wainner-verdict b { font-weight:700; }
+/* Les jetons sont ceux de CE fichier : --amrap est un nom de programme.html,
+   et une variable non definie rend la declaration entiere invalide, en
+   silence. Le controle check-css-vars l'a attrape. */
+.wainner-verdict.ok   { border-left-color:var(--green); background:var(--green-l); color:var(--green-d); }
+.wainner-verdict.warn { border-left-color:var(--orange); background:var(--orange-l); color:var(--orange-d); }
+.wainner-verdict.bad  { border-left-color:var(--red); background:var(--red-l); color:var(--red-d); }
+.wainner-note { display:block; margin-top:3px; font-size:.68rem; font-weight:400; color:var(--text3); }
 
 /* ── Mode édition d'un bilan passé : dernière valeur connue ─────────────
    Valeur fantôme À L'INTÉRIEUR du champ (placeholder natif / texte d'option) +
@@ -2840,16 +2854,24 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <div class="block" data-block-id="epaule--irrit" id="ep-single-irrit">
-  <div class="block-header red">Scan Épaule Irritable — Positif = ❌ (signe clinique)</div>
+  <div class="block-header red">Scan neurologique — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-ep-irrit"></tbody>
   </table>
+  <!-- Verdict du cluster de Wainner. Vide tant que rien n'est renseigne :
+       une case de verdict permanente ferait croire a un resultat.
+       (qualite/cluster-wainner-cas.js) -->
+  <div class="wainner-verdict" id="wainner-tb-ep-irrit" hidden></div>
 </div>
 <div class="block" data-block-id="epaule--irrit" id="ep-bilateral-irrit" style="display:none">
-  <div class="block-header red">Scan Épaule Irritable — Positif = ❌ (signe clinique)</div>
+  <div class="block-header red">Scan neurologique — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-irrit-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-irrit-d"></tbody></table></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div class="wainner-verdict" id="wainner-tb-ep-irrit-g" hidden></div>
+    <div class="wainner-verdict" id="wainner-tb-ep-irrit-d" hidden></div>
+  </div>
 </div>
 
 <div class="block" data-block-id="epaule--fonc" id="ep-single-fonc">
@@ -6255,8 +6277,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 <div class="toast" id="toast"></div>
 
 
-<script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260926o"></script>
+<script src="js/bilan-blocks.js?v=20260926p"></script>
+<script src="js/bilan.js?v=20260926p"></script>
 
 </body>
 </html>

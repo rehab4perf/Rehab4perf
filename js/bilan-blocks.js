@@ -60,7 +60,7 @@ var BILAN_BLOCKS = {
   },
   {
    "id": "epaule--irrit",
-   "name": "Scan Épaule Irritable",
+   "name": "Scan neurologique",
    "tests": [
     "tb-ep-irrit",
     "tb-ep-irrit-g",

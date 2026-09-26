@@ -716,6 +716,12 @@ const TESTS = {
     'ULNT médian (ULNT 2a)',
     'ULNT radial (ULNT 2b)',
     'ULNT ulnaire (ULNT 3)',
+    /* Cluster de Wainner (2003). AJOUTES EN FIN : l'index est l'identite,
+       les bilans enregistres en derivent. L'ordre d'AFFICHAGE les remet a
+       leur place clinique (_BL_ORDRE_DEFAUT). */
+    'Rotation cervicale active &lt; 60\u00b0 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Du côté atteint</span>',
+    'Distraction cervicale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Soulagement des symptômes à la traction</span>',
+    'Spurling A <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension + inclinaison homolatérale + compression ≈ 14 kg</span>',
   ]},
   'tb-ep-trau-gh':{type:'ortho',items:[
     'Appréhension test (antérieure) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">ABD + RE → Appréhension</span>',
@@ -747,8 +753,8 @@ const TESTS = {
     'Hawkins-Kennedy <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">RI passive max à 90° d\'élévation → Douleur (conflit sous-coracoïdien)</span>',
   ]},
   // Épaule bilatérale — tables simplifiées (flat, sans sous-en-têtes)
-  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers moyen bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT médian (ULNT 1)','ULNT médian (ULNT 2a)','ULNT radial (ULNT 2b)','ULNT ulnaire (ULNT 3)']},
-  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers moyen bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT médian (ULNT 1)','ULNT médian (ULNT 2a)','ULNT radial (ULNT 2b)','ULNT ulnaire (ULNT 3)']},
+  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers moyen bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT médian (ULNT 1)','ULNT médian (ULNT 2a)','ULNT radial (ULNT 2b)','ULNT ulnaire (ULNT 3)','Rotation cervicale active &lt; 60\u00b0','Distraction cervicale','Spurling A']},
+  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers moyen bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT médian (ULNT 1)','ULNT médian (ULNT 2a)','ULNT radial (ULNT 2b)','ULNT ulnaire (ULNT 3)','Rotation cervicale active &lt; 60\u00b0','Distraction cervicale','Spurling A']},
   'tb-ep-trau-g':{type:'ortho',items:[
     'Appréhension (ant.)','Relocation test','Appréhension post.','Sulcus Test',
     'Cross body adduction test','Palpation interligne AC',
@@ -1754,11 +1760,35 @@ function _initAllRomBars() {
    sinon ordre du catalogue. Les tests masqués restent inclus (en fin) :
    le masquage est un display:none, jamais une absence — les ids doivent
    toujours exister pour les brouillons et bilans sauvegardés. */
+/* L'ordre d'AFFICHAGE est decouple de l'identite : le catalogue s'etend en
+   fin (l'index est l'identite des bilans enregistres), mais un test ajoute
+   n'a aucune raison de s'afficher en derniere position.
+
+   Le Scan neurologique le demande : les trois items du cluster de Wainner ont
+   ete ajoutes apres les ULNT, alors qu'ils se lisent avec l'ULNT median — qui
+   est le quatrieme item du cluster et le premier a faire, puisque negatif il
+   ecarte a lui seul. (qualite/cluster-wainner-cas.js) */
+var _BL_ORDRE_DEFAUT = {
+  /* Arm Squeeze · cluster (ULNT 1, rotation, distraction, Spurling) · autres ULNT */
+  'tb-ep-irrit':   [0, 1, 5, 6, 7, 2, 3, 4],
+  'tb-ep-irrit-g': [0, 1, 5, 6, 7, 2, 3, 4],
+  'tb-ep-irrit-d': [0, 1, 5, 6, 7, 2, 3, 4]
+};
 function _blTestDisplayOrder(tbodyId, cfg) {
   var all = [];
   for (var i = 0; i < cfg.items.length; i++) all.push(i);
   var tl = _blTestsLayout(tbodyId);
-  if (!tl || !tl.order || !tl.order.length) return all;
+  /* La disposition du praticien prime ; sinon l'ordre par defaut du bloc.
+     Dans les deux cas, tout test absent de la liste est remis en fin — un
+     test qui disparaitrait de l'ecran serait pire qu'un test mal place. */
+  if (!tl || !tl.order || !tl.order.length) {
+    var d = _BL_ORDRE_DEFAUT[tbodyId];
+    if (!d) return all;
+    var vus = {}, res = [];
+    d.forEach(function(i){ if (i >= 0 && i < cfg.items.length && !vus[i]) { vus[i] = 1; res.push(i); } });
+    all.forEach(function(i){ if (!vus[i]) { vus[i] = 1; res.push(i); } });
+    return res;
+  }
   var seen = {}, out = [];
   tl.order.forEach(function(i){ if (i >= 0 && i < cfg.items.length && !seen[i]) { seen[i] = 1; out.push(i); } });
   all.forEach(function(i){ if (!seen[i]) { seen[i] = 1; out.push(i); } }); // nouveaux tests du catalogue → en fin
@@ -1805,6 +1835,74 @@ var EP_FONC_GROUPES = [
   { nom:'Réponses de la coiffe',   idx:[6,7] },
   { nom:'Contrôle scapulaire',     idx:[8,9] }
 ];
+
+/* ── Cluster de Wainner ───────────────────────────────────────────────────
+   Les INDICES au catalogue des quatre items (tb-ep-irrit et ses deux tables
+   bilaterales, qui partagent la meme disposition). L'ULNT median est deja
+   dans le bloc depuis toujours : il n'est pas duplique, le cluster le lit la
+   ou il est. */
+var EP_WAINNER = { ulnt:1, rot:5, dist:6, spur:7 };
+
+function _wainnerLire(tbodyId){
+  var v = {};
+  Object.keys(EP_WAINNER).forEach(function(k){
+    var el = document.getElementById('sel-' + tbodyId + '-' + EP_WAINNER[k]);
+    v[k] = el ? el.value : '';
+  });
+  return v;
+}
+/* Ce que le cluster conclut. Les pourcentages sont ceux de Wainner (2003) —
+   des probabilites POST-TEST : elles valent pour un patient chez qui l'on
+   suspecte deja une radiculopathie. `note` porte cette condition, et elle
+   doit suivre le chiffre partout ou il s'affiche, CR compris : un
+   pourcentage nu se lit comme une affirmation sur CE patient. */
+function _wainnerVerdict(v){
+  v = v || {};
+  var cles = ['ulnt','rot','dist','spur'];
+  var remplis = cles.filter(function(k){ return v[k] === 'Positif' || v[k] === 'Négatif'; });
+  if(!remplis.length) return { vide:true, n:0, txt:'', cls:'', note:'' };
+  /* L'ULNT median negatif ECARTE, quoi que disent les autres. C'est l'usage
+     le plus utile du cluster, et Wainner le dit : « the most useful test for
+     ruling out cervical radiculopathy ». */
+  if(v.ulnt === 'Négatif'){
+    return { ecarte:true, n:0, cls:'ok',
+      txt:'ULNT médian négatif — radiculopathie écartée (3 %)',
+      note:'Probabilité chez un patient chez qui l\'on suspectait une radiculopathie (Wainner 2003).' };
+  }
+  var n = cles.filter(function(k){ return v[k] === 'Positif'; }).length;
+  /* Un cluster INCOMPLET n'est pas un cluster negatif : 2 positifs sur 2
+     renseignes ne vaut pas 2/4, et annoncer un pourcentage la-dessus serait
+     inventer un resultat. */
+  if(remplis.length < cles.length){
+    return { incomplet:true, n:n, cls:'',
+      txt:'Cluster incomplet — ' + n + ' positif' + (n>1?'s':'') + ' sur ' + remplis.length + ' renseigné' + (remplis.length>1?'s':''),
+      note:'' };
+  }
+  if(n === 4) return { n:4, cls:'bad', txt:'4 / 4 — radiculopathie cervicale très probable (90 %)',
+    note:'Probabilité chez un patient chez qui l\'on suspectait une radiculopathie (Wainner 2003).' };
+  if(n === 3) return { n:3, cls:'warn', txt:'3 / 4 — radiculopathie cervicale probable (65 %)',
+    note:'Probabilité chez un patient chez qui l\'on suspectait une radiculopathie (Wainner 2003).' };
+  /* En dessous de 3, Wainner ne donne pas de probabilite : on n'en invente
+     pas. Le compte suffit. */
+  return { n:n, cls:'', txt:n + ' / 4 — cluster non concluant', note:'' };
+}
+
+/* L'affichage du verdict, dans les trois tables du Scan neurologique. Le
+   conteneur reste MASQUE tant que rien n'est renseigne : une case de verdict
+   permanente ferait croire a un resultat. */
+function _epWainnerRefresh(){
+  ['tb-ep-irrit','tb-ep-irrit-g','tb-ep-irrit-d'].forEach(function(tb){
+    var box = document.getElementById('wainner-' + tb);
+    if(!box) return;
+    if(!document.getElementById(tb)){ box.hidden = true; return; }
+    var w = _wainnerVerdict(_wainnerLire(tb));
+    if(w.vide){ box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.className = 'wainner-verdict' + (w.cls ? ' ' + w.cls : '');
+    box.innerHTML = '<b>' + _objEsc(w.txt) + '</b>'
+      + (w.note ? '<span class="wainner-note">' + _objEsc(w.note) + '</span>' : '');
+  });
+}
 
 function _epFoncGroupeDe(i){
   for (var g = 0; g < EP_FONC_GROUPES.length; g++)
@@ -3880,6 +3978,7 @@ function _resetBilanFields(){
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
   try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
+  try{ _epWainnerRefresh(); }catch(ex){}
   /* SON PROPRE try, et jamais partage. La cellule d'interpretation est un
      <td> : aucune boucle de vidage ne l'atteint, elle ne se nettoie que par
      cet appel. Range en fin d'un try commun, un voisin qui echoue laissait
@@ -5686,6 +5785,7 @@ function _deserializeBilan(data){
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   });
   try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
+  try{ _epWainnerRefresh(); }catch(ex){}
   /* SON PROPRE try, et jamais partage. La cellule d'interpretation est un
      <td> : aucune boucle de vidage ne l'atteint, elle ne se nettoie que par
      cet appel. Range en fin d'un try commun, un voisin qui echoue laissait
@@ -6826,6 +6926,7 @@ function _saveSuiviRapide(){
           else el.value = delta[mid];
         });
         try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); calcPlioq2(); }catch(ex){}
+        try{ _epWainnerRefresh(); }catch(ex){}
 
         // Mettre à jour l'initial pour détecter de nouveaux changements
         Object.keys(delta).forEach(function(mid){ _suiviRapideInitial[mid]=delta[mid]; });
@@ -6951,35 +7052,65 @@ function showPage(id) {
 // -- TEST CHANGE -----------------------------------------------
 function _calcWainnerCerv() {
   var score = 0;
+  /* `…Vu` dit que l'item a ete RENSEIGNE. Sans lui, un cluster a peine
+     commence se lirait comme un cluster negatif. */
   // Rotation cervicale <60° (selects cv-rot-cerv-g / cv-rot-cerv-d) — counts as 1 criterion max
-  var rotPos = 0;
+  var rotPos = 0, rotVu = 0;
   ['cv-rot-cerv-g','cv-rot-cerv-d'].forEach(function(id) {
     var el = document.getElementById(id);
+    if (el && el.value) rotVu = 1;
     if (el && el.value === 'inf60') rotPos = 1;
   });
   score += rotPos;
   // ULNT 1 (row 0 in ulnt-g or ulnt-d) — counts as 1 criterion max
-  var ulntPos = 0;
+  var ulntPos = 0, ulntVu = 0;
   ['tb-cv-ulnt-g','tb-cv-ulnt-d'].forEach(function(tid) {
     var tb = document.getElementById(tid); if (!tb) return;
     var rows = tb.querySelectorAll('tr');
-    if (rows[0] && rows[0].querySelector('select') && rows[0].querySelector('select').value === 'Positif') ulntPos = 1;
+    var sel0 = rows[0] && rows[0].querySelector('select');
+    if (sel0 && sel0.value) ulntVu = 1;
+    if (sel0 && sel0.value === 'Positif') ulntPos = 1;
   });
   score += ulntPos;
   // Compression axiale any (rows 1,2,3 in mecanique) — counts as 1 criterion max
-  var compPos = 0;
+  var compPos = 0, compVu = 0, distVu = 0;
   var mec = document.getElementById('tb-cv-mecanique');
   if (mec) {
     var mecRows = mec.querySelectorAll('tr');
     [1,2,3].forEach(function(i) {
-      if (mecRows[i] && mecRows[i].querySelector('select') && mecRows[i].querySelector('select').value === 'Positif') compPos = 1;
+      var s2 = mecRows[i] && mecRows[i].querySelector('select');
+      if (s2 && s2.value) compVu = 1;
+      if (s2 && s2.value === 'Positif') compPos = 1;
     });
     score += compPos;
     // Distraction cervicale (row 4 in mecanique)
-    if (mecRows[4] && mecRows[4].querySelector('select') && mecRows[4].querySelector('select').value === 'Positif') score++;
+    var sd = mecRows[4] && mecRows[4].querySelector('select');
+    if (sd && sd.value) distVu = 1;
+    if (sd && sd.value === 'Positif') score++;
   }
+  var distPos = (mec && mec.querySelectorAll('tr')[4] && mec.querySelectorAll('tr')[4].querySelector('select')
+                 && mec.querySelectorAll('tr')[4].querySelector('select').value === 'Positif') ? 1 : 0;
+  /* LA REGLE EST PARTAGEE avec le Scan neurologique de l'epaule : ce bloc ne
+     faisait que compter, sans pourcentage et surtout SANS la regle
+     d'ecartement de l'ULNT median. Deux ecrans rendaient deux verdicts
+     differents du meme examen. Seule la LECTURE differe ici — les deux pages
+     ne rangent pas leurs tests de la meme facon.
+     (qualite/cluster-wainner-cas.js) */
+  var v = {
+    ulnt: ulntPos ? 'Positif' : (ulntVu ? 'Négatif' : ''),
+    rot:  rotPos  ? 'Positif' : (rotVu  ? 'Négatif' : ''),
+    dist: distPos ? 'Positif' : (distVu ? 'Négatif' : ''),
+    spur: compPos ? 'Positif' : (compVu ? 'Négatif' : '')
+  };
+  var w = _wainnerVerdict(v);
   var alertEl = document.getElementById('cv-wainner-alert');
-  if (alertEl) alertEl.style.display = score >= 3 ? 'flex' : 'none';
+  /* L'alerte garde son seuil d'origine — 3 items — et gagne le verdict
+     chiffre. Un ULNT median negatif l'eteint : il ecarte. */
+  if (alertEl) {
+    alertEl.style.display = (w.n >= 3) ? 'flex' : 'none';
+    var txtEl = alertEl.querySelector('[data-wainner-txt]');
+    if (txtEl) txtEl.textContent = w.txt;
+  }
 }
 
 function _calcDN4() {
@@ -7144,6 +7275,10 @@ function onTestChange(sel, tableId, idx) {
     var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
     if (dn4Tables[tableId]) _calcDN4();
     if (tableId === 'tb-ep-fonc') _epFoncRefresh();
+    /* Le cluster se relit des qu'un de ses items bouge — il vit dans les
+       memes tables que les ULNT. */
+    var wainnerEp = {'tb-ep-irrit':1,'tb-ep-irrit-g':1,'tb-ep-irrit-d':1};
+    if (wainnerEp[tableId]) _epWainnerRefresh();
     if (tableId === 'tb-rl-instab') _calcInstabLomb();
     var lasslett = {'tb-rl-laslett-1':1,'tb-rl-laslett-2':1,'tb-rl-laslett-3':1};
     if (lasslett[tableId]) _calcLaslett();
@@ -9871,6 +10006,20 @@ function _buildAllTestsHtml() {
       });
       if (ulntPos.length) toWork.push('Mobilisation neurale — ' + ulntPos.join(', ') + ' positif(s)');
     }
+    /* Cluster de Wainner : a partir de 3 items sur 4, l'origine cervicale
+       devient probable et la suite n'est plus de notre ressort seul. Les
+       items du cluster ne portent pas « ULNT » dans leur libelle : ils ne
+       peuvent donc pas declencher la mobilisation neurale ci-dessus par
+       erreur. (qualite/cluster-wainner-cas.js) */
+    ['tb-ep-irrit','tb-ep-irrit-g','tb-ep-irrit-d'].forEach(function(tb){
+      if(!document.getElementById(tb)) return;
+      var w = _wainnerVerdict(_wainnerLire(tb));
+      if(w && w.n >= 3){
+        var cote = tb.slice(-2) === '-g' ? ' (gauche)' : (tb.slice(-2) === '-d' ? ' (droite)' : '');
+        toWork.push('Suspicion de radiculopathie cervicale' + cote + ' — ' + w.txt
+                  + ' : avis médical avant progression en charge');
+      }
+    });
   })();
 
   // ── PSET ─────────────────────────────────────────────────────────────────
