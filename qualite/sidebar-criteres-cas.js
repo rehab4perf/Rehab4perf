@@ -111,6 +111,44 @@ ok('la carte lit le cache PARTAGÉ, pas sa propre copie', (() => {
   vm.runInContext([fm('_ppCritereLigneHtml'), fm('_ppProtoHtml')].join('\n'), k);
   return (k._ppProtoHtml().match(/\d+ \/ \d+ critères/) || ['?'])[0]; })());
 
+/* Demande du praticien (2026-09-26) : « une fois tous les critères validés,
+   un petit bouton discret pour passer à la phase suivante serait bien ».
+   Un cycle à critères bascule SEUL quand sa phase est validée ; un protocole,
+   non — c'est une décision clinique, et le praticien la prend. Le bouton
+   n'existe donc que lorsqu'il n'y a plus rien à cocher. */
+console.log('\nPasser à la phase suivante');
+{
+  const proto = { id: 'lca', name: 'LCA', phases: [
+    { id: 'p1', name: 'Phase 1', exitCriteria: ['a', 'b'] },
+    { id: 'p2', name: 'Phase 2 — Renforcement', exitCriteria: ['c'] } ] };
+  const carte = (coches, phaseId) => {
+    const k = vm.createContext({ escH: x => String(x || ''), escJS: x => String(x || ''),
+      _protoPatientData: { lca: { checks: { [phaseId]: coches } } },
+      _ppProto: { proto: proto, phase: proto.phases.find(p => p.id === phaseId) } });
+    vm.runInContext([fm('_ppCritereLigneHtml'), fm('_ppNomPhase'), fm('_ppProtoHtml')].join('\n'), k);
+    return k._ppProtoHtml();
+  };
+  ok('rien à voir tant qu\'un critère manque', !/_ppPhaseSuivante/.test(carte({ 0: true }, 'p1')),
+     'le bouton apparaîtrait sur une phase non terminée');
+  const fini = carte({ 0: true, 1: true }, 'p1');
+  ok('tous validés : le bouton paraît', /_ppPhaseSuivante\(/.test(fini), fini.slice(-260));
+  ok('… et il NOMME la phase où il mène', /Phase 2/.test(fini), fini.slice(-260));
+  ok('sur la DERNIÈRE phase, rien à proposer', !/_ppPhaseSuivante/.test(carte({ 0: true }, 'p2')),
+     'un bouton qui ne mène nulle part');
+  ok('… mais on dit que le protocole est au bout', /derni/i.test(carte({ 0: true }, 'p2')),
+     carte({ 0: true }, 'p2').slice(-200));
+}
+{
+  const f = fm('_ppPhaseSuivante');
+  ok('la bascule existe', !!f, '_ppPhaseSuivante introuvable');
+  ok('elle DEMANDE avant : changer de phase est une décision clinique',
+     /r4pConfirmer\(/.test(f), 'un clic suffirait à faire avancer le protocole');
+  ok('… et passe par la bascule déjà écrite, qui journalise', /_protoUpdatePhase\(/.test(f),
+     'une seconde écriture de phase divergerait de l\'historique');
+  ok('… puis relit le protocole, sinon la carte garde l\'ancienne phase',
+     /_ppProto = null/.test(f) && /_ppChargerProto\(/.test(f), f);
+}
+
 ok('la carte est posée dans la colonne', /_ppProtoHtml\(\)/.test(fm('_panneauPatientHtml')), 'la carte n\'est pas rendue');
 ok('le style des critères existe', /\.pp-crit\b/.test(html), 'CSS absent');
 

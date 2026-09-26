@@ -180,7 +180,20 @@ function _chargerEcheancesAthlete(pid){
     .catch(function(){});
 }
 
-// Repère "🎯 <objectif>" sur le jour concerné, même emplacement que le
+/* L'icone de l'echeance est un SVG, pas un emoji (demande du praticien,
+   2026-09-26) : un emoji change de dessin d'un systeme a l'autre, s'aligne
+   mal sur le texte, et detonnait a cote des icones du menu du jour, toutes
+   vectorielles. `currentColor` : l'ambre vient de la regle CSS, l'icone n'a
+   pas de couleur propre — une icone qui porte sa teinte reapparait en ambre
+   sur un fond ambre. Une source unique pour tous les emplacements.
+   (qualite/echeances-cas.js) */
+var _ECH_SVG_CIBLE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">'
+  + '<circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.2"/></svg>';
+var _ECH_SVG_PAUSE = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">'
+  + '<rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>';
+function _echIcoSvg(periode){ return periode ? _ECH_SVG_PAUSE : _ECH_SVG_CIBLE; }
+
+// Repère "<objectif>" sur le jour concerné, même emplacement que le
 // libellé de cycle (avant les chips de séances).
 function _dayObjectifLabelHtml(dateStr, cls){
   /* Une periode marque CHAQUE jour qu'elle couvre, pas seulement son premier :
@@ -190,14 +203,16 @@ function _dayObjectifLabelHtml(dateStr, cls){
   var matches = _patientObjectifs.filter(function(o){ return _echCouvre(o, dateStr); });
   if(!matches.length) return '';
   var tousPeriodes = matches.every(_echEstPeriode);
-  var ico = tousPeriodes ? '⏸' : '🎯';
+  var ico = '<span class="ech-ico-svg">' + _echIcoSvg(tousPeriodes) + '</span>';
   var titleFull = matches.map(function(o){
     return _echEstPeriode(o) ? o.text + ' (' + o.date + ' → ' + o.dateFin + ')' : o.text;
   }).join(' · ');
   var label = matches.length > 1
     ? matches.length + (tousPeriodes ? ' périodes' : ' objectifs')
     : (matches[0].text.length > 18 ? matches[0].text.slice(0,18)+'…' : matches[0].text);
-  return '<div class="'+cls+'" title="'+ico+' '+escH(titleFull)+'">'+ico+' '+escH(label)+'</div>';
+  /* `title` est du texte pur : un SVG n'y a pas sa place, et l'emoji qui s'y
+     trouvait n'apportait rien de plus que le mot qui suit. */
+  return '<div class="'+cls+'" title="'+escH(titleFull)+'">'+ico+' '+escH(label)+'</div>';
 }
 /* ── Bande d'echeances ──────────────────────────────────────────────
    Ce qui compte au quotidien n'est pas la date, c'est la DISTANCE qui l'en
@@ -319,7 +334,7 @@ function _renderEcheances(){
   /* `_patientObjectifs` ne contient deja que les objectifs DATES : sans date,
      un objectif n'a rien a dire a un agenda, et il reste dans le bilan. */
   var liste = (_patientObjectifs || []).map(function(o){
-    /* Toutes les echeances portent la meme identite — 🎯 ambre, comme le
+    /* Toutes les echeances portent la meme identite — la cible ambre, comme le
        repere du jour : la meme echeance presentee sous deux couleurs selon
        l'endroit ferait douter que ce soit la meme.
 
@@ -396,8 +411,7 @@ function _renderEcheances(){
          praticien doit pouvoir verifier que c'est bien la meme echeance, et
          non deux courses le meme jour. */
       +  ' title="' + escH(o.text + (o.autres && o.autres.length ? ' · ' + o.autres.join(' · ') : '')) + ' — ' + o.date + '">'
-      +  '<span class="cal-ech-ico">'
-      +  (o.kind === 'periode' ? '⏸' : o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
+      +  '<span class="cal-ech-ico ech-ico-svg">' + _echIcoSvg(o.kind === 'periode') + '</span>'
       +  '<span class="cal-ech-txt"><b>' + escH(o.text.length > 26 ? o.text.slice(0,26) + '…' : o.text) + '</b>'
       +  '<span class="cal-ech-date">'
       +  (_echEstPeriode(o) ? _echDateLisible(o.date) + ' → ' + _echDateLisible(o.dateFin)
@@ -459,7 +473,7 @@ function _echPrendreEnCompte(id, dateStr){
     if(!r.ok) return;
     _patientObjectifs.forEach(function(o){ if(o.echId === id) o.repris = true; });
     _renderEcheances();
-    if(typeof _showToast === 'function') _showToast('🎯 Échéance prise en compte');
+    if(typeof _showToast === 'function') _showToast('Échéance prise en compte');
   }).catch(function(){}).then(function(){ _echAller(dateStr); });
 }
 window._echPrendreEnCompte = _echPrendreEnCompte;
@@ -483,17 +497,23 @@ function _echNouvelle(dateStr){
   var d = dateStr || _dateStr(new Date());
   _calPickerDate = d;
   var t = document.getElementById('calPickerTitle');
-  if(t) t.textContent = 'Nouvelle echeance';
+  if(t) t.textContent = 'Nouvelle échéance';
   var list = document.getElementById('calPickerList');
   if(!list) return;
   list.innerHTML = '<div class="cal-note-form ech-form">'
     + (dateStr ? '<button class="cal-note-back" onclick="openCalPicker(\'' + dateStr + '\')">&larr; Retour</button>' : '')
     + '<input class="cal-note-inp" id="echTexte" type="text" maxlength="120" placeholder="Course, reprise, examen\u2026" />'
     + '<div class="ech-form-dates">'
-    +   '<label>Date<input class="cal-note-inp" id="echDate" type="date" value="' + d + '"></label>'
-    +   '<label>Fin <span class="ech-form-opt">(periode)</span><input class="cal-note-inp" id="echFin" type="date"></label>'
+    /* Le libelle tient dans UN SEUL element. Le label est une colonne flex :
+       un <span> pose a cote d'un noeud texte y devient un item separe, donc
+       une seconde ligne — et le champ de droite descendait d'autant, decalant
+       les deux colonnes (vu en ligne le 2026-09-26). */
+    +   '<label><span class="ech-form-lbl">Date</span>'
+    +     '<input class="cal-note-inp" id="echDate" type="date" value="' + d + '"></label>'
+    +   '<label><span class="ech-form-lbl">Fin <i class="ech-form-opt">(période)</i></span>'
+    +     '<input class="cal-note-inp" id="echFin" type="date"></label>'
     + '</div>'
-    + '<div class="ech-form-aide">Une seconde date en fait une periode : vacances, deplacement, arret.</div>'
+    + '<div class="ech-form-aide">Une seconde date en fait une période : vacances, déplacement, arrêt.</div>'
     + '<button class="cal-note-save" onclick="_echEnregistrer()">Enregistrer</button>'
     + '</div>';
   var ov = document.getElementById('calPickerOverlay');
@@ -509,9 +529,9 @@ function _echEnregistrer(){
   var fin = (fe && fe.value) || '';
   /* Un intitule vide ne dit rien, et une echeance sans date n'a rien a dire a
      un calendrier — elle resterait invisible apres avoir ete saisie. */
-  if(!texte){ if(typeof _showToast === 'function') _showToast('Donnez un intitule a l\'echeance.', true); return; }
-  if(!date){ if(typeof _showToast === 'function') _showToast('Donnez une date a l\'echeance.', true); return; }
-  if(fin && fin < date){ if(typeof _showToast === 'function') _showToast('La fin ne peut pas preceder le debut.', true); return; }
+  if(!texte){ if(typeof _showToast === 'function') _showToast('Donnez un intitulé à l\'échéance.', true); return; }
+  if(!date){ if(typeof _showToast === 'function') _showToast('Donnez une date à l\'échéance.', true); return; }
+  if(fin && fin < date){ if(typeof _showToast === 'function') _showToast('La fin ne peut pas précéder le début.', true); return; }
   if(!_progPatient) return;
   var pid = String(_progPatient.id);
   var corps = { patient_id: pid, texte: texte, date: date,
@@ -544,13 +564,13 @@ function _echEnregistrer(){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     var ov = document.getElementById('calPickerOverlay');
     if(ov) ov.classList.remove('open');
-    if(typeof _showToast === 'function') _showToast('\uD83C\uDFAF Echeance ajoutee');
+    if(typeof _showToast === 'function') _showToast('Échéance ajoutée');
     /* La bande et le repere du jour se relisent depuis la base : on ne pousse
        rien a la main, sinon deux etats divergeraient jusqu'au rechargement. */
     _chargerEcheancesAthlete(pid);
     if(typeof renderCalendar === 'function') renderCalendar();
   }).catch(function(){
-    if(typeof _showToast === 'function') _showToast('Echeance non enregistree \u2014 reessayez.', true);
+    if(typeof _showToast === 'function') _showToast('Échéance non enregistrée \u2014 réessayez.', true);
   });
 }
 window._echEnregistrer = _echEnregistrer;
@@ -642,7 +662,7 @@ function _echFusionner(id, dateStr){
                            fusion:{ avec:autre.text,
                                     avecId:(autre.echId != null ? autre.echId : null),
                                     affiche:(autre.source === 'praticien' ? 'autre' : 'moi') } },
-                     '🎯 Échéances fusionnées')
+                     'Échéances fusionnées')
       .then(function(ok){ if(ok) _echRelire(); });
   });
 }
@@ -3478,7 +3498,7 @@ function openCalPicker(dateStr) {
     /* L'echeance se pose ici, a cote de la note : c'est le meme geste, sur le
        meme jour. Elle passait par le bilan faute d'un autre endroit. */
     +'<button class="cal-ctx-btn" onclick="_echNouvelle(\''+dateStr+'\')">'
-      +'<span class="cal-ctx-btn-icon">\uD83C\uDFAF</span>'
+      +'<span class="cal-ctx-btn-icon ech-ico-svg">' + _ECH_SVG_CIBLE + '</span>'
       +'<span class="cal-ctx-btn-body"><span>Ajouter une échéance</span>'
       +'<span class="cal-ctx-btn-desc">Course, reprise, examen — ou une période</span></span>'
     +'</button>';
@@ -8662,8 +8682,58 @@ function _ppProtoHtml(){
           "_protoCheckboxChange(this,'" + escJS(String(p.proto.id)) + "','" + escJS(String(p.phase.id)) + "'," + i + ")");
       }).join('') + '</div>'
     : '<div class="pp-crit-fin">Aucun critère de sortie sur cette phase.</div>';
+  /* Tout est coche : la suite se propose ICI, la ou on vient de cocher le
+     dernier critere. Un cycle a criteres bascule seul ; un protocole, non —
+     c'est une decision clinique, et elle reste au praticien. Le bouton
+     n'existe donc que lorsqu'il n'y a plus rien a cocher, et il NOMME la
+     phase ou il mene : « suivante » ne dit pas ou l'on va.
+     (qualite/sidebar-criteres-cas.js) */
+  if(crits.length && faits === crits.length){
+    var phs = p.proto.phases || [];
+    var k = -1;
+    for(var i2 = 0; i2 < phs.length; i2++){ if(phs[i2].id === p.phase.id){ k = i2; break; } }
+    var suiv = (k >= 0 && k + 1 < phs.length) ? phs[k + 1] : null;
+    h += suiv
+      ? '<button type="button" class="pp-phase-suiv" onclick="_ppPhaseSuivante(\''
+        + escJS(String(p.proto.id)) + '\',\'' + escJS(String(suiv.id)) + '\')">Passer à '
+        + escH(_ppNomPhase(suiv)) + '</button>'
+      : '<div class="pp-crit-fin">Dernière phase du protocole.</div>';
+  }
   return h + '</div>';
 }
+/* Le nom court d'une phase : « Phase 2 — Renforcement & controle
+   neuromusculaire » ne tient pas sur un bouton de colonne. On garde ce qui
+   precede le tiret cadratin, qui est l'identite de la phase. */
+function _ppNomPhase(ph){
+  var n = (ph && (ph.name || ph.nom)) || 'la phase suivante';
+  return n.split('\u2014')[0].trim() || n;
+}
+/* Passer a la phase suivante. Trois choses, et en perdre une laisse un ecran
+   qui ment : on DEMANDE (le protocole avance, des criteres neufs arrivent),
+   on passe par la bascule deja ecrite — qui journalise le changement dans
+   `history` —, puis on relit, sinon la carte garde l'ancienne phase avec ses
+   criteres tous coches. */
+function _ppPhaseSuivante(protoId, phaseId){
+  var p = _ppProto;
+  if(!p || !p.proto) return;
+  var phs = p.proto.phases || [];
+  var suiv = phs.filter(function(x){ return String(x.id) === String(phaseId); })[0];
+  r4pConfirmer({
+    titre: 'Passer à la phase suivante ?',
+    message: 'Tous les critères de sortie sont validés.\n' + p.proto.name + ' passe à « '
+             + ((suiv && (suiv.name || suiv.nom)) || 'la phase suivante') + ' ».',
+    ok: 'Passer à la suite'
+  }).then(function(oui){
+    if(!oui) return;
+    _protoUpdatePhase(protoId, phaseId);
+    /* `_ppChargerProto` sort tot quand le patient est deja charge : sans cette
+       remise a zero, elle ne relirait rien et la carte resterait en place. */
+    _ppProto = null;
+    try { _ppChargerProto(); } catch(ex){}
+  });
+}
+window._ppPhaseSuivante = _ppPhaseSuivante;
+
 function _panneauPatientHtml(){
   if(!_progPatient) return '';
   var auj = new Date(); auj.setHours(0,0,0,0);

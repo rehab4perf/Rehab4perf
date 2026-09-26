@@ -187,6 +187,13 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
   line-height:1.35; cursor:pointer; padding:2px 0; }
 .pp-crit input { margin:1px 0 0; accent-color:var(--accent); flex-shrink:0; cursor:pointer; }
 .pp-crit.on span { color:var(--muted); text-decoration:line-through; }
+/* Le bouton de phase suivante : discret, demande du praticien — il ne doit
+   pas peser plus que les critères qu'on vient de cocher. Pleine largeur pour
+   qu'il se distingue d'une ligne de critère, mais en contour, pas en aplat. */
+.pp-phase-suiv { width:100%; margin-top:8px; padding:6px 10px; border:1px solid var(--accent);
+  border-radius:7px; background:none; color:var(--accent); font-family:inherit;
+  font-size:var(--fs-xs); font-weight:700; cursor:pointer; }
+.pp-phase-suiv:hover { background:var(--accent-ll); }
 .pp-crit-fin { margin-top:8px; font-size:var(--fs-xs); color:var(--muted); font-style:italic; }
 .pp-barre { height:5px; border-radius:3px; background:var(--surface2); margin-top:8px; overflow:hidden; }
 .pp-barre i { display:block; height:100%; border-radius:3px; }
@@ -2422,9 +2429,17 @@ div.cal-central-header { flex-wrap:wrap; row-gap:6px; }
 .ech-form .cal-note-save { background:var(--amrap); }
 .ech-form .cal-note-save:hover { filter:brightness(.92); }
 .ech-form-dates { display:flex; gap:8px; }
-.ech-form-dates label { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;
-  font-size:var(--fs-2xs); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-.ech-form-opt { font-weight:400; letter-spacing:0; text-transform:none; }
+.ech-form-dates label { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+/* Le libelle est UN element : dans une colonne flex, deux enfants font deux
+   lignes, et la colonne la plus haute decalait le champ de l'autre. */
+.ech-form-lbl { font-size:var(--fs-2xs); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+.ech-form-opt { font-weight:400; font-style:normal; letter-spacing:0; text-transform:none; }
+/* L'icone de l'echeance : un SVG plutot qu'un emoji. Il se dimensionne sur le
+   texte (`em`) et prend sa couleur du parent — l'ambre reste porte par la
+   pastille, pas par l'icone. */
+.ech-ico-svg { display:inline-flex; align-items:center; justify-content:center; }
+.ech-ico-svg svg { width:1.05em; height:1.05em; display:block; }
 .ech-form-aide { font-size:var(--fs-xs); color:var(--muted); margin:2px 0 2px; }
 /* ── Sélecteur de type de note ── */
 .cal-note-type-row { display:flex; gap:6px; margin-bottom:10px; }
@@ -5010,6 +5025,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <script src="js/protocoles-ref.js?v=20260910g"></script>
-<script src="js/prog-main.js?v=20260926g"></script>
+<script src="js/prog-main.js?v=20260926h"></script>
 </body>
 </html>

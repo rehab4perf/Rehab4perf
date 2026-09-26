@@ -31,7 +31,11 @@ function ok(nom, cond, detail) {
 var FIN = 'window._echToutBasculer = _echToutBasculer;';
 var d0 = js.indexOf('var _ECH_MAX'), d1 = js.indexOf(FIN, d0);
 if (d0 < 0 || d1 < d0) { console.error('Bornes introuvables dans js/prog-main.js.'); process.exit(1); }
-var code = js.slice(d0, d1 + FIN.length);
+/* Les icones sont declarees PLUS HAUT que la tranche : elles servent aussi au
+   repere du jour. On les prefixe — c'est bien le vrai code, pas une copie. */
+var i0 = js.indexOf('var _ECH_SVG_CIBLE'), i1 = js.indexOf('\n// Repère', i0);
+if (i0 < 0 || i1 < i0) { console.error('Icones d\'echeance introuvables.'); process.exit(1); }
+var code = js.slice(i0, i1) + '\n' + js.slice(d0, d1 + FIN.length);
 
 function jour(n) {
   var d = new Date(); d.setDate(d.getDate() + n);
@@ -93,7 +97,17 @@ ok('le repère du jour est ambre',
    /\.cal-day-objectif-lbl \{[^}]*color:var\(--amrap\)/.test(html.replace(/\n/g, ' ')));
 ok('la pastille par défaut l\'est aussi',
    /\.cal-ech \{[^}]*border-left:3px solid var\(--amrap\)/.test(html.replace(/\n/g, ' ')));
-ok('… et porte le même 🎯', une.innerHTML.indexOf('🎯') > 0);
+/* L'icone est un SVG depuis le 2026-09-26, a la demande du praticien : un
+   emoji change de dessin d'un systeme a l'autre, et detonnait a cote des
+   icones du menu du jour, toutes vectorielles. Ce qui compte n'a pas change —
+   la bande et la grille montrent LE MEME dessin. */
+ok('… et porte la même cible', /<svg[\s\S]*circle[\s\S]*r="2\.2"/.test(une.innerHTML), une.innerHTML.slice(0, 200));
+ok('plus aucun emoji dans la bande', !/🎯|⏸|⚑/.test(une.innerHTML), une.innerHTML.slice(0, 200));
+ok('l\'icone n\'a pas de couleur propre : elle suit la pastille',
+   /stroke="currentColor"/.test(une.innerHTML) && !/stroke="#|fill="#/.test(une.innerHTML),
+   'une icone teintee reapparait en ambre sur un fond ambre');
+var peri = rendre([{ text: 'Vacances', date: jour(5), dateFin: jour(12) }]);
+ok('une période a son propre dessin', /<rect/.test(peri.innerHTML) && !/circle/.test(peri.innerHTML), peri.innerHTML.slice(0, 200));
 /* La distinction ne porte PAS sur qui a saisi — une fois l'échéance
    acceptée, la source ne change plus rien — mais sur ce qui reste à faire.
 
@@ -139,7 +153,9 @@ ok('le clic mène au mois de l\'échéance', /function _echAller\(dateStr\)/.tes
 console.log('\nL\'écran athlète survit à l\'absence de la table');
 var ath = fs.readFileSync(path.join(R, 'athlete.html'), 'utf8');
 
-var D0 = 'var _echListe = null;', D1 = 'function _echSupprimer(id){';
+/* La tranche part des ICONES : elles precedent `_echListe` et le rendu s'en
+   sert (SVG plutot qu'emoji depuis le 2026-09-26). */
+var D0 = 'var _ECH_SVG_CIBLE', D1 = 'function _echSupprimer(id){';
 var a0 = ath.indexOf(D0), a1 = ath.indexOf(D1, a0);
 ok('le bloc de l\'écran est identifiable', a0 > 0 && a1 > a0);
 var codeAth = ath.slice(a0, a1);
@@ -422,7 +438,9 @@ console.log('\nLe rendu ENTIER, de bout en bout');
     var boite = { style:{}, innerHTML:'' };
     new Function('_patientObjectifs', '_echTout', '_ECH_MAX', 'escH',
                  '_echDateLisible', 'document', '_dernierRenduEch',
-      js.slice(Y0, Y1) + '\n_renderEcheances();')(
+      /* Les icones vivent plus haut dans le fichier : meme prefixe que la
+         premiere tranche, et toujours le vrai code. */
+      js.slice(i0, i1) + '\n' + js.slice(Y0, Y1) + '\n_renderEcheances();')(
       objectifs, false, 3,
       function(x){ return String(x); },
       function(d){ return d; },
@@ -638,12 +656,15 @@ ok('… et annonce sa durée, bornes incluses', /15 j/.test(aVenir.innerHTML),
    aVenir.innerHTML);
 
 console.log('\nUne période ne se déguise pas en échéance');
-ok('elle porte son propre pictogramme', /⏸/.test(aVenir.innerHTML));
-ok('… pas celui des échéances', !/🎯/.test(aVenir.innerHTML));
+/* Depuis le 2026-09-26 les deux pictogrammes sont des SVG : la pause a des
+   <rect>, la cible des <circle>. Ce qui est verifie n'a pas change — une
+   periode ne se deguise pas en echeance. */
+ok('elle porte son propre pictogramme', /<rect/.test(aVenir.innerHTML));
+ok('… pas celui des échéances', !/<circle/.test(aVenir.innerHTML));
 var mixte = rendre([{ text: 'Vacances', date: jour(10), dateFin: jour(24), echId: 7 },
                     { text: 'UTMB', date: jour(40), echId: 8 }]);
 ok('les deux cohabitent, chacune avec sa marque',
-   /⏸/.test(mixte.innerHTML) && /🎯/.test(mixte.innerHTML));
+   /<rect/.test(mixte.innerHTML) && /<circle/.test(mixte.innerHTML), mixte.innerHTML.slice(0, 260));
 ok('la période affiche ses deux bornes', /→/.test(aVenir.innerHTML));
 
 console.log('\nLa fusion ne s\'applique pas aux périodes');
@@ -679,7 +700,7 @@ console.log('\nLe calendrier marque chaque jour couvert');
   var fO = js.indexOf('\n}', js.indexOf('function _echCouvre'));
   if (dL < 0 || dO < 0 || fO < 0) { console.error('Bornes du repère de jour introuvables'); process.exit(1); }
   var jourLbl = new Function('_patientObjectifs', 'escH',
-    js.slice(dO, fO + 2) + '\n' + js.slice(dL, js.indexOf('\n}', dL) + 2) +
+    js.slice(i0, i1) + '\n' + js.slice(dO, fO + 2) + '\n' + js.slice(dL, js.indexOf('\n}', dL) + 2) +
     '\nreturn _dayObjectifLabelHtml;')(
       [{ text: 'Vacances', date: '2026-07-10', dateFin: '2026-07-20' },
        { text: 'UTMB', date: '2026-08-28' }],
@@ -690,8 +711,12 @@ console.log('\nLe calendrier marque chaque jour couvert');
   ok('le dernier jour aussi', /Vacances/.test(jourLbl('2026-07-20', 'c')));
   ok('la veille ne l\'est pas', jourLbl('2026-07-09', 'c') === '');
   ok('le lendemain non plus', jourLbl('2026-07-21', 'c') === '');
-  ok('une période porte son pictogramme', /⏸/.test(jourLbl('2026-07-15', 'c')));
-  ok('une échéance garde le sien', /🎯/.test(jourLbl('2026-08-28', 'c')));
+  ok('une période porte son pictogramme', /<rect/.test(jourLbl('2026-07-15', 'c')));
+  ok('une échéance garde le sien', /<circle/.test(jourLbl('2026-08-28', 'c')));
+  /* `title` est du texte pur : un SVG ne s'y affiche pas, il s'y ecrirait en
+     clair. L'infobulle ne porte donc plus que le libelle. */
+  ok('… et l\'infobulle ne contient aucun balisage',
+     !/title="[^"]*</.test(jourLbl('2026-08-28', 'c')), jourLbl('2026-08-28', 'c'));
   ok('… et n\'emprunte pas celui des périodes', !/⏸/.test(jourLbl('2026-08-28', 'c')));
 }
 
@@ -701,7 +726,8 @@ console.log('\nL\'écran athlète rend vraiment ses périodes');
      rien de ce qui s'affiche : une chaine mal fermee ou une variable oubliee
      passerait tout entiere. On execute ici le vrai `_echRendre`. */
   var ath = fs.readFileSync(path.join(R, 'athlete.html'), 'utf8');
-  var a0 = ath.indexOf('var _echListe = null;');
+  /* Depuis les ICONES : elles precedent `_echListe` et le rendu les appelle. */
+  var a0 = ath.indexOf('var _ECH_SVG_CIBLE');
   var a1 = ath.indexOf('/* ── Vue MOIS ── */');
   if (a0 < 0 || a1 < a0) { console.log('  ✗ bloc « Mes objectifs » introuvable'); ko++; }
 
@@ -726,20 +752,24 @@ console.log('\nL\'écran athlète rend vraiment ses périodes');
   ok('la période commencée s\'affiche', /Vacances/.test(h1));
   ok('… avec ses deux bornes', /du .* au /.test(h1), h1.slice(0, 200));
   ok('… et le temps restant', /encore 5 j/.test(h1));
-  /* On vise la PASTILLE de la ligne, pas le caractere n'importe ou : le bouton
-     de bascule porte lui aussi « ⏸ Une période », et une recherche large
-     passait au vert alors que la ligne avait repris le 🎯 des echeances. */
-  ok('… sous son propre pictogramme', h1.indexOf('<div class="ech-ico">⏸</div>') > 0);
+  /* On vise la PASTILLE de la ligne, pas le dessin n'importe ou : le bouton
+     de bascule porte lui aussi une pause, et une recherche large passait au
+     vert alors que la ligne avait repris la cible des echeances.
+     Les pictogrammes sont des SVG depuis le 2026-09-26 — meme dessin que chez
+     le praticien, l'echeance ne change pas d'identite d'un ecran a l'autre. */
+  ok('… sous son propre pictogramme',
+     /<div class="ech-ico"><svg[^>]*>\s*<rect/.test(h1), h1.slice(0, 220));
   ok('… et pas celui des échéances', h1.indexOf('<div class="ech-ico">🎯</div>') < 0);
 
   var h2 = rendreAth([{ id: 1, texte: 'UTMB', date: jour(30) }], { per: true });
   ok('une échéance garde son J-N', /J-30/.test(h2));
-  ok('… et sa cible', h2.indexOf('<div class="ech-ico">🎯</div>') > 0);
+  ok('… et sa cible', /<div class="ech-ico"><svg[^>]*>\s*<circle/.test(h2), h2.slice(0, 220));
+  ok('… et plus aucun emoji dans la liste', !/🎯|⏸/.test(h1 + h2), 'un emoji subsiste');
 
   var h3 = rendreAth([], { per: true, mode: true });
   ok('le mode période propose deux dates', /id="echDate"/.test(h3) && /id="echFin"/.test(h3));
   ok('… et la bascule marque le mode actif',
-     /⏸ Une période<\/button>/.test(h3) && /aria-pressed="true"[^>]*onclick="_echBasculerMode\(true\)/.test(h3));
+     /Une période<\/button>/.test(h3) && /aria-pressed="true"[^>]*onclick="_echBasculerMode\(true\)/.test(h3));
 
   var h4 = rendreAth([], { per: false });
   ok('sans la colonne en base, aucune bascule', !/_echBasculerMode/.test(h4));

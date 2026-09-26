@@ -788,7 +788,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   border:1px solid var(--border); border-left:3px solid var(--warn);
   border-radius:9px; padding:11px 13px; margin-bottom:8px; }
 .ech-val { border-left-color:var(--ok); }
-.ech-ico { font-size:var(--fs-lg); line-height:1; }
+.ech-ico { font-size:var(--fs-lg); line-height:1;
+  display:inline-flex; align-items:center; justify-content:center; color:var(--accent2); }
+.ech-ico svg { width:1.05em; height:1.05em; display:block; }
+.ech-bascule button svg { width:1em; height:1em; vertical-align:-.12em; margin-right:3px; }
 .ech-main { flex:1; min-width:0; }
 .ech-nom { font-size:var(--fs-md); font-weight:700; color:var(--text); }
 .ech-d { font-size:var(--fs-xs); color:var(--muted); margin-top:2px; }
@@ -1792,6 +1795,17 @@ function volAthDecaler(s){ _volAthDec = Math.min(0, _volAthDec + s); _volAthRend
    APPLIQUEE, la table n'existe pas : la requete echoue et la section reste
    entierement masquee. Rien ne casse, rien ne s'affiche a moitie. C'est ce
    qui permet de deployer cet ecran avant de toucher au schema. */
+/* La MEME echeance doit porter le MEME dessin chez le praticien et chez
+   l'athlete : ces deux SVG sont la copie de ceux de js/prog-main.js. Ce
+   fichier est autonome — il ne charge pas prog-main.js — d'ou la copie, qui
+   est la seule facon de garder l'identite commune ici.
+   (qualite/echeances-cas.js) */
+var _ECH_SVG_CIBLE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">'
+  + '<circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.2"/></svg>';
+var _ECH_SVG_PAUSE = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">'
+  + '<rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>';
+function _echIcoSvg(periode){ return periode ? _ECH_SVG_PAUSE : _ECH_SVG_CIBLE; }
+
 var _echListe = null;
 /* La colonne `date_fin` arrive avec la migration `20260906`. Tant qu'elle
    n'est pas appliquee, le formulaire de periode reste masque : proposer une
@@ -1870,7 +1884,7 @@ function _echRendre(){
       : _echDateLisibleAth(o.e.date);
     h += '<div class="ech'+(pris?' ech-val':'')+(per?' ech-per':'')
       +  (encours?' ech-encours':'')+'">'
-      +  '<div class="ech-ico">'+(per?'⏸':'🎯')+'</div><div class="ech-main">'
+      +  '<div class="ech-ico">'+_echIcoSvg(per)+'</div><div class="ech-main">'
       +  '<div class="ech-nom">'+escH(o.e.texte)+'</div>'
       +  '<div class="ech-d">'+quand+' · <span class="ech-src">'
       +  (pris ? 'pris en compte' : 'en attente de validation')+'</span></div></div>'
@@ -1888,9 +1902,9 @@ function _echRendre(){
     +  (_echPeriodesOk
         ? '<div class="ech-bascule">'
           + '<button type="button" aria-pressed="'+(mp?'false':'true')+'"'
-          + ' onclick="_echBasculerMode(false)">🎯 Une échéance</button>'
+          + ' onclick="_echBasculerMode(false)">'+_ECH_SVG_CIBLE+' Une échéance</button>'
           + '<button type="button" aria-pressed="'+(mp?'true':'false')+'"'
-          + ' onclick="_echBasculerMode(true)">⏸ Une période</button></div>'
+          + ' onclick="_echBasculerMode(true)">'+_ECH_SVG_PAUSE+' Une période</button></div>'
         : '')
     +  '<div class="ech-champ"><label>Intitulé</label>'
     +  '<input type="text" id="echNom" maxlength="120" value="'+escH(_echSaisieNom)+'" placeholder="'
@@ -1912,7 +1926,7 @@ function _echRendre(){
     passees.reverse().forEach(function(o){
       var per = _echEstPeriode(o.e);
       h += '<div class="ech'+(per?' ech-per':'')+'" style="opacity:.55">'
-        +  '<div class="ech-ico">'+(per?'⏸':'🎯')+'</div>'
+        +  '<div class="ech-ico">'+_echIcoSvg(per)+'</div>'
         +  '<div class="ech-main"><div class="ech-nom">'+escH(o.e.texte)+'</div>'
         +  '<div class="ech-d">'
         +  (per ? 'du '+_echDateLisibleAth(o.e.date)+' au '+_echDateLisibleAth(o.e.date_fin)
