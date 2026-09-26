@@ -168,9 +168,82 @@ console.log('\nPasser à la phase suivante');
 ok('_protoUpdatePhase rend sa promesse', /return _fetchRetry\(/.test(fm('_protoUpdatePhase')),
    'impossible de savoir si le changement de phase a été écrit');
 
+/* LE CHEMIN INVERSE, signalé par le praticien (2026-09-26) : la phase se
+   change aussi depuis la FENÊTRE Protocoles, et la barre latérale gardait
+   la sienne — deux endroits annonçaient deux phases différentes du même
+   protocole, celui du même patient, sur le même écran.
+
+   La mise à jour appartient à _protoUpdatePhase, pas à ses appelants : c'est
+   le point de passage UNIQUE de tout changement de phase. Posée dans le
+   bouton de la fenêtre, elle aurait manqué chaque autre chemin. */
+console.log('\nLa fenêtre et la barre disent la même phase');
+{
+  /* On EXÉCUTE _protoUpdatePhase : une attente textuelle passerait au vert sur
+     un code désactivé par un `if(false)` — essayé, elle ne voyait rien. */
+  const PROTO = { id: 'lca', name: 'LCA', phases: [
+    { id: 'p1', name: 'Phase 1' }, { id: 'p2', name: 'Phase 2' }, { id: 'p3', name: 'Phase 3' } ] };
+  function majPhase(phaseId, opts) {
+    opts = opts || {};
+    let rendus = 0;
+    const k = vm.createContext({
+      SUPA_URL_P: '', _sbHeaders: () => ({}), _showToast: () => {}, renderProtocols: () => {},
+      _getAllProtocols: () => [PROTO],
+      _protoPatientData: { lca: { pp: { id: 'pp1', current_phase_id: 'p1', history: [] } } },
+      _ppProto: opts.ppProto === undefined
+        ? { pid: 'x', proto: PROTO, phase: PROTO.phases[0], pp: { id: 'pp1', current_phase_id: 'p1' } }
+        : opts.ppProto,
+      _renderPanneauPatient: () => { rendus++; },
+      _fetchRetry: () => Promise.resolve({ ok: opts.ok !== false, status: opts.ok === false ? 500 : 204 })
+    });
+    vm.runInContext(fm('_protoUpdatePhase'), k);
+    return k._protoUpdatePhase('lca', phaseId)
+      .catch(() => {})
+      .then(() => ({ phase: k._ppProto && k._ppProto.phase, pp: k._ppProto && k._ppProto.pp, rendus }));
+  }
+  return majPhase('p3').then(r => {
+    ok('la barre suit le changement fait depuis la fenêtre',
+       r.phase && r.phase.id === 'p3', JSON.stringify(r.phase));
+    ok('… et redessine', r.rendus === 1, r.rendus + ' rendu(s)');
+    ok('… la ligne du patient suit aussi', r.pp && r.pp.current_phase_id === 'p3', JSON.stringify(r.pp));
+    return majPhase(null);
+  }).then(r => {
+    /* Une phase remise à null, c'est un protocole qu'on sort de sa phase : la
+       carte ne peut plus montrer de critères, et garder les anciens serait
+       pire que de ne rien montrer. */
+    ok('une phase vidée vide aussi la carte', r.phase === null, JSON.stringify(r.phase));
+    return majPhase('p3', { ok: false });
+  }).then(r => {
+    ok('écriture en échec : la barre ne bouge pas',
+       r.phase && r.phase.id === 'p1' && r.rendus === 0,
+       'la barre annoncerait une phase que la base ignore');
+    return majPhase('p3', { ppProto: { pid: 'x', proto: { id: 'autre', phases: [] }, phase: { id: 'z' } } });
+  }).then(r => {
+    ok('un AUTRE protocole ne la touche pas', r.phase && r.phase.id === 'z' && r.rendus === 0,
+       'la barre suivrait le changement d\'un protocole qu\'elle n\'affiche pas');
+    return suite();
+  });
+}
+function suite() {
+/* Même famille : ASSIGNER un protocole depuis la fenêtre. La barre garde en
+   mémoire « ce patient n'a pas de protocole » (_ppProto = {pid}) et ne
+   rechargerait jamais — la carte ne serait apparue qu'au prochain changement
+   de patient. Ici on RELIT, contrairement au changement de phase : la barre
+   n'a pas la ligne `patient_protocols` qui vient d'être créée. */
+{
+  const a = fm('_protoAssign') || fm('assignProtocol') || fm('_protoAssignToPatient');
+  ok('assigner un protocole fait apparaître la carte',
+     !!a && /_ppProto = null/.test(a) && /_ppChargerProto\(/.test(a),
+     a ? a.slice(-500) : 'fonction d\'assignation introuvable');
+  const d = fm('_protoUnassign');
+  ok('… et la désassignation la fait disparaître',
+     /_ppProto = null/.test(d) && /_ppChargerProto\(/.test(d),
+     'la carte resterait sur un protocole que le patient n\'a plus');
+}
+
 ok('la carte est posée dans la colonne', /_ppProtoHtml\(\)/.test(fm('_panneauPatientHtml')), 'la carte n\'est pas rendue');
 ok('le style des critères existe', /\.pp-crit\b/.test(html), 'CSS absent');
 
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Barre latérale : les critères se cochent sur place, chacun sur sa propre bascule.');
+}

@@ -10739,6 +10739,9 @@ function _protoTlSaveHistory(protoId, history) {
 }
 
 /* ─── Désassigner le protocole (supprimer patient_protocol) ─── */
+/* Desassigner : la carte doit DISPARAITRE de la barre. Le meme oubli que
+   l'assignation, en sens inverse — elle serait restee affichee sur un
+   protocole que le patient n'a plus. */
 function _protoUnassign(protoId) {
   var data = _protoPatientData[protoId];
   if(!data || !data.pp) return;
@@ -10747,7 +10750,13 @@ function _protoUnassign(protoId) {
     _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
       method: 'DELETE', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'})
     }).then(function(r){
-      if(r.ok){ _showToast('Assignation supprimée.'); renderProtocols(); }
+      if(r.ok){
+        _showToast('Assignation supprimée.'); renderProtocols();
+        /* La carte disparait de la barre : elle serait restee affichee sur un
+           protocole que le patient n'a plus. */
+        _ppProto = null;
+        try { _ppChargerProto(); } catch(ex){}
+      }
       else { _showToast('Erreur suppression.', true); }
     }).catch(function(){ _showToast('Erreur suppression.', true); });
   });
@@ -10771,6 +10780,13 @@ function assignProtocol(protoId) {
   .then(function(){
     _showToast('✅ Protocole '+_escHtml(proto.name)+' assigné à '+_escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''))+' !');
     renderProtocols();
+    /* La barre laterale garde en memoire « ce patient n'a pas de protocole »
+       et ne rechargerait jamais : la carte ne serait apparue qu'au prochain
+       changement de patient. On RELIT — contrairement au changement de phase,
+       la barre n'a pas la ligne `patient_protocols` qui vient d'etre creee.
+       (qualite/sidebar-criteres-cas.js) */
+    _ppProto = null;
+    try { _ppChargerProto(); } catch(ex){}
     // Ouvrir modal rappels
     var protoFull = _getAllProtocols().find(function(p){ return p.id===protoId; }) || PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
     if(protoFull) setTimeout(function(){ _openRappelsModal(protoFull); }, 400);
@@ -10975,6 +10991,24 @@ function _protoUpdatePhase(protoId, phaseId) {
     body: JSON.stringify({ current_phase_id: phaseId||null, phase_started_at: phaseId ? now : null, updated_at: now, history: history })
   }).then(function(r){
     if(r.ok && data.pp){ data.pp.current_phase_id = phaseId||null; data.pp.history = history; renderProtocols(); }
+    /* LA BARRE LATERALE SUIT, et c'est ici que ca se joue : cette fonction est
+       le point de passage UNIQUE de tout changement de phase — la fenetre
+       Protocoles, le bouton de la barre, et ce qui viendra. Pose dans le
+       bouton de la fenetre, le rafraichissement aurait manque les autres
+       chemins, et les deux ecrans annoncaient deux phases differentes du meme
+       protocole (signale le 2026-09-26).
+       Apres `r.ok` seulement : sinon la barre annoncerait une phase que la
+       base ignore. (qualite/sidebar-criteres-cas.js) */
+    if(r.ok && _ppProto && _ppProto.proto && String(_ppProto.proto.id) === String(protoId)){
+      var ph2 = phaseId
+        ? (_ppProto.proto.phases || []).filter(function(x){ return String(x.id) === String(phaseId); })[0] || null
+        : null;
+      /* Plus de phase : la carte n'a plus de criteres a montrer, et garder les
+         anciens serait pire que de ne rien montrer. */
+      _ppProto.phase = ph2;
+      if(_ppProto.pp) _ppProto.pp.current_phase_id = phaseId || null;
+      try { _renderPanneauPatient(); } catch(ex){}
+    }
     if(!r.ok) throw new Error('HTTP ' + r.status);
     return r;
   });
