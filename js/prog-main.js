@@ -523,10 +523,23 @@ function _echEnregistrer(){
                    ce qui la met hors de portee de l'athlete, dont les
                    politiques exigent `repris_at IS NULL`. */
                 repris_at: new Date().toISOString() };
-  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_objectifs', {
-    method:'POST',
-    headers: Object.assign({ 'Prefer':'return=minimal' }, _sbHeaders()),
-    body: JSON.stringify(corps)
+  /* TANT QUE LA MIGRATION `20260926` N'EST PAS APPLIQUEE, la colonne `source`
+     n'existe pas — et PostgREST REFUSE l'ecriture entiere (400), il n'ignore
+     pas la colonne inconnue. Sans ce repli, le bouton ne ferait rien du tout
+     jusqu'a l'application de la migration. On reessaie donc SANS elle :
+     l'echeance est alors rangee comme une declaration d'athlete, ce qui ne
+     change que le regroupement de la bande. */
+  function _poster(c){
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_objectifs', {
+      method:'POST',
+      headers: Object.assign({ 'Prefer':'return=minimal' }, _sbHeaders()),
+      body: JSON.stringify(c)
+    });
+  }
+  _poster(corps).then(function(r){
+    if(r.ok || !('source' in corps)) return r;
+    var sansSource = Object.assign({}, corps); delete sansSource.source;
+    return _poster(sansSource);
   }).then(function(r){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     var ov = document.getElementById('calPickerOverlay');

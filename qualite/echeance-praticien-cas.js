@@ -74,6 +74,12 @@ console.log('\nLa saisie');
      /date_fin: *[^,]*\? *[^:]*: *null|date_fin: *\w+ *\|\| *null/.test(e), e.slice(0, 600));
   ok('rien ne part sans intitulé', /trim\(\)/.test(e) && /return/.test(e), e.slice(0, 300));
   ok('la bande se redessine après l\'écriture', /_chargerEcheancesAthlete\(|_renderEcheances\(/.test(e));
+  /* PostgREST REFUSE l'écriture entière sur une colonne inconnue — il ne
+     l'ignore pas. Sans repli, le bouton ne ferait donc rien du tout tant que
+     la migration n'est pas appliquée : exactement le genre de panne muette
+     que le reste du projet évite en écrivant le code pour vivre sans elle. */
+  ok('… et elle passe même sans la migration, en retirant `source`',
+     /delete\s+\w+\.source/.test(e), 'un 400 laisserait le bouton sans effet');
 }
 ok('le menu du jour la propose, comme une note',
    /_echNouvelle\(/.test(fm('openCalPicker')) && /Ajouter une échéance/.test(fm('openCalPicker')),
