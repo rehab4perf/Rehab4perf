@@ -711,11 +711,11 @@ function _sbRetry(fn, _n) {
 // -- DATA -----------------------------------------------------
 const TESTS = {
   'tb-ep-irrit':{type:'ortho',items:[
-    'Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>',
-    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
-    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>',
+    'Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers moyen bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>',
+    'ULNT médian (ULNT 1)',
+    'ULNT médian (ULNT 2a)',
+    'ULNT radial (ULNT 2b)',
+    'ULNT ulnaire (ULNT 3)',
   ]},
   'tb-ep-trau-gh':{type:'ortho',items:[
     'Appréhension test (antérieure) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">ABD + RE → Appréhension</span>',
@@ -747,8 +747,8 @@ const TESTS = {
     'Hawkins-Kennedy <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">RI passive max à 90° d\'élévation → Douleur (conflit sous-coracoïdien)</span>',
   ]},
   // Épaule bilatérale — tables simplifiées (flat, sans sous-en-têtes)
-  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
-  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
+  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers moyen bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT médian (ULNT 1)','ULNT médian (ULNT 2a)','ULNT radial (ULNT 2b)','ULNT ulnaire (ULNT 3)']},
+  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers moyen bras / ACJ / sous-acromial — EVA bras ≥ 3 = positif (Thoomes 2026)</span>','ULNT médian (ULNT 1)','ULNT médian (ULNT 2a)','ULNT radial (ULNT 2b)','ULNT ulnaire (ULNT 3)']},
   'tb-ep-trau-g':{type:'ortho',items:[
     'Appréhension (ant.)','Relocation test','Appréhension post.','Sulcus Test',
     'Cross body adduction test','Palpation interligne AC',
@@ -778,10 +778,10 @@ const TESTS = {
     'Test de Cozen <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension poignet contre résistance → Douleur épicondyle latérale</span>',
     'Test de Mill <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Avant-bras en pronation, extension + flexion palmaire poignet → Douleur épicondyle lat.</span>',
     'Test de Maudsley <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension contrariée du majeur (P3) → Douleur épicondyle latérale</span>',
-    'ULNT radial (ULNT 2) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Diminution amplitude / modification symptômes par inclinaison de la tête</span>',
+    'ULNT radial (ULNT 2b) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Diminution amplitude / modification symptômes par inclinaison de la tête</span>',
   ]},
-  'tb-co-lat-g':{type:'ortho',items:['Test LCLC varus statique','Test LCLC varus dynamique','Test de Cozen','Test de Mill','Test de Maudsley','ULNT radial (ULNT 2)']},
-  'tb-co-lat-d':{type:'ortho',items:['Test LCLC varus statique','Test LCLC varus dynamique','Test de Cozen','Test de Mill','Test de Maudsley','ULNT radial (ULNT 2)']},
+  'tb-co-lat-g':{type:'ortho',items:['Test LCLC varus statique','Test LCLC varus dynamique','Test de Cozen','Test de Mill','Test de Maudsley','ULNT radial (ULNT 2b)']},
+  'tb-co-lat-d':{type:'ortho',items:['Test LCLC varus statique','Test LCLC varus dynamique','Test de Cozen','Test de Mill','Test de Maudsley','ULNT radial (ULNT 2b)']},
   'tb-co-med':{type:'ortho',items:[
     'Test UCL — valgus statique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Décubitus, humérus fixé en RI, coude 30° → Laxité / Douleur épicondyle méd. (Sp 50%, Se 65%)</span>',
     'Test UCL — valgus dynamique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Recherche d\'un ressaut en valgus (Sp 100%, Se 19%)</span>',
