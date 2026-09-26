@@ -3908,6 +3908,8 @@ function _resetBilanFields(){
 }
 
 function _resetAndLoadPatient(p){
+  /* Les echeances de l'agenda suivent le patient, comme ses bilans. */
+  try { _chargerEcheancesBilan(p && p.id); } catch(ex){}
   _exitHistoMode();
   _exitReadOnlyMode();
   _bilanIsSuivi  = false;
@@ -11323,6 +11325,62 @@ function addObjectif(){
 function removeObjectif(idx){
   _objectifs.splice(idx,1);
   renderObjectifs();
+}
+
+/* ── Les echeances posees depuis l'agenda, en LECTURE ────────────────
+   Decide avec le praticien le 2026-09-26 : une date de course n'est pas une
+   observation clinique, elle se saisit dans Programme. Le bilan la LISTE —
+   on la voit a l'examen, la ou on l'attend — mais ne la possede pas : une
+   seule source, donc aucun doublon qui diverge.
+
+   La suppression n'est PAS offerte ici, et ce n'est pas un oubli : ces
+   entrees se modifient la ou elles ont ete posees. Un bouton « x » sur une
+   copie en lecture ferait croire a un objectif du bilan.
+
+   Tant que la table n'existe pas, la requete echoue et le bloc reste
+   masque — exactement comme avant. (qualite/echeance-bilan-cas.js) */
+function _echJoursBilan(iso){
+  if(!iso) return null;
+  var d = new Date(iso + 'T00:00:00'); d.setHours(0,0,0,0);
+  var a = new Date(); a.setHours(0,0,0,0);
+  return Math.round((d - a) / 864e5);
+}
+function _renderEcheancesBilan(lignes){
+  var box = document.getElementById('obj-ech');
+  if(!box) return;
+  var liste = (lignes || []).filter(function(e){
+    /* Une echeance passee ne dit plus rien a l'examen ; une periode reste
+       tant que sa FIN n'est pas depassee. */
+    var j = _echJoursBilan(e.date_fin || e.date);
+    return j !== null && j >= 0;
+  }).sort(function(x, y){ return (x.date < y.date) ? -1 : 1; });
+  if(!liste.length){ box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = '<div class="obj-ech-tete">Échéances de l\u2019agenda</div>'
+    + liste.map(function(e){
+        var j = _echJoursBilan(e.date);
+        var quand = e.date_fin && e.date_fin !== e.date
+          ? 'du ' + _objDateFmt(e.date) + ' au ' + _objDateFmt(e.date_fin)
+          : _objDateFmt(e.date);
+        return '<div class="obj-ech-item"><b>' + _objEsc(e.texte) + '</b>'
+             + '<span>' + quand + '</span>'
+             + '<span class="obj-ech-jm">' + (j === 0 ? 'aujourd\u2019hui' : 'J-' + j) + '</span></div>';
+      }).join('')
+    + '<div class="obj-ech-aide">Se modifient dans l\u2019onglet Programme.</div>';
+}
+function _chargerEcheancesBilan(pid){
+  var box = document.getElementById('obj-ech');
+  if(box){ box.hidden = true; box.innerHTML = ''; }
+  if(!pid) return;
+  sbB.from('athlete_objectifs').select('*').eq('patient_id', pid)
+    .then(function(res){
+      /* Le patient a pu changer pendant la requete : ecrire ici les echeances
+         d'un autre serait pire que ne rien afficher. */
+      if(!_bilanPatient || String(_bilanPatient.id) !== String(pid)) return;
+      if(res.error || !res.data) return;            // table absente : rien
+      _renderEcheancesBilan(res.data);
+    })
+    .catch(function(){});
 }
 
 function _parseObjectifs(){

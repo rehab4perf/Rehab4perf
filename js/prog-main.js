@@ -144,7 +144,12 @@ function _chargerEcheancesAthlete(pid){
 
          Une fonction de chargement doit pouvoir etre rejouee et donner le meme
          resultat que la premiere fois. */
-      _patientObjectifs = _patientObjectifs.filter(function(o){ return o.source !== 'athlete'; });
+      /* On remplace ce qui vient de la TABLE, et c'est `echId` qui le dit —
+         pas la source. Depuis que le praticien pose lui aussi des echeances
+         ici (20260926), filtrer sur `source !== 'athlete'` laisserait SES
+         lignes en place et les rejouerait par-dessus a chaque rechargement.
+         Les objectifs du BILAN n'ont pas d'id : ils survivent, comme avant. */
+      _patientObjectifs = _patientObjectifs.filter(function(o){ return !o.echId; });
       var deja = {};
       _patientObjectifs.forEach(function(o){ deja[o.text + '|' + o.date] = 1; });
       data.forEach(function(e){
@@ -161,7 +166,11 @@ function _chargerEcheancesAthlete(pid){
            appliquee : `select=*` la rend simplement introuvable, et l'entree
            reste un point. Aucun autre code n'a besoin de savoir si la colonne
            existe. */
-        _patientObjectifs.push({ text:e.texte, date:e.date, source:'athlete',
+        /* La source est RELUE. Tant que la migration `20260926` n'est pas
+           appliquee, la colonne est absente et tout reste 'athlete' — donc
+           exactement le comportement d'avant. */
+        _patientObjectifs.push({ text:e.texte, date:e.date,
+                                 source:(e.source === 'praticien' ? 'praticien' : 'athlete'),
                                  dateFin:(e.date_fin && e.date_fin !== e.date) ? e.date_fin : null,
                                  echId:e.id, repris:!!e.repris_at, fusion:fus });
       });
@@ -454,6 +463,84 @@ function _echPrendreEnCompte(id, dateStr){
   }).catch(function(){}).then(function(){ _echAller(dateStr); });
 }
 window._echPrendreEnCompte = _echPrendreEnCompte;
+
+/* ── Poser une echeance depuis Programme ───────────────────────────────────
+   Le praticien apprend une date de course au telephone. Elle passait par le
+   bilan — le seul endroit ou la saisir — ce qui obligeait a rouvrir et
+   reenregistrer un document clinique date pour y noter un semi-marathon.
+
+   Elle se range desormais dans `athlete_objectifs`, la table des echeances,
+   avec `source:'praticien'`. Le gain n'est pas seulement le raccourci : un
+   objectif de bilan vit dans un JSON SANS IDENTIFIANT, et c'est pour cela que
+   la bande ne propose ni fusion ni modification dessus. Ici, l'echeance a un
+   id — donc modifiable, supprimable, fusionnable avec celle que l'athlete a
+   declaree de son cote, et transformable en periode par une seconde date.
+
+   `dateStr` vide : appel depuis la carte de la colonne, sans jour choisi.
+   (qualite/echeance-praticien-cas.js) */
+function _echNouvelle(dateStr){
+  if(!_progPatient){ if(typeof _showToast === 'function') _showToast('Choisissez un patient d\'abord.', true); return; }
+  var d = dateStr || _dateStr(new Date());
+  _calPickerDate = d;
+  var t = document.getElementById('calPickerTitle');
+  if(t) t.textContent = 'Nouvelle echeance';
+  var list = document.getElementById('calPickerList');
+  if(!list) return;
+  list.innerHTML = '<div class="cal-note-form ech-form">'
+    + (dateStr ? '<button class="cal-note-back" onclick="openCalPicker(\'' + dateStr + '\')">&larr; Retour</button>' : '')
+    + '<input class="cal-note-inp" id="echTexte" type="text" maxlength="120" placeholder="Course, reprise, examen\u2026" />'
+    + '<div class="ech-form-dates">'
+    +   '<label>Date<input class="cal-note-inp" id="echDate" type="date" value="' + d + '"></label>'
+    +   '<label>Fin <span class="ech-form-opt">(periode)</span><input class="cal-note-inp" id="echFin" type="date"></label>'
+    + '</div>'
+    + '<div class="ech-form-aide">Une seconde date en fait une periode : vacances, deplacement, arret.</div>'
+    + '<button class="cal-note-save" onclick="_echEnregistrer()">Enregistrer</button>'
+    + '</div>';
+  var ov = document.getElementById('calPickerOverlay');
+  if(ov) ov.classList.add('open');
+  setTimeout(function(){ var el = document.getElementById('echTexte'); if(el) el.focus(); }, 60);
+}
+window._echNouvelle = _echNouvelle;
+
+function _echEnregistrer(){
+  var te = document.getElementById('echTexte'), de = document.getElementById('echDate'), fe = document.getElementById('echFin');
+  var texte = ((te && te.value) || '').trim();
+  var date = (de && de.value) || '';
+  var fin = (fe && fe.value) || '';
+  /* Un intitule vide ne dit rien, et une echeance sans date n'a rien a dire a
+     un calendrier — elle resterait invisible apres avoir ete saisie. */
+  if(!texte){ if(typeof _showToast === 'function') _showToast('Donnez un intitule a l\'echeance.', true); return; }
+  if(!date){ if(typeof _showToast === 'function') _showToast('Donnez une date a l\'echeance.', true); return; }
+  if(fin && fin < date){ if(typeof _showToast === 'function') _showToast('La fin ne peut pas preceder le debut.', true); return; }
+  if(!_progPatient) return;
+  var pid = String(_progPatient.id);
+  var corps = { patient_id: pid, texte: texte, date: date,
+                date_fin: fin || null,
+                source: 'praticien',
+                /* Elle nait REPRISE. La marque « a voir » de la bande dit
+                   « declaree par l'athlete, pas encore prise en compte » : la
+                   porter sur sa propre saisie n'aurait aucun sens. C'est aussi
+                   ce qui la met hors de portee de l'athlete, dont les
+                   politiques exigent `repris_at IS NULL`. */
+                repris_at: new Date().toISOString() };
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_objectifs', {
+    method:'POST',
+    headers: Object.assign({ 'Prefer':'return=minimal' }, _sbHeaders()),
+    body: JSON.stringify(corps)
+  }).then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    var ov = document.getElementById('calPickerOverlay');
+    if(ov) ov.classList.remove('open');
+    if(typeof _showToast === 'function') _showToast('\uD83C\uDFAF Echeance ajoutee');
+    /* La bande et le repere du jour se relisent depuis la base : on ne pousse
+       rien a la main, sinon deux etats divergeraient jusqu'au rechargement. */
+    _chargerEcheancesAthlete(pid);
+    if(typeof renderCalendar === 'function') renderCalendar();
+  }).catch(function(){
+    if(typeof _showToast === 'function') _showToast('Echeance non enregistree \u2014 reessayez.', true);
+  });
+}
+window._echEnregistrer = _echEnregistrer;
 
 /* Trois gestes autour d'une paire, et une seule ecriture qui les porte tous :
    la colonne `fusion` de la ligne de l'athlete.
@@ -3374,6 +3461,13 @@ function openCalPicker(dateStr) {
       +'<span class="cal-ctx-btn-icon"><svg fill="none" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><g clip-rule="evenodd" fill="currentColor" fill-rule="evenodd"><path d="m6 1.25c.41421 0 .75.33579.75.75v2c0 .41421-.33579.75-.75.75s-.75-.33579-.75-.75v-2c0-.41421.33579-.75.75-.75zm5 0c.4142 0 .75.33579.75.75v2c0 .41421-.3358.75-.75.75s-.75-.33579-.75-.75v-2c0-.41421.3358-.75.75-.75zm5 0c.4142 0 .75.33579.75.75v2c0 .41421-.3358.75-.75.75s-.75-.33579-.75-.75v-2c0-.41421.3358-.75.75-.75z"/><path d="m9.44425 2.25h3.11145c1.6026-.00002 2.8816-.00003 3.8847.13483 1.0363.13932 1.8897.43483 2.5648 1.10997s.9706 1.52855 1.11 2.56481c.1348 1.00309.1348 2.28205.1348 3.88465v.05574c0 .4142-.3358.75-.75.75s-.75-.3358-.75-.75c0-1.67112-.0016-2.84901-.1215-3.74052-.1169-.86993-.334-1.35404-.684-1.70402-.3499-.34999-.8341-.56705-1.704-.68401-.8915-.11986-2.0694-.12145-3.7405-.12145h-3c-1.67112 0-2.84901.00159-3.74051.12145-.86994.11696-1.35405.33402-1.70403.68401-.34999.34998-.56705.83409-.68401 1.70402-.11986.89151-.12145 2.0694-.12145 3.74052v5c0 1.6711.00159 2.849.12145 3.7405.11696.87.33402 1.3541.68401 1.704.34998.35.83409.5671 1.70402.684.89151.1199 2.0694.1215 3.74052.1215h3c.4142 0 .75.3358.75.75s-.3358.75-.75.75h-3.05574c-1.6026 0-2.88156 0-3.88465-.1348-1.03626-.1394-1.88967-.4349-2.56481-1.11s-.97065-1.5285-1.10997-2.5648c-.13486-1.0031-.13485-2.2821-.13483-3.8847v-5.11145c-.00002-1.60259-.00003-2.88155.13483-3.88464.13932-1.03626.43483-1.88967 1.10997-2.56481s1.52855-.97065 2.56481-1.10997c1.00309-.13486 2.28205-.13485 3.88464-.13483z"/><path d="m17.5 13.25c.4142 0 .75.3358.75.75v3.25h3.25c.4142 0 .75.3358.75.75s-.3358.75-.75.75h-3.25v3.25c0 .4142-.3358.75-.75.75s-.75-.3358-.75-.75v-3.25h-3.25c-.4142 0-.75-.3358-.75-.75s.3358-.75.75-.75h3.25v-3.25c0-.4142.3358-.75.75-.75z"/><path d="m6.25 10c0-.41421.33579-.75.75-.75h8c.4142 0 .75.33579.75.75 0 .4142-.3358.75-.75.75h-8c-.41421 0-.75-.3358-.75-.75zm0 5c0-.4142.33579-.75.75-.75h4c.4142 0 .75.3358.75.75s-.3358.75-.75.75h-4c-.41421 0-.75-.3358-.75-.75z"/></g></svg></span>'
       +'<span class="cal-ctx-btn-body"><span>Ajouter une note</span>'
       +'<span class="cal-ctx-btn-desc">Rappel, événement, observation…</span></span>'
+    +'</button>'
+    /* L'echeance se pose ici, a cote de la note : c'est le meme geste, sur le
+       meme jour. Elle passait par le bilan faute d'un autre endroit. */
+    +'<button class="cal-ctx-btn" onclick="_echNouvelle(\''+dateStr+'\')">'
+      +'<span class="cal-ctx-btn-icon">\uD83C\uDFAF</span>'
+      +'<span class="cal-ctx-btn-body"><span>Ajouter une échéance</span>'
+      +'<span class="cal-ctx-btn-desc">Course, reprise, examen — ou une période</span></span>'
     +'</button>';
   document.getElementById('calPickerOverlay').classList.add('open');
 }
@@ -8612,7 +8706,9 @@ function _panneauPatientHtml(){
      réponse arrive. */
   try { _ppChargerProto(); } catch(ex){}
   h += _ppProtoHtml();
-  h += '<div class="pp-carte pp-ech"><div class="pp-tete">Échéances</div><div id="ppEchSlot"></div><div class="pp-vide" id="ppEchVide">Aucune échéance à venir.</div></div>';
+  h += '<div class="pp-carte pp-ech"><div class="pp-tete">Échéances'
+     + '<button type="button" onclick="_echNouvelle(\'\')">+ Ajouter</button></div>'
+     + '<div id="ppEchSlot"></div><div class="pp-vide" id="ppEchVide">Aucune échéance à venir.</div></div>';
   // La charge — memes calculs que le bilan
   var a = _calcACWR(_buildUaMap()), z = _zoneAcwrFr(a.ratio);
   /* Le curseur : echelle 0–2, zones aux seuils de _zoneAcwrFr ; sans ratio, pas d'aiguille. */

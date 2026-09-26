@@ -512,12 +512,17 @@ console.log('\nLe geste se voit tout de suite');
   var C0 = js.indexOf('function _chargerEcheancesAthlete');
   var C1 = js.indexOf('\n// Repère', C0);
   var chg = js.slice(C0, C1);
-  ok('le chargement REMPLACE la part athlète',
-     /_patientObjectifs = _patientObjectifs\.filter\(function\(o\)\{ return o\.source !== 'athlete'; \}\);/.test(chg));
+  /* Le CRITERE a change le 2026-09-26 : c'est `echId` qui dit « vient de la
+     table », plus la source — depuis que le praticien y ecrit aussi, filtrer
+     sur la source laisserait SES lignes en place et les rejouerait par-dessus
+     (qualite/echeance-praticien-cas.js). La regle protegee ici, elle, ne
+     change pas : le chargement REMPLACE, il n'empile pas. */
+  ok('le chargement REMPLACE ce qui vient de la table',
+     /_patientObjectifs = _patientObjectifs\.filter\(function\(o\)\{ return !o\.echId; \}\);/.test(chg));
   /* Et il doit le faire AVANT de construire son garde-fou anti-doublon, sinon
      celui-ci retient encore les entrees qu'on vient de retirer. */
   ok('… avant de construire le garde-fou anti-doublon',
-     chg.indexOf("o.source !== 'athlete'") < chg.indexOf('var deja = {}'));
+     chg.indexOf('return !o.echId;') < chg.indexOf('var deja = {}'));
 
   /* La ligne rendue par le serveur fait foi et s'applique tout de suite : c'est
      ce qui rend l'affichage independant d'une relecture, laquelle exige un

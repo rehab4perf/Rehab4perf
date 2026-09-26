@@ -2067,6 +2067,16 @@ textarea { resize:none !important; overflow:hidden !important; }
 .obj-text-input { flex:1 1 160px; }
 .obj-add-btn { padding:6px 14px; border:1px solid var(--accent2); border-radius:6px; font-size:.78rem; font-weight:600; color:var(--accent2); background:#fff; cursor:pointer; white-space:nowrap; }
 .obj-add-btn:hover { background:var(--accent-l); }
+/* Les échéances de l'agenda, en lecture. Volontairement DISTINCTES des chips
+   d'objectif juste au-dessus : même apparence, on croirait pouvoir les
+   supprimer ici — or elles se modifient depuis l'onglet Programme. */
+.obj-ech { display:flex; flex-direction:column; gap:5px; }
+.obj-ech-tete { font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.obj-ech-item { display:flex; align-items:baseline; gap:8px; font-size:.8rem; color:var(--text2);
+  border-left:3px solid var(--cote-d); padding-left:8px; }
+.obj-ech-item b { font-weight:600; color:var(--text); }
+.obj-ech-jm { margin-left:auto; font-size:.7rem; font-weight:700; color:var(--cote-d); white-space:nowrap; }
+.obj-ech-aide { font-size:.7rem; color:var(--muted); }
 
 /* ── Mode édition d'un bilan passé : dernière valeur connue ─────────────
    Valeur fantôme À L'INTÉRIEUR du champ (placeholder natif / texte d'option) +
@@ -2562,6 +2572,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           <label>Attentes & objectifs du patient</label>
           <div class="obj-wrap">
             <div class="obj-list" id="obj-list"></div>
+            <!-- Les échéances posées depuis l'agenda : en LECTURE seulement.
+                 Elles ne sont pas des objectifs de bilan — elles vivent dans
+                 leur propre table, avec un identifiant, et se modifient là où
+                 elles ont été posées. Les rendre éditables ici en ferait deux
+                 copies qui divergent. (qualite/echeance-bilan-cas.js) -->
+            <div class="obj-ech" id="obj-ech" hidden></div>
             <div class="obj-add">
               <input type="text" id="obj-text-input" class="obj-text-input" placeholder="Reprendre le football en compétition…" onkeydown="if(event.key==='Enter'){event.preventDefault();addObjectif();}">
               <input type="date" id="obj-date-input" class="obj-date-input" title="Date cible (optionnel) — apparaît dans l'agenda">
@@ -6240,7 +6256,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260922b"></script>
+<script src="js/bilan.js?v=20260926f"></script>
 
 </body>
 </html>
